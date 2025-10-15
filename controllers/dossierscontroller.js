@@ -20,38 +20,60 @@ export const addDossier = async (req, res) => {
     let proprietaire_id = null;
     let mandataire_id = null;
 
-    // --- Création du propriétaire si fourni ---
+    // --- Gestion du propriétaire ---
     if (proprietaire) {
       const { nom, prenom, telephone, cni } = proprietaire;
       if (!nom || !prenom || !telephone || !cni) {
         return res.status(400).json({ message: "Nom, prénom, téléphone et CNI du propriétaire sont obligatoires" });
       }
 
-      const { data: propData, error: propError } = await supabase
+      // Vérifier si le propriétaire existe déjà
+      const { data: existingProp } = await supabase
         .from('proprietaires')
-        .insert([proprietaire])
         .select('id')
-        .single();
+        .or(`telephone.eq.${telephone},cni.eq.${cni}`)
+        .maybeSingle();
 
-      if (propError) return res.status(400).json({ message: propError.message });
-      proprietaire_id = propData.id;
+      if (existingProp) {
+        proprietaire_id = existingProp.id;
+      } else {
+        const { data: propData, error: propError } = await supabase
+          .from('proprietaires')
+          .insert([proprietaire])
+          .select('id')
+          .single();
+
+        if (propError) return res.status(400).json({ message: propError.message });
+        proprietaire_id = propData.id;
+      }
     }
 
-    // --- Création du mandataire si fourni ---
+    // --- Gestion du mandataire ---
     if (mandataire) {
       const { nom, prenom, telephone, cni } = mandataire;
       if (!nom || !prenom || !telephone || !cni) {
         return res.status(400).json({ message: "Nom, prénom, téléphone et CNI du mandataire sont obligatoires" });
       }
 
-      const { data: mandData, error: mandError } = await supabase
+      // Vérifier si le mandataire existe déjà
+      const { data: existingMand } = await supabase
         .from('mandataires')
-        .insert([mandataire])
         .select('id')
-        .single();
+        .or(`telephone.eq.${telephone},cni.eq.${cni}`)
+        .maybeSingle();
 
-      if (mandError) return res.status(400).json({ message: mandError.message });
-      mandataire_id = mandData.id;
+      if (existingMand) {
+        mandataire_id = existingMand.id;
+      } else {
+        const { data: mandData, error: mandError } = await supabase
+          .from('mandataires')
+          .insert([mandataire])
+          .select('id')
+          .single();
+
+        if (mandError) return res.status(400).json({ message: mandError.message });
+        mandataire_id = mandData.id;
+      }
     }
 
     if (!proprietaire_id && !mandataire_id) {
@@ -92,7 +114,6 @@ export const addDossier = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
-
 /* ==========================================================
    📋 LISTER TOUS LES DOSSIERS
    ========================================================== */
