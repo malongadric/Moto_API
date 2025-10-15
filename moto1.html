@@ -1,0 +1,452 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Agent Adaptatif - Immatriculation Moto</title>
+    <style>
+        /* --- Style Général & Variables --- */
+        :root {
+            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
+            --secondary-color: #00796b; /* Vert pour les actions */
+            --accent-color: #fbc02d; /* Jaune pour l'attention */
+            --background-color: #f5f7fa; /* Gris très clair */
+            --text-color: #333; 
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 8px;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Barre de Navigation Latérale (Sidebar) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--white-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, padding-left 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .sidebar-nav a svg {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-nav a.active {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-footer #user-name { font-weight: bold; display: block; }
+        .sidebar-footer #user-department { font-size: 0.9em; opacity: 0.8; display: block; }
+
+        /* --- Zone de Contenu Principal --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            background-color: var(--white-color);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .menu-toggle svg { width: 28px; height: 28px; }
+
+        .main-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            display: none;
+            background-color: var(--white-color);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .content-section.active { display: block; }
+
+        /* --- Styles des Formulaires --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .form-section-title {
+            grid-column: 1 / -1;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 20px; margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select {
+            padding: 12px; border: 1px solid var(--border-color);
+            border-radius: var(--border-radius); font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.2);
+        }
+
+        /* --- Boutons --- */
+        .form-actions {
+            grid-column: 1 / -1; display: flex;
+            justify-content: flex-end; margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 30px; border: none;
+            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(0, 121, 107, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #004d40; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 121, 107, 0.4);
+        }
+
+        /* --- Section Consultation & Historique --- */
+        .search-bar { display: flex; gap: 15px; margin-bottom: 25px; }
+        .search-bar input { flex-grow: 1; padding: 12px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); }
+        .table-container { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+        .data-table th { background-color: var(--background-color); font-weight: 600; }
+        
+        .history-list { list-style: none; padding: 0; }
+        .history-list li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
+        .history-list li:last-child { border-bottom: none; }
+        .history-list .history-icon { margin-right: 15px; color: var(--secondary-color); }
+        .history-list .history-date { margin-left: auto; color: #777; font-size: 0.9em; }
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 1024px) {
+            :root { --sidebar-width: 220px; }
+            .content-area { padding: 20px; }
+            .main-header h2 { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .main-header { padding: 15px; }
+            .content-area { padding: 15px; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h1>Immatriculation</h1></div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#" id="nav-form" class="nav-link active">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        Nouvel Enregistrement
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-list" class="nav-link">
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        Consulter / Modifier
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-history" class="nav-link">
+                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Historique
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <span id="user-name">Jean Dupont</span>
+            <span id="user-department">Agent - Département du Kouilou</span>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <header class="main-header">
+            <button class="menu-toggle" id="menu-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <h2 id="page-title">Nouvel Enregistrement</h2>
+        </header>
+
+        <main class="content-area">
+
+            <section id="form-section" class="content-section active">
+                <form id="moto-form">
+                    <div class="form-grid">
+                        
+                        <h3 class="form-section-title">Informations de la Moto</h3>
+                        <div class="form-group"><label for="moto-chassis">N° Châssis (VIN)</label><input type="text" id="moto-chassis" placeholder="17 caractères" maxlength="17" required></div>
+                        <div class="form-group"><label for="moto-marque">Marque de la Moto</label><input type="text" id="moto-marque" placeholder="Ex: Haojue, Lifan"></div>
+                        <div class="form-group"><label for="moto-modele">Modèle de la Moto</label><input type="text" id="moto-modele" placeholder="Ex: GN 125, LF150-10B"></div>
+                        <div class="form-group"><label for="moto-carrosserie">Carrosserie (Type)</label><select id="moto-carrosserie" name="carrosserie"><option value="motocycle">Motocycle</option><option value="tricycle">Tricycle</option><option value="quadricycle">Quadricycle</option></select></div>
+                        <div class="form-group"><label for="moto-cylindree">Cylindrée</label><input type="text" id="moto-cylindree" placeholder="Ex: 125 cm3, 150 cm3"></div>
+                        <div class="form-group"><label for="moto-puissance-admin">Puissance Admin (CV)</label><input type="number" id="moto-puissance-admin" placeholder="Ex: 1, 2"></div>
+                        <div class="form-group"><label for="moto-couleur">Couleur de la Moto</label><select id="moto-couleur"><option>---</option><option>Rouge</option><option>Noir</option><option>Bleu</option><option>Gris</option><option>Blanc</option><option>Jaune</option></select></div>
+                        <div class="form-group"><label for="moto-energie">Énergie</label><select id="moto-energie" name="energie"><option>Essence</option><option>Diesel</option><option>Électrique</option></select></div>
+                        <div class="form-group"><label for="moto-boite">Boîte de vitesse</label><select id="moto-boite" name="boite_vitesse"><option>Manuelle</option><option>Automatique</option><option>Semi-automatique</option><option>Sans</option></select></div>
+                        <div class="form-group"><label for="moto-usage">Usage de la Moto</label><select id="moto-usage" name="usage"><option>Personnel</option><option>Commercial (Taxi)</option><option>Administratif</option></select></div>
+                        <div class="form-group"><label for="moto-etat">État de la Moto</label><select id="moto-etat" name="etat"><option>Neuf</option><option>Occasion</option><option>Réformé</option></select></div>
+                        <div class="form-group"><label for="moto-date-fab">Date Fabrication</label><input type="date" id="moto-date-fab"></div>
+                        <div class="form-group"><label for="moto-date-circu">1ère Mise en Circulation</label><input type="date" id="moto-date-circu"></div>
+
+                    </div>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary">Suivant</button></div>
+                </form>
+            </section>
+
+            <section id="list-section" class="content-section">
+                <h2>Consulter / Modifier les dossiers de Motos</h2>
+                <div class="search-bar">
+                    <input type="text" placeholder="Rechercher par N° de châssis, plaque, nom...">
+                    <button class="btn btn-primary">Rechercher</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>N° Châssis</th><th>Propriétaire</th><th>Marque/Modèle de la Moto</th><th>Type</th><th>Statut</th><th>Actions</th></tr></thead>
+                        <tbody>
+                            <tr><td>ABC123456789DEF01</td><td>(Lien vers Dossier Proprio)</td><td>Lifan LF150</td><td>Motocycle</td><td>En attente validation</td><td><a href="#">Modifier</a></td></tr>
+                            <tr><td>XYZ987654321ABC02</td><td>(Lien vers Dossier Proprio)</td><td>TVS King</td><td>Tricycle</td><td>Validé</td><td><a href="#">Voir</a></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+             <section id="history-section" class="content-section">
+                 <h2>Historique des activités</h2>
+                <ul class="history-list">
+                    <li>
+                        <span class="history-icon">📝</span>
+                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis ABC123456789DEF01.</span>
+                        <span class="history-date">Aujourd'hui, 09:35</span>
+                    </li>
+                    <li>
+                        <span class="history-icon">✏️</span>
+                        <span class="history-details"><strong>Modification :</strong> Mise à jour pour châssis XYZ987654321ABC02.</span>
+                        <span class="history-date">Hier, 14:30</span>
+                    </li>
+                     <li>
+                        <span class="history-icon">📝</span>
+                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis XYZ987654321ABC02.</span>
+                        <span class="history-date">Hier, 11:02</span>
+                    </li>
+                </ul>
+            </section>
+        </main>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+    const pageTitle = document.getElementById('page-title');
+    const motoForm = document.getElementById('moto-form');
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    const sectionTitles = {
+        'form-section': 'Nouvel Enregistrement',
+        'list-section': 'Consulter / Modifier les dossiers de Motos',
+        'history-section': 'Historique des activités'
+    };
+
+    function switchView(targetId) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        contentSections.forEach(section => section.classList.remove('active'));
+
+        const activeLink = document.querySelector(`#nav-${targetId.split('-')[0]}`);
+        const activeSection = document.getElementById(targetId);
+
+        if (activeLink) activeLink.classList.add('active');
+        if (activeSection) activeSection.classList.add('active');
+
+        pageTitle.textContent = sectionTitles[targetId];
+
+        if (window.innerWidth <= 768) {
+            sidebar.classList.remove('open');
+        }
+    }
+
+    // Navigation entre sections
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetSectionId = this.id.replace('nav-', '') + '-section';
+            switchView(targetSectionId);
+        });
+    });
+
+    // Soumission du formulaire
+    motoForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const motoData = {
+            numero_chassis: document.getElementById('moto-chassis').value,
+            marque: document.getElementById('moto-marque').value,
+            modele: document.getElementById('moto-modele').value,
+            carrosserie: document.getElementById('moto-carrosserie').value,
+            cylindree: document.getElementById('moto-cylindree').value,
+            puissance_admin: document.getElementById('moto-puissance-admin').value,
+            couleur: document.getElementById('moto-couleur').value,
+            energie: document.getElementById('moto-energie').value,
+            boite: document.getElementById('moto-boite').value,
+            usage: document.getElementById('moto-usage').value,
+            etat: document.getElementById('moto-etat').value,
+            date_fab: document.getElementById('moto-date-fab').value,
+            date_circu: document.getElementById('moto-date-circu').value,
+            cree_par: localStorage.getItem('userId')
+        };
+
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch('http://localhost:5000/api/motos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(motoData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Erreur lors de l'enregistrement");
+            }
+
+            // Vérifie si la moto est bien renvoyée
+            if (data.moto_id && data.moto.numero_chassis) {
+                alert(`Moto enregistrée avec succès : ${data.moto.numero_chassis}`);
+                // Stocke le moto_id pour l'utiliser ensuite
+                localStorage.setItem('moto_id', data.moto_id);
+                window.location.href = 'enregistrement_pro.html';
+            } else {
+                alert("Moto enregistrée, mais la réponse du serveur ne contient pas toutes les informations.");
+                console.log("Réponse serveur :", data);
+                window.location.href = 'enregistrement_pro.html';
+            }
+
+        } catch (error) {
+            console.error("Erreur :", error);
+            alert("Erreur lors de l'enregistrement : " + error.message);
+        }
+    });
+
+    // Menu hamburger responsive
+    menuToggle.addEventListener('click', function() {
+        sidebar.classList.toggle('open');
+    });
+
+    // Initialisation de la vue
+    switchView('form-section');
+});
+</script>
+
+</body>
+</html>

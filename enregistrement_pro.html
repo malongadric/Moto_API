@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<meta name='viewport' content='width=device-width, initial-scale=1'/>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Agent - Enregistrement Demandeur</title>
+    <style>
+        /* --- Style Général & Variables --- */
+        :root {
+            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
+            --secondary-color: #00796b; /* Vert pour les actions */
+            --accent-color: #fbc02d; /* Jaune pour l'attention */
+            --background-color: #f5f7fa; /* Gris très clair */
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 8px;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Barre de Navigation Latérale (Sidebar) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--white-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .sidebar-nav a svg {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-nav a.active {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-footer #user-name { font-weight: bold; display: block; }
+        .sidebar-footer #user-department { font-size: 0.9em; opacity: 0.8; display: block; }
+
+        /* --- Zone de Contenu Principal --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            background-color: var(--white-color);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 20px;
+            color: var(--primary-color);
+        }
+        .menu-toggle svg { width: 28px; height: 28px; }
+
+        .main-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        /* Centrage du contenu principal */
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center; /* Centre le contenu horizontalement */
+            align-items: flex-start; /* Aligne le contenu en haut verticalement */
+        }
+
+        .content-wrapper {
+            max-width: 1000px; /* Largeur maximale pour le contenu */
+            width: 100%;
+        }
+
+        .content-section {
+            display: none;
+            background-color: var(--white-color);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .content-section.active { display: block; }
+
+        /* --- Styles des Formulaires --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .form-section-title {
+            grid-column: 1 / -1;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 20px; margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select {
+            padding: 12px; border: 1px solid var(--border-color);
+            border-radius: var(--border-radius); font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.2);
+        }
+
+        /* --- Boutons --- */
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end; /* Alignement à droite */
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px; border: none;
+            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(0, 121, 107, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #004d40; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 121, 107, 0.4);
+        }
+
+        /* --- Section de Choix Radio (Propriétaire / Mandataire) --- */
+        .radio-choice-section {
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            background-color: var(--background-color);
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .radio-choice-group {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 12px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            transition: all 0.3s ease;
+            background-color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .radio-choice-group:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .radio-choice-group input[type="radio"] {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .radio-choice-group.selected {
+            border-color: var(--secondary-color);
+            background-color: #e8f5e9;
+            box-shadow: 0 4px 8px rgba(0, 121, 107, 0.2);
+        }
+        
+        /* Conteneurs de Formulaires Cachés (Propriétaire / Mandataire) */
+        .form-container {
+            display: none; /* Initialement caché */
+            border-top: 2px solid var(--primary-color);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+        
+        .form-container.active {
+            display: block; /* Affiché via JS */
+        }
+        
+        /* --- Styles pour les autres sections (Consultation et Historique) --- */
+        .search-bar { display: flex; gap: 15px; margin-bottom: 25px; }
+        .search-bar input { flex-grow: 1; padding: 12px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); }
+        .table-container { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+        .data-table th { background-color: var(--background-color); font-weight: 600; }
+        
+        .history-list { list-style: none; padding: 0; }
+        .history-list li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
+        .history-list li:last-child { border-bottom: none; }
+        .history-list .history-icon { margin-right: 15px; color: var(--secondary-color); }
+        .history-list .history-date { margin-left: auto; color: #777; font-size: 0.9em; }
+
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 1024px) {
+            :root { --sidebar-width: 200px; }
+            .content-area { padding: 20px; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                transform: translateX(-100%);
+                width: 70%;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .main-header { padding: 15px; }
+            .content-area { padding: 15px; justify-content: flex-start; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h1>Espace Agent</h1>
+    </div>
+    <nav class="sidebar-nav">
+        <ul>
+            <li><a href="#enregistrement" class="active">Enregistrement</a></li>
+            <li><a href="#consultation">Consultation</a></li>
+            <li><a href="#historique">Historique</a></li>
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <span id="user-name">Agent Dupont</span>
+        <span id="user-department">Département Moto</span>
+    </div>
+</div>
+
+<div class="main-content">
+    <header class="main-header">
+        <button class="menu-toggle" onclick="toggleSidebar()">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+        </button>
+        <h2>Enregistrement Demandeur</h2>
+    </header>
+    <div class="content-area">
+        <div class="content-wrapper">
+            <!-- Section Enregistrement -->
+            <div id="enregistrement" class="content-section active">
+                <div class="radio-choice-section">
+                    <label class="radio-choice-group" id="label-proprietaire">
+                        <input type="radio" name="type" id="radio-proprietaire"> Propriétaire
+                    </label>
+                    <label class="radio-choice-group" id="label-mandataire">
+                        <input type="radio" name="type" id="radio-mandataire"> Mandataire
+                    </label>
+                </div>
+
+                <!-- Formulaire Propriétaire -->
+                <form id="form-proprietaire" class="form-container">
+                    <div class="form-grid">
+                        <div class="form-section-title">Informations Propriétaire</div>
+                        <div class="form-group">
+                            <label>Nom</label>
+                            <input type="text" id="prop-nom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Prénom</label>
+                            <input type="text" id="prop-prenom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>CNI</label>
+                            <input type="text" id="prop-cni" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Téléphone</label>
+                            <input type="text" id="prop-tel" required>
+                        </div>
+                        <!-- Autres champs facultatifs -->
+                        <div class="form-group">
+                            <label>Date de naissance</label>
+                            <input type="date" id="prop-date-naissance">
+                        </div>
+                        <div class="form-group">
+                            <label>Profession</label>
+                            <input type="text" id="prop-profession">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="prop-email">
+                        </div>
+                        <div class="form-group">
+                            <label>Nationalité</label>
+                            <input type="text" id="prop-nationalite">
+                        </div>
+                        <div class="form-group">
+                            <label>Ville</label>
+                            <input type="text" id="prop-ville">
+                        </div>
+                        <div class="form-group">
+                            <label>Adresse</label>
+                            <input type="text" id="prop-adresse">
+                        </div>
+                        <div class="form-group">
+                            <label>Département</label>
+                            <select id="prop-departement">
+                                <option value="">-- Sélectionner --</option>
+                                <option value="1">Moto</option>
+                                <option value="2">Voiture</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Formulaire Mandataire -->
+                <form id="form-mandataire" class="form-container">
+                    <div class="form-grid">
+                        <div class="form-section-title">Informations Mandataire</div>
+                        <div class="form-group">
+                            <label>Nom</label>
+                            <input type="text" id="mand-nom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Prénom</label>
+                            <input type="text" id="mand-prenom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>CNI</label>
+                            <input type="text" id="mand-cni" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Téléphone</label>
+                            <input type="text" id="mand-tel" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="mand-email">
+                        </div>
+                        <div class="form-group">
+                            <label>Profession</label>
+                            <input type="text" id="mand-profession">
+                        </div>
+                        <div class="form-group">
+                            <label>Nationalité</label>
+                            <input type="text" id="mand-nationalite">
+                        </div>
+                        <div class="form-group">
+                            <label>Ville</label>
+                            <input type="text" id="mand-ville">
+                        </div>
+                        <div class="form-group">
+                            <label>Adresse</label>
+                            <input type="text" id="mand-adresse">
+                        </div>
+                        <div class="form-group">
+                            <label>Procuration</label>
+                            <input type="text" id="mand-procuration">
+                        </div>
+                        <div class="form-group">
+                            <label>Propriétaire (si applicable)</label>
+                            <input type="text" id="mand-prop-nom" placeholder="Nom du propriétaire">
+                            <input type="text" id="mand-prop-cni" placeholder="CNI du propriétaire">
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Bouton unique pour les deux formulaires -->
+                <div class="form-actions">
+                    <button id="btn-submit" class="btn btn-primary">Suivant</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const radioProprietaire = document.getElementById('radio-proprietaire');
+    const radioMandataire = document.getElementById('radio-mandataire');
+    const formContainerProp = document.getElementById('form-proprietaire');
+    const formContainerMand = document.getElementById('form-mandataire');
+    const labelProprietaire = document.getElementById('label-proprietaire');
+    const labelMandataire = document.getElementById('label-mandataire');
+    const btnSubmit = document.getElementById('btn-submit');
+
+    let mode = null; // "proprietaire" ou "mandataire"
+    let ids = {};    // stockera {moto_id, proprietaire_id, mandataire_id}
+
+    // Fonction pour récupérer le moto_id depuis le formulaire ou le localStorage
+    function getMotoId() {
+        const motoInput = document.getElementById('moto-id'); // ajoute cet input dans ton formulaire de moto
+        let motoId = motoInput?.value || localStorage.getItem('moto_id');
+        if (!motoId) throw new Error("ID de la moto introuvable !");
+        motoId = parseInt(motoId);
+        localStorage.setItem('moto_id', motoId); // sauvegarde pour la suite
+        return motoId;
+    }
+
+    // Affiche le formulaire correspondant
+    function showForm(type) {
+        formContainerProp.classList.remove('active');
+        formContainerMand.classList.remove('active');
+        labelProprietaire.classList.remove('selected');
+        labelMandataire.classList.remove('selected');
+        
+        if (type === 'proprietaire') {
+            formContainerProp.classList.add('active');
+            labelProprietaire.classList.add('selected');
+            mode = 'proprietaire';
+        } else if (type === 'mandataire') {
+            formContainerMand.classList.add('active');
+            labelMandataire.classList.add('selected');
+            mode = 'mandataire';
+        }
+        btnSubmit.textContent = "Suivant";
+    }
+
+    radioProprietaire.addEventListener('change', () => { if (radioProprietaire.checked) showForm('proprietaire'); });
+    radioMandataire.addEventListener('change', () => { if (radioMandataire.checked) showForm('mandataire'); });
+
+    // Fonction générique pour envoyer les données au backend
+    async function submitForm(url, data) {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error("Vous devez être connecté !");
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        const resData = await response.json();
+        if (!response.ok) {
+            throw new Error(Array.isArray(resData) ? resData[0]?.message || 'Erreur' : resData.message);
+        }
+        return Array.isArray(resData) ? resData[0] : resData;
+    }
+
+    // Créer ou récupérer un propriétaire/mandataire existant
+    async function submitPerson(type, data) {
+        try {
+            const url = type === 'proprietaire' ? 'http://localhost:5000/api/proprietaires' : 'http://localhost:5000/api/mandataire';
+            const res = await submitForm(url, data);
+            return res.id;
+        } catch(e) {
+            if(e.message.includes("existe déjà")) {
+                const url = type === 'proprietaire' ? 
+                    `http://localhost:5000/api/proprietaires?cni=${data.cni}` :
+                    `http://localhost:5000/api/mandataire?cni=${data.cni}`;
+                const token = localStorage.getItem('token');
+                const existing = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                const json = await existing.json();
+                if(json.length > 0) return json[0].id;
+            }
+            throw e;
+        }
+    }
+
+    // Gestion du bouton "Suivant / Soumettre"
+    btnSubmit.addEventListener('click', async function() {
+        try {
+            ids.moto_id = getMotoId();
+
+            if(btnSubmit.textContent === "Suivant") {
+                if(mode === 'proprietaire') {
+                    const data = {
+                        nom: document.getElementById('prop-nom').value,
+                        prenom: document.getElementById('prop-prenom').value,
+                        cni: document.getElementById('prop-cni').value,
+                        telephone: document.getElementById('prop-tel').value,
+                        moto_id: ids.moto_id
+                    };
+                    ids.proprietaire_id = await submitPerson('proprietaire', data);
+                } else if(mode === 'mandataire') {
+                    const data = {
+                        nom: document.getElementById('mand-nom').value,
+                        prenom: document.getElementById('mand-prenom').value,
+                        cni: document.getElementById('mand-cni').value,
+                        tel: document.getElementById('mand-tel').value,
+                        moto_id: ids.moto_id
+                    };
+                    ids.mandataire_id = await submitPerson('mandataire', data);
+                }
+
+                btnSubmit.textContent = "Soumettre le dossier";
+                alert("Information enregistrée. Cliquez sur 'Soumettre le dossier'.");
+            } else {
+                if(!ids.proprietaire_id && !ids.mandataire_id) throw new Error("Vous devez fournir un propriétaire ou un mandataire");
+
+                const dossierData = {
+                    moto_id: ids.moto_id,
+                    proprietaire_id: ids.proprietaire_id || null,
+                    mandataire_id: ids.mandataire_id || null
+                };
+
+                await submitForm('http://localhost:5000/api/dossiers', dossierData);
+                alert("Dossier soumis avec succès !");
+                
+                btnSubmit.textContent = "Suivant";
+                ids = {};
+            }
+        } catch(e) {
+            alert("Erreur: " + e.message);
+            console.error(e);
+        }
+    });
+});
+</script>
+
+
+</body>
+</html>
