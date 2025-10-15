@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS departements (
 );
 
 -- ==============================
--- 2️⃣ Table utilisateurs
+-- 2️ Table utilisateurs
 -- ==============================
 CREATE TABLE IF NOT EXISTS utilisateurs (
     id SERIAL PRIMARY KEY,
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS immatriculations (
 -- ==============================
 -- 8️⃣ Table operations
 -- ==============================
-CREATE TABLE IF NOT EXISTS operations (
+CREATE TABLE IF NOT EXISTS historique_journalier (
     id SERIAL PRIMARY KEY,
     moto_id INT REFERENCES motos(id) ON DELETE CASCADE,
     type_operation VARCHAR(50) CHECK (type_operation IN ('saisie','immatriculation','mutation','maj')),
@@ -210,3 +210,4 @@ CREATE INDEX idx_operations_moto ON operations(moto_id);
 CREATE INDEX idx_mutations_moto ON mutations(moto_id);
 CREATE INDEX idx_mandataires_moto ON mandataires(moto_id);
 CREATE INDEX idx_paiement_dossier ON paiement(dossier_id);
+CREATE INDEX idx_paiement_dossier ON proprietaire(dossier_id);

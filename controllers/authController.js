@@ -1,8 +1,7 @@
 // controllers/authController.js
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken'
 import supabase from '../config/db.js'
-import { VALID_ROLES, getPermissions } from '../middlewares/role.js'
+import { getPermissions } from '../middlewares/role.js'
 import rateLimit from 'express-rate-limit'
 
 // ----------------- Rate limiter pour login -----------------
@@ -16,100 +15,62 @@ export const loginLimiter = rateLimit({
 const formatUser = (user) => ({
   id: user.id,
   nom: user.nom,
-  email: user.email,
   profil: user.profil,
   departement_id: user.departement_id,
   permissions: getPermissions(user.profil)
 })
 
-// ----------------- REGISTER -----------------
-export const register = async (req, res) => {
-  try {
-    const { nom, email, mot_de_passe, profil, departement_id } = req.body
-
-    // Validation de base
-    if (!nom || !email || !mot_de_passe) {
-      return res.status(400).json({ message: 'Nom, email et mot de passe requis' })
-    }
-    if (!VALID_ROLES.includes(profil)) {
-      return res.status(400).json({ message: 'Rôle invalide' })
-    }
-
-    // Vérifier si l'utilisateur existe
-    const { data: existingUser, error: existErr } = await supabase
-      .from('utilisateurs')
-      .select('*')
-      .eq('email', email)
-      .single()
-    
-    if (existErr && existErr.code !== 'PGRST116') throw existErr
-    if (existingUser) return res.status(400).json({ message: 'Email déjà utilisé' })
-
-    // Hasher mot de passe
-    const hashedPassword = await bcrypt.hash(mot_de_passe, 10)
-
-    // Créer utilisateur
-    const { data, error } = await supabase
-      .from('utilisateurs')
-      .insert([{
-        nom,
-        email,
-        mot_de_passe: hashedPassword,
-        profil,
-        departement_id,
-        actif: true,
-        cree_le: new Date()
-      }])
-      .select()
-    
-    if (error) throw error
-    const user = data[0]
-
-    // Générer JWT
-    const token = jwt.sign(
-      { ...formatUser(user) },
-      process.env.JWT_SECRET,
-      { expiresIn: '12h' }
-    )
-
-    res.status(201).json({ message: 'Utilisateur créé avec succès', token, user: formatUser(user) })
-
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur serveur', erreur: err.message })
+// ----------------- Fonction pour générer le code attendu -----------------
+const getCode = (profil, departement_id) => {
+  const departementPart = `A${departement_id}2025`
+  switch(profil){
+    case 'agent': return `${departementPart}B`
+    case 'admin': return `${departementPart}D`
+    case 'directeur departemental': return `${departementPart}DD`
+    case 'SD': return `${departementPart}S`
+    case 'super_directeur': return `${departementPart}SD`
+    default: return ''
   }
 }
 
 // ----------------- LOGIN -----------------
 export const login = async (req, res) => {
   try {
-    const { email, mot_de_passe } = req.body
-    if (!email || !mot_de_passe) return res.status(400).json({ message: 'Email et mot de passe requis' })
+    const { nom, departement_id, profil, code } = req.body
 
-    const { data: user, error } = await supabase
-      .from('utilisateurs')
-      .select('*')
-      .eq('email', email)
-      .single()
-    
-    if (error || !user) return res.status(400).json({ message: 'Email ou mot de passe incorrect' })
-
-    let validPassword = false
-
-    // DD / SD / super_directeur utilisent mot de passe spécial
-    if (['directeur departemental','SD','super_directeur'].includes(user.profil)) {
-      const specialPassword = process.env.SPECIAL_PASSWORD_HASH
-      validPassword = await bcrypt.compare(mot_de_passe, specialPassword)
-    } else {
-      validPassword = await bcrypt.compare(mot_de_passe, user.mot_de_passe)
+    if (!nom || !departement_id || !profil || !code) {
+      return res.status(400).json({ message: 'Nom, département, profil et code requis' })
     }
 
-    if (!validPassword) return res.status(400).json({ message: 'Email ou mot de passe incorrect' })
+    // Chercher l'utilisateur
+    let { data: user, error } = await supabase
+      .from('utilisateurs')
+      .select('*')
+      .eq('nom', nom)
+      .eq('departement_id', departement_id)
+      .eq('profil', profil)
+      .single()
 
-    const token = jwt.sign(
-      { ...formatUser(user) },
-      process.env.JWT_SECRET,
-      { expiresIn: '12h' }
-    )
+    // Si pas trouvé -> créer automatiquement
+    if (error && error.code === 'PGRST116') {
+      const { data: newUser, error: insertErr } = await supabase
+        .from('utilisateurs')
+        .insert([{ nom, profil, departement_id, actif: true, cree_le: new Date() }])
+        .select()
+      if (insertErr) return res.status(500).json({ message: 'Erreur création utilisateur', erreur: insertErr.message })
+      user = newUser[0]
+    } else if (error) {
+      return res.status(500).json({ message: 'Erreur serveur', erreur: error.message })
+    }
+
+    // Vérifier le code
+    const expectedCode = getCode(profil, departement_id)
+    if (code !== expectedCode) {
+      return res.status(400).json({ message: 'Code incorrect' })
+    }
+
+    // Générer JWT
+    const token = jwt.sign({ ...formatUser(user) }, process.env.JWT_SECRET, { expiresIn: '12h' })
 
     res.json({ message: 'Connexion réussie', user: formatUser(user), token })
 
@@ -122,7 +83,7 @@ export const login = async (req, res) => {
 export const getUsers = async (req, res) => {
   try {
     const { profil, departement_id } = req.user
-    const { filter, departement } = req.query
+    const { filter } = req.query
 
     // Accès limité à admin / DD / SD / super_directeur
     if (!['admin','directeur departemental','SD','super_directeur'].includes(profil)) {
@@ -131,8 +92,8 @@ export const getUsers = async (req, res) => {
 
     const { data, error } = await supabase
       .from('utilisateurs')
-      .select('id, nom, email, profil, departement_id, actif')
-    
+      .select('id, nom, profil, departement_id, actif')
+
     if (error) throw error
 
     let filteredData = data
@@ -143,9 +104,7 @@ export const getUsers = async (req, res) => {
     // DD -> son département seulement
     if (profil === 'directeur departemental') filteredData = filteredData.filter(u => u.departement_id === departement_id)
 
-    // SD / super_directeur -> accès national
-    // admin -> accès complet
-
+    // Stats par profil
     const stats = filteredData.reduce((acc, u) => {
       acc[u.profil] = (acc[u.profil] || 0) + 1
       return acc

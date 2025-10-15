@@ -405,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const token = localStorage.getItem('token');
 
         try {
-            const response = await fetch('http://localhost:5000/api/motos', {
+            const response = await fetch('http://moto-api-cika.onrender.com/api/motos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
