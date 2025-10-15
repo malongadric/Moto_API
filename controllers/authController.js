@@ -1,5 +1,5 @@
 // controllers/authController.js
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken'
 import supabase from '../config/db.js'
 import { VALID_ROLES, getPermissions } from '../middlewares/role.js'
