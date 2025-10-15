@@ -75,11 +75,13 @@ export const addMandataire = async (req, res) => {
       cni,
       date_naissance,
       lien_proprietaire,
-      moto_id
+      moto_id,
+      proprietaire_id
     } = req.body;
 
-    const userDept = req.user.departement_id;
-    const userId = req.user.id;
+    // --- Récupération de l'utilisateur connecté ---
+    const userDept = req.user?.departement_id || null;
+    const userId = req.user?.id || null;
 
     // --- Validation des champs obligatoires ---
     if (!nom || !prenom || !telephone || !cni || !moto_id) {
@@ -118,20 +120,23 @@ export const addMandataire = async (req, res) => {
     const { data, error: insertError } = await supabase
       .from('mandataires')
       .insert([{
+        acteur_type: 'mandataire',             // ajout acteur_type
         nom,
         prenom,
         telephone: normalizedTel,
-        email,
-        profession,
-        nationalite,
-        ville,
-        adresse,
+        email: email || null,
+        profession: profession || null,
+        nationalite: nationalite || null,
+        ville: ville || null,
+        adresse: adresse || null,
         cni: normalizedCni,
-        date_naissance,
-        lien_proprietaire,
+        date_naissance: date_naissance || null,
+        lien_proprietaire: lien_proprietaire || null,
         moto_id,
-        departement_id: userDept || null,
-        cree_par: userId || null
+        proprietaire_id: proprietaire_id || null, // possibilité de lier un propriétaire
+        departement_id: userDept,
+        cree_par: userId,
+        date_enregistrement: new Date()          // ajout date_enregistrement
       }])
       .select();
 
