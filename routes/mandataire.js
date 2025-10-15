@@ -1,18 +1,12 @@
-import express from 'express'
-import {
-  getMandataires,
-  addMandataire,
-  getMandataireById,
-  updateMandataire,
-  deleteMandataire
-} from '../controllers/mandatairecontroller.js'
+// routes/mandataire.js
+import express from 'express';
+import { addMandataire, getMandataires } from '../controllers/mandatairecontroller.js';
+import { verifyToken, checkRole } from '../middlewares/auth.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.get('/', getMandataires)
-router.post('/', addMandataire)
-router.get('/:id', getMandataireById)
-router.put('/:id', updateMandataire)
-router.delete('/:id', deleteMandataire)
+// Toutes les routes nécessitent d'être connecté
+router.get('/', verifyToken, getMandataires);
+router.post('/', verifyToken, checkRole('admin','agent','directeur_departemental'), addMandataire);
 
-export default router
+export default router;
