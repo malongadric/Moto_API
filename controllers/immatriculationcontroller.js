@@ -9,7 +9,7 @@ export const attribuerNumero = async (req, res) => {
   try {
     const { motoId } = req.params;
     const userId = req.user.id;
-    const userRole = req.user.role;
+    const userRole = req.user.profil; 
 
     if (userRole !== 'admin') {
       return res.status(403).json({ message: 'Vous n’avez pas le droit d’attribuer un numéro.' });
@@ -38,7 +38,8 @@ export const attribuerNumero = async (req, res) => {
     }
 
     const typeVehicule = 'TAXI';
-    const departementId = moto.departement_id;
+    const departementId = req.user.departement_id;
+
 
     // 3️⃣ Récupère la séquence actuelle pour ce département et type
     let { data: sequenceData, error: seqError } = await supabase

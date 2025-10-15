@@ -9,9 +9,13 @@ import proprietaires from './routes/proprietaires.js'
 import structureRoutes from './routes/structureRoutes.js'
 import statistiques from './routes/statistiques.js'
 import mandataire from './routes/mandataire.js'
-// import immatriculation from './routes/immatriculation.js'
+import immatriculation from './routes/immatriculation.js';
 import departements from './routes/departement.js';
 import dossiers from './routes/dossiers.js';
+import paiement from './routes/paiement.js';
+
+
+
 
 // Chargement des variables d'environnement
 dotenv.config()
@@ -50,6 +54,8 @@ app.use('/api/mandataire', mandataire)
 // app.use('/api/immatriculation', immatriculation)
 app.use('/api/departements', departements);
 app.use('/api/dossiers', dossiers);
+app.use('/api/immatriculations', immatriculation);
+app.use('/api/v1', paiement);
 
 app.get('/api/test-supabase', async (req, res) => {
   const { data, error } = await supabase.from('departements').select('*').limit(2);

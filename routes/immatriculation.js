@@ -1,6 +1,6 @@
 // routes/immatriculations.js
 import express from 'express';
-import { attribuerNumero, getImmatriculations } from '../controllers/immatriculationcontroller.js';
+import { attribuerNumero } from '../controllers/immatriculationcontroller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { checkRole } from '../middlewares/role.js';
 
@@ -14,7 +14,7 @@ const router = express.Router();
 router.post(
   '/attribuer/:motoId',
   verifyToken,
-  checkRole('admin'), // seulement admin peut attribuer
+  checkRole(['admin', 'agent']), // <-- ici, tableau
   attribuerNumero
 );
 
@@ -22,10 +22,10 @@ router.post(
  * 🔹 Lister / rechercher / filtrer les immatriculations
  * GET /immatriculations?search=&departement_id=
  */
-router.get(
-  '/',
-  verifyToken,
-  getImmatriculations
-);
+// router.get(
+//   '/',
+//   verifyToken,
+//   getImmatriculations
+// );
 
 export default router;
