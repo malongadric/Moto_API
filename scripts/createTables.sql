@@ -211,3 +211,22 @@ CREATE INDEX idx_mutations_moto ON mutations(moto_id);
 CREATE INDEX idx_mandataires_moto ON mandataires(moto_id);
 CREATE INDEX idx_paiement_dossier ON paiement(dossier_id);
 CREATE INDEX idx_paiement_dossier ON proprietaire(dossier_id);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- git add .
+-- git commit -m "mise à jour du backend"
+-- git push

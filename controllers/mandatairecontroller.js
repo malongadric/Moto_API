@@ -133,7 +133,7 @@ export const addMandataire = async (req, res) => {
         date_naissance: date_naissance || null,
         lien_proprietaire: lien_proprietaire || null,
         moto_id,
-        proprietaire_id: proprietaire_id || null, // possibilité de lier un propriétaire
+       proprietaire_id: proprietaire_id !== undefined ? proprietaire_id : null, // possibilité de lier un propriétaire
         departement_id: userDept,
         cree_par: userId,
         date_enregistrement: new Date()          // ajout date_enregistrement
