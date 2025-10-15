@@ -94,15 +94,26 @@ export const addMandataire = async (req, res) => {
     const normalizedTel = telephone.replace(/\s+/g, '');
     const normalizedCni = cni.toUpperCase();
 
-    // --- Vérification doublons ---
-    const { data: existing } = await supabase
+    // --- Vérification doublons téléphone / CNI ---
+    const { data: existingMandataire } = await supabase
       .from('mandataires')
       .select('id')
-      .or(`telephone.eq.${normalizedTel},cni.eq.${normalizedCni},moto_id.eq.${moto_id}`)
+      .or(`telephone.eq.${normalizedTel},cni.eq.${normalizedCni}`)
       .maybeSingle();
 
-    if (existing) {
-      return res.status(400).json({ message: 'Ce mandataire ou cette moto existe déjà.' });
+    if (existingMandataire) {
+      return res.status(400).json({ message: 'Un mandataire avec ce téléphone ou cette CNI existe déjà.' });
+    }
+
+    // --- Vérification si la moto est déjà attribuée ---
+    const { data: existingMoto } = await supabase
+      .from('mandataires')
+      .select('id')
+      .eq('moto_id', moto_id)
+      .maybeSingle();
+
+    if (existingMoto) {
+      return res.status(400).json({ message: 'Cette moto est déjà attribuée à un mandataire.' });
     }
 
     // --- Vérification que la moto existe ---
@@ -120,7 +131,7 @@ export const addMandataire = async (req, res) => {
     const { data, error: insertError } = await supabase
       .from('mandataires')
       .insert([{
-        acteur_type: 'mandataire',             // ajout acteur_type
+        acteur_type: 'mandataire',
         nom,
         prenom,
         telephone: normalizedTel,
@@ -133,10 +144,10 @@ export const addMandataire = async (req, res) => {
         date_naissance: date_naissance || null,
         lien_proprietaire: lien_proprietaire || null,
         moto_id,
-       proprietaire_id: proprietaire_id !== undefined ? proprietaire_id : null, // possibilité de lier un propriétaire
+        proprietaire_id: proprietaire_id || null, // Lien vers le propriétaire
         departement_id: userDept,
         cree_par: userId,
-        date_enregistrement: new Date()          // ajout date_enregistrement
+        date_enregistrement: new Date()
       }])
       .select();
 
