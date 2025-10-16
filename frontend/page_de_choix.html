@@ -492,8 +492,32 @@
 </section>
 
             
+             
              <section id="history-section" class="content-section">
-                </section>
+    <!-- Barre de recherche -->
+    <input type="text" id="search-history" placeholder="Rechercher par action, châssis, immatriculation ou agent..." style="margin-bottom:10px; padding:5px; width:100%;">
+
+    <!-- Tableau historique -->
+    <table id="history-table" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#f2f2f2;">
+                <th style="border:1px solid #ccc; padding:8px;">ID Dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Réf Dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Agent</th>
+                <th style="border:1px solid #ccc; padding:8px;">Acteur</th>
+                <th style="border:1px solid #ccc; padding:8px;">Immatriculation</th>
+                <th style="border:1px solid #ccc; padding:8px;">Date</th>
+                <th style="border:1px solid #ccc; padding:8px;">Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Les lignes seront générées dynamiquement par JavaScript -->
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div id="history-pagination" style="margin-top:10px;"></div>
+</section>
         </main>
     </div>
 
@@ -692,47 +716,90 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 🔹 Historique
-    async function loadHistory() {
-        const token = localStorage.getItem('token');
-        const historySection = document.getElementById('history-section');
-        if (!historySection) return;
+      // 🕘 Historique
+  async function loadHistory() {
+    const token = localStorage.getItem('token');
+    const historyTableBody = document.querySelector("#history-table tbody");
+    const searchInput = document.getElementById('search-history');
+    const paginationDiv = document.getElementById('history-pagination');
 
-        historySection.innerHTML = "<p>Chargement...</p>";
+    historyTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Chargement...</td></tr>`;
 
-        try {
-            const response = await fetch("https://moto-api-cika.onrender.com/api/history", {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            const history = await response.json();
+    try {
+        const response = await fetch("https://moto-api-cika.onrender.com/api/dossiers", {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const result = await response.json();
+        let history = Array.isArray(result) ? result : result.dossiers || [];
 
-            if (!Array.isArray(history) || history.length === 0) {
-                historySection.innerHTML = "<p>Aucun historique trouvé.</p>";
-                return;
-            }
-
-            const ul = document.createElement('ul');
-            ul.className = "history-list";
-
-            history.forEach(h => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="history-icon">📝</span>
-                    ${h.action} - ${h.numero_chassis || ''} par ${h.agent}
-                    <span class="history-date">${new Date(h.date).toLocaleString('fr-FR')}</span>
-                `;
-                ul.appendChild(li);
-            });
-
-            historySection.innerHTML = "";
-            historySection.appendChild(ul);
-
-        } catch (error) {
-            console.error(error);
-            historySection.innerHTML = "<p>Erreur lors du chargement de l'historique.</p>";
+        if (history.length === 0) {
+            historyTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Aucun historique trouvé.</td></tr>`;
+            return;
         }
-    }
 
+        let filteredHistory = [...history];
+        let currentPage = 1;
+        const rowsPerPage = 10;
+
+        const renderTable = () => {
+            historyTableBody.innerHTML = '';
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageItems = filteredHistory.slice(start, end);
+
+            pageItems.forEach(d => {
+                const acteurNom = d.acteur_type === 'proprietaire' ? d.proprietaire?.nom || 'N/A' : d.mandataire?.nom || 'N/A';
+                const reference = d.reference_dossier || `REF-2025-PN-${d.dossier_id || 'XXXX'}`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="border:1px solid #ccc; padding:8px;">${d.dossier_id || 'N/A'}</td>
+                    <td style="border:1px solid #ccc; padding:8px;">${reference}</td>
+                    <td style="border:1px solid #ccc; padding:8px;">${d.agent_id || 'N/A'}</td>
+                    <td style="border:1px solid #ccc; padding:8px;">${acteurNom}</td>
+                    <td style="border:1px solid #ccc; padding:8px;">${d.immatriculation_def || d.immatriculation_prov || 'N/A'}</td>
+                    <td style="border:1px solid #ccc; padding:8px;">${new Date(d.date_soumission).toLocaleString()}</td>
+                    <td style="border:1px solid #ccc; padding:8px;">${d.statut || 'N/A'}</td>
+                `;
+                historyTableBody.appendChild(tr);
+            });
+
+            // Pagination
+            paginationDiv.innerHTML = '';
+            const totalPages = Math.ceil(filteredHistory.length / rowsPerPage);
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.style.marginRight = '5px';
+                btn.disabled = i === currentPage;
+                btn.onclick = () => { currentPage = i; renderTable(); };
+                paginationDiv.appendChild(btn);
+            }
+        };
+
+        searchInput.addEventListener('input', () => {
+            const term = searchInput.value.toLowerCase();
+            filteredHistory = history.filter(d =>
+                (d.acteur_type === 'proprietaire' ? d.proprietaire?.nom : d.mandataire?.nom || '').toLowerCase().includes(term) ||
+                (d.moto?.marque || '').toLowerCase().includes(term) ||
+                (d.moto?.modele || '').toLowerCase().includes(term) ||
+                (d.immatriculation_prov || '').toLowerCase().includes(term) ||
+                (d.immatriculation_def || '').toLowerCase().includes(term) ||
+                (d.agent_id || '').toString().includes(term)
+            );
+            currentPage = 1;
+            renderTable();
+        });
+
+        renderTable();
+
+    } catch (err) {
+        console.error(err);
+        historyTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Erreur lors du chargement de l'historique.</td></tr>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadHistory)
     // 🔹 Toggle Sidebar
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {

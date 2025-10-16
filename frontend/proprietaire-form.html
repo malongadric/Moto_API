@@ -225,6 +225,113 @@
         .history-list .history-icon { margin-right: 15px; color: var(--secondary-color); }
         .history-list .history-date { margin-left: auto; color: #777; font-size: 0.9em; }
 
+         /* --- Table des motos --- */
+.table-container {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    background-color: var(--white-color);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+}
+
+.data-table th {
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.data-table th:hover {
+    background-color: #094183; /* légèrement plus foncé au hover */
+}
+
+.data-table tr:hover {
+    background-color: rgba(0,0,0,0.03);
+}
+
+.data-table td {
+    color: var(--text-color);
+}
+
+/* Pagination */
+#pagination {
+    display: flex;
+    gap: 5px;
+}
+
+#pagination button {
+    padding: 5px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--white-color);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#pagination button:hover {
+    background-color: var(--secondary-color);
+    color: var(--white-color);
+    border-color: var(--secondary-color);
+}
+
+#pagination button:disabled {
+    background-color: #ccc;
+    cursor: default;
+    color: #666;
+}
+
+/* --- Barre de recherche stylée --- */
+.search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 400px; /* ajustable */
+    margin-bottom: 15px;
+}
+
+.search-wrapper input {
+    width: 100%;
+    padding: 10px 40px 10px 15px; /* espace pour l'icône */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.search-wrapper input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
+}
+
+.search-wrapper .search-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    color: #888;
+    pointer-events: none; /* l'icône ne bloque pas le clic */
+    transition: color 0.3s;
+}
+
+.search-wrapper input:focus + .search-icon {
+    color: var(--secondary-color);
+}
+
+
         /* --- RESPONSIVE DESIGN --- */
 
         /* Tablettes & Petits écrans */
@@ -328,41 +435,62 @@
                 </form>
             </section>
 
-            <section id="list-section" class="content-section">
-                <div class="search-bar">
-                    <input type="text" placeholder="Rechercher par N° de châssis, plaque, nom...">
-                    <button class="btn btn-primary">Rechercher</button>
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead><tr><th>N° Châssis</th><th>Propriétaire</th><th>Carrosserie</th><th>Date Saisie</th><th>Statut</th><th>Actions</th></tr></thead>
-                        <tbody>
-                            <tr><td>ABC123456789DEF01</td><td>KODIA Jean</td><td>Motocycle</td><td>12/10/2025</td><td>En attente validation</td><td><a href="#">Modifier</a></td></tr>
-                            <tr><td>XYZ987654321ABC02</td><td>MABIALA Pierre</td><td>Tricycle</td><td>11/10/2025</td><td>Validé</td><td><a href="#">Voir</a></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+             <section id="list-section" class="content-section">
+    <h3 class="form-section-title">Liste des Motos</h3>
+
+    <!-- Barre de recherche -->
+    <input type="text" id="search-input" placeholder="Rechercher une moto..." style="margin-bottom: 10px; padding: 5px; width: 100%;" />
+
+    <!-- Conteneur du tableau -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th data-key="numero_chassis">N° Châssis</th>
+                    <th data-key="marque">Marque</th>
+                    <th data-key="modele">Modèle</th>
+                    <th data-key="couleur">Couleur</th>
+                    <th data-key="proprietaire">Propriétaire</th>
+                    <th data-key="departement_nom">Département</th>
+                </tr>
+            </thead>
+            <tbody id="motos-table-body">
+                <!-- Les motos seront injectées ici via JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination" style="margin-top: 10px;"></div>
+</section>
+
+
             
              <section id="history-section" class="content-section">
-                <ul class="history-list">
-                    <li>
-                        <span class="history-icon">📝</span>
-                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis ABC123456789DEF01 pour KODIA Jean.</span>
-                        <span class="history-date">Aujourd'hui, 03:15</span>
-                    </li>
-                    <li>
-                        <span class="history-icon">✏️</span>
-                        <span class="history-details"><strong>Modification :</strong> Mise à jour du N° de téléphone pour MABIALA Pierre.</span>
-                        <span class="history-date">Hier, 14:30</span>
-                    </li>
-                     <li>
-                        <span class="history-icon">📝</span>
-                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis XYZ987654321ABC02 pour MABIALA Pierre.</span>
-                        <span class="history-date">Hier, 11:02</span>
-                    </li>
-                </ul>
-            </section>
+    <!-- Barre de recherche -->
+    <input type="text" id="search-history" placeholder="Rechercher par action, châssis, immatriculation ou agent..." style="margin-bottom:10px; padding:5px; width:100%;">
+
+    <!-- Tableau historique -->
+    <table id="history-table" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#f2f2f2;">
+                <th style="border:1px solid #ccc; padding:8px;">ID Dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Réf Dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Agent</th>
+                <th style="border:1px solid #ccc; padding:8px;">Acteur</th>
+                <th style="border:1px solid #ccc; padding:8px;">Immatriculation</th>
+                <th style="border:1px solid #ccc; padding:8px;">Date</th>
+                <th style="border:1px solid #ccc; padding:8px;">Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Les lignes seront générées dynamiquement par JavaScript -->
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div id="history-pagination" style="margin-top:10px;"></div>
+</section>
         </main>
     </div>
 
@@ -452,7 +580,7 @@
             alert("❌ Erreur lors de l'enregistrement du propriétaire : " + error.message);
         }
     });
-
+    
     menuToggle.addEventListener('click', function() {
         sidebar.classList.toggle('open');
     });

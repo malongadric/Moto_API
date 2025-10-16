@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Validateur - Immatriculation</title>
+    <style>
+        /* --- Style Général & Variables --- */
+        :root {
+            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
+            --secondary-color: #00796b; /* Vert pour les actions */
+            --danger-color: #d32f2f; /* Rouge pour le rejet */
+            --accent-color: #fbc02d; /* Jaune pour l'attention */
+            --background-color: #f5f7fa; /* Gris très clair */
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 8px;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Barre de Navigation Latérale (Sidebar) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--white-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, padding-left 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .sidebar-nav a svg {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-nav a.active {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-footer #user-name { font-weight: bold; display: block; }
+        .sidebar-footer #user-department { font-size: 0.9em; opacity: 0.8; display: block; }
+
+        /* --- Zone de Contenu Principal --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            background-color: var(--white-color);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .menu-toggle svg { width: 28px; height: 28px; }
+
+        .main-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            display: none;
+            background-color: var(--white-color);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        .content-section.active { display: block; }
+
+        /* --- Styles du Tableau de Liste & Titres --- */
+        .form-section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 0; 
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+        /* Style spécifique au titre de la sélection du déclarant */
+        .form-section-title.selection-title {
+            font-size: 1.6rem;
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* Styles de la liste (Dossiers en Attente) */
+        .dossier-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .dossier-table th, .dossier-table td { text-align: left; padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
+        .dossier-table th { background-color: var(--primary-color); color: var(--white-color); font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+        .dossier-table tr:hover { background-color: var(--background-color); cursor: pointer; }
+        .action-cell { text-align: center; width: 100px; }
+        .btn-view { background-color: var(--secondary-color); color: var(--white-color); border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.3s; }
+        .btn-view:hover { background-color: #004d40; }
+
+        /* --- Styles pour le Choix (Radio Cards) dans Nouvel Enregistrement --- */
+        .selection-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            justify-content: center; 
+            padding: 30px 0;
+        }
+
+        .selection-group input[type="radio"] {
+            display: none;
+        }
+
+        .selection-card {
+            display: block;
+            flex: 1;
+            max-width: 300px; 
+            padding: 30px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .selection-card:hover {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(0, 121, 107, 0.1);
+        }
+
+        .selection-card h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .selection-card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        .selection-group input[type="radio"]:checked + .selection-card {
+            background-color: rgba(0, 121, 107, 0.05);
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 4px rgba(0, 121, 107, 0.3);
+            transform: translateY(-2px);
+        }
+
+
+        /* --- Boutons d'Action --- */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px; border: none;
+            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary { background-color: var(--border-color); color: var(--text-color); }
+        .btn-secondary:hover { background-color: #d0d0d0; transform: translateY(-2px); }
+
+        .btn-primary {
+            background-color: var(--secondary-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(0, 121, 107, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #004d40; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 121, 107, 0.4);
+        }
+        
+        /* Bouton Rejeter (Rouge) */
+        .btn-danger {
+            background-color: var(--danger-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+        }
+        .btn-danger:hover {
+            background-color: #b71c1c; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
+        }
+
+        /* Styles des Détails de Confirmation (pour details-section) */
+         .confirmation-summary {
+            background-color: var(--background-color);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+        .confirmation-summary h4 {
+            color: var(--primary-color); margin-top: 25px; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px dashed var(--border-color); font-size: 1.15rem;
+        }
+        .confirmation-summary h4:first-child { margin-top: 0; }
+        .confirmation-summary p { display: flex; justify-content: space-between; margin: 8px 0; font-size: 1rem; }
+        .confirmation-summary span.label { font-weight: 500; color: #555; margin-right: 15px; }
+        .confirmation-summary strong.value { font-weight: 700; color: var(--text-color); text-align: right; }
+
+        /* Message d'alerte/info */
+        .info-message {
+            padding: 15px;
+            background-color: rgba(13, 71, 161, 0.05);
+            border-left: 4px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+        .info-message p { margin: 5px 0; font-size: 0.95rem; }
+        .info-message strong { color: var(--primary-color); }
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 768px) {
+            .sidebar { position: absolute; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .menu-toggle { display: block; }
+            .main-header { padding: 15px; }
+            .content-area { padding: 15px; }
+            .selection-group { flex-direction: column; }
+            .selection-card { max-width: 100%; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h1>Validation</h1></div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#" id="nav-pending" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Dossiers en Attente
+                    </a>
+                </li>
+                 <li>
+                    <a href="#" id="nav-new-entry" class="nav-link active">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Nouvel Enregistrement
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-validated" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.18c-1.554-1.92-3.83-3.08-6.188-3.08-5.71 0-10.333 4.623-10.333 10.333S6.18 21.333 12 21.333c2.35 0 4.626-1.16 6.188-3.08l1.414 1.414c1.17-1.78 1.88-3.86 1.88-6.17a10.333 10.333 0 00-10.333-10.333c-2.31 0-4.39.71-6.17 1.88L3.982 5.618C5.894 3.706 8.78 2.333 12 2.333c3.22 0 6.106 1.373 8.018 3.285z" /></svg>
+                        Historique Validations
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-stats" class="nav-link">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 3-3M6 20h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        Statistiques
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <span id="user-name">Mme. Léa Dubois</span>
+            <span id="user-department">Chef de Service (Validation)</span>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <header class="main-header">
+            <button class="menu-toggle" id="menu-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <h2 id="page-title">Nouvel Enregistrement (Admin)</h2>
+        </header>
+
+        <main class="content-area">
+
+            <section id="new-entry-section" class="content-section active">
+                <form id="declarant-form">
+                    <h3 class="form-section-title selection-title">Sélectionnez le Type de Déclarant</h3>
+                    
+                    <div class="selection-group">
+                        
+                        <input type="radio" id="proprio" name="declarant_type" value="Propriétaire" required>
+                        <label for="proprio" class="selection-card">
+                            <h4>Propriétaire</h4>
+                            <p>Le titulaire effectue lui-même la démarche.</p>
+                        </label>
+
+                        <input type="radio" id="mandataire" name="declarant_type" value="Mandataire">
+                        <label for="mandataire" class="selection-card">
+                            <h4>Mandataire</h4>
+                            <p>Un représentant légal agit en son nom.</p>
+                        </label>
+
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="alert('Simulation: Retour à l\'écran de démarrage.');">Retour</button>
+                        <button type="button" class="btn btn-primary" id="btn-next">Suivant</button>
+                    </div>
+                </form>
+            </section>
+            
+            <section id="pending-section" class="content-section">
+                <h3 class="form-section-title">Liste des Dossiers à Traiter</h3>
+                <table class="dossier-table">
+                    <thead>
+                        <tr>
+                            <th>Référence Dossier</th>
+                            <th>Déclarant</th>
+                            <th>Véhicule</th>
+                            <th class="action-cell">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dossier-list-body">
+                        <tr data-ref="2025-KYL-MTO-00147">
+                            <td data-label="Référence Dossier">2025-KYL-MTO-00147</td>
+                            <td data-label="Déclarant">NDONGO Yves (Mandataire)</td>
+                            <td data-label="Véhicule">YAMAHA C-80</td>
+                            <td class="action-cell"><button class="btn-view" data-ref="2025-KYL-MTO-00147">Voir Détails</button></td>
+                        </tr>
+                         <tr data-ref="2025-KYL-MTO-00146">
+                            <td data-label="Référence Dossier">2025-KYL-MTO-00146</td>
+                            <td data-label="Déclarant">MAKAYA Pierre (Propriétaire)</td>
+                            <td data-label="Véhicule">HONDA XL-125</td>
+                            <td class="action-cell"><button class="btn-view" data-ref="2025-KYL-MTO-00146">Voir Détails</button></td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </section>
+            
+            <section id="details-section" class="content-section">
+                <h3 class="form-section-title">Validation du Dossier: <span id="detail-ref-title"></span></h3>
+
+                <div class="info-message">
+                    <p style="margin: 0;"><strong>Vérification :</strong> Veuillez inspecter l'ensemble des informations et des pièces justificatives avant de prendre une décision. Le statut actuel du dossier est **"En Attente de Validation Supérieure"**.</p>
+                </div>
+                
+                <div class="confirmation-summary" id="detail-summary">
+                    </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-retour-liste">Retour à la Liste</button>
+                    <button type="button" class="btn btn-danger" id="btn-rejeter-dossier">Rejeter le Dossier</button>
+                    <button type="button" class="btn btn-primary" id="btn-valider-dossier">Valider le Dossier</button>
+                </div>
+            </section>
+
+
+            <section id="validated-section" class="content-section">
+                 <h3 class="form-section-title">Historique des Validations</h3>
+                 <p>Contenu de l'historique...</p>
+            </section>
+            
+            <section id="stats-section" class="content-section">
+                 <h3 class="form-section-title">Statistiques et Rapports</h3>
+                 <p>Contenu des statistiques...</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // ========================================================================
+        // 🚨🚨🚨 COMMENTAIRE TAP-À-L'ŒIL : INTÉGRATION SUPABASE AVEC FETCH 🚨🚨🚨
+        // ========================================================================
+        
+        // 1. Définir vos variables Supabase (à remplacer par vos clés réelles)
+        const SUPABASE_URL = 'VOTRE_URL_PROJET_SUPABASE'; // Ex: https://xyz123.supabase.co
+        const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_SUPABASE'; 
+
+        /**
+         * REMPLACEZ CE BLOC DE DONNÉES SIMULÉES par une fonction fetch() !
+         * Cette fonction devrait récupérer les dossiers en attente de la table 'dossiers'.
+         */
+        
+        // DONNÉES SIMULÉES DE LA BASE DE DONNÉES (À SUPPRIMER APRÈS INTÉGRATION)
+        const dossiersData = {
+            '2025-KYL-MTO-00147': {
+                declarantType: 'Mandataire',
+                proprioNom: 'MABIALA Jean',
+                proprioPiece: '123456789',
+                mandataireNom: 'NDONGO Yves',
+                mandatairePiece: '987654321',
+                mandataireTel: '06 666 00 00',
+                motoMarque: 'YAMAHA C-80',
+                motoChassis: 'MY1234567890CONG',
+                motoCouleur: 'Noir',
+                motoAcquisition: 'Importation neuve',
+                motoDateAcquisition: '01/10/2025',
+                agentTraitant: 'Jean Dupont',
+                dateCreation: '13/10/2025 à 10:45'
+            },
+            '2025-KYL-MTO-00146': {
+                declarantType: 'Propriétaire',
+                proprioNom: 'MAKAYA Pierre',
+                proprioPiece: '555444333',
+                mandataireNom: 'N/A',
+                mandatairePiece: 'N/A',
+                mandataireTel: '05 123 45 67',
+                motoMarque: 'HONDA XL-125',
+                motoChassis: 'HN999888777AFRI',
+                motoCouleur: 'Rouge',
+                motoAcquisition: 'Achat local',
+                motoDateAcquisition: '10/09/2025',
+                agentTraitant: 'Agent C. M.',
+                dateCreation: '12/10/2025 à 16:20'
+            }
+        };
+
+        /**
+         * 💡 EXEMPLE D'UTILISATION DE FETCH POUR RÉCUPÉRER LES DONNÉES DE SUPABASE
+         * Note: Assurez-vous que vos règles RLS (Row Level Security) sur Supabase
+         * autorisent la lecture pour la clé ANON.
+         */
+        async function fetchDossiersEnAttente() {
+            // L'URL suppose que votre table s'appelle 'dossiers' et que vous filtrez par statut
+            const url = `${SUPABASE_URL}/rest/v1/dossiers?statut=eq.en attente&select=id_dossier,type_declarant,nom_declarant,marque_moto`; 
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        // Le jeton Bearer est souvent le même que l'API key pour les requêtes ANON
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}` 
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP lors de la récupération : ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log("Dossiers récupérés de Supabase :", data);
+                
+                // ➡️ REMPLACER L'AFFICHAGE SIMULÉ par l'affichage des vrais dossiers
+                // buildDossierTable(data); 
+
+                return data;
+
+            } catch (error) {
+                console.error("Erreur lors de la récupération des données Supabase:", error);
+                // En cas d'échec de la connexion, vous pouvez fallback aux données simulées ou afficher un message d'erreur
+                return []; 
+            }
+        }
+        
+        // ------------------------------------------------------------------------
+        // FIN DU BLOC SUPABASE
+        // ------------------------------------------------------------------------
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+            const contentSections = document.querySelectorAll('.content-area .content-section');
+            const pageTitle = document.getElementById('page-title');
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const dossierListBody = document.getElementById('dossier-list-body');
+            const detailSummary = document.getElementById('detail-summary');
+            const detailRefTitle = document.getElementById('detail-ref-title');
+            const declarantForm = document.getElementById('declarant-form');
+            const btnNext = document.getElementById('btn-next');
+            
+            let currentDossierRef = null;
+            
+            const sectionTitles = {
+                'pending-section': 'Dossiers en Attente de Validation',
+                'new-entry-section': 'Nouvel Enregistrement (Admin)',
+                'details-section': 'Validation du Dossier',
+                'validated-section': 'Historique des Validations',
+                'stats-section': 'Statistiques et Rapports'
+            };
+
+            function switchView(targetId) {
+                navLinks.forEach(link => link.classList.remove('active'));
+                contentSections.forEach(section => section.classList.remove('active'));
+
+                const navId = targetId.replace('-section', '');
+                const activeLink = document.querySelector(`#nav-${navId}`);
+                const activeSection = document.getElementById(targetId);
+
+                if (activeLink) activeLink.classList.add('active');
+                if (activeSection) activeSection.classList.add('active');
+                
+                pageTitle.textContent = sectionTitles[targetId] || "Détails du Dossier";
+
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                }
+            }
+
+            // Affiche les détails d'un dossier (simulation - doit être remplacé par fetch(id))
+            function showDossierDetails(ref) {
+                // 💡 EN PRODUCTION : Ici, vous feriez un second FETCH ciblé :
+                // fetch(`${SUPABASE_URL}/rest/v1/dossiers?id_dossier=eq.${ref}&select=*`, { ... })
+                
+                const data = dossiersData[ref];
+                if (!data) return;
+
+                currentDossierRef = ref;
+                detailRefTitle.textContent = ref;
+
+                // Construction dynamique du HTML du résumé
+                let htmlContent = `
+                    <h4>A. Informations Propriétaire / Déclarant</h4>
+                    <p><span class="label">Type de déclarant:</span> <strong class="value">${data.declarantType}</strong></p>
+                    <p><span class="label">Nom du Propriétaire:</span> <strong class="value">${data.proprioNom}</strong></p>
+                    <p><span class="label">N° Pièce Propriétaire:</span> <strong class="value">${data.proprioPiece}</strong></p>
+                    ${data.declarantType === 'Mandataire' ? `
+                        <hr style="border-style: dashed; border-color: #ddd;">
+                        <p><span class="label">Nom Mandataire:</span> <strong class="value">${data.mandataireNom}</strong></p>
+                        <p><span class="label">N° Pièce Mandataire:</span> <strong class="value">${data.mandatairePiece}</strong></p>
+                        <p><span class="label">Téléphone Mandataire:</span> <strong class="value">${data.mandataireTel}</strong></p>
+                    ` : ''}
+
+                    <h4 style="margin-top: 30px;">B. Informations de la Moto</h4>
+                    <p><span class="label">Marque / Modèle:</span> <strong class="value">${data.motoMarque}</strong></p>
+                    <p><span class="label">N° Série (Châssis):</span> <strong class="value">${data.motoChassis}</strong></p>
+                    <p><span class="label">Couleur:</span> <strong class="value">${data.motoCouleur}</strong></p>
+                    <p><span class="label">Source d'Acquisition:</span> <strong class="value">${data.motoAcquisition}</strong></p>
+                    <p><span class="label">Date d'Acquisition:</span> <strong class="value">${data.motoDateAcquisition}</strong></p>
+                    
+                    <h4 style="margin-top: 30px;">C. Traçabilité du Dossier</h4>
+                    <p><span class="label">Référence du Dossier:</span> <strong class="value">${ref}</strong></p>
+                    <p><span class="label">Agent Traitant:</span> <strong class="value">${data.agentTraitant}</strong></p>
+                    <p><span class="label">Date de Création:</span> <strong class="value">${data.dateCreation}</strong></p>
+                `;
+
+                detailSummary.innerHTML = htmlContent;
+                switchView('details-section');
+            }
+
+
+            // --- Événements ---
+
+            // 1. Navigation latérale
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetSectionId = this.id.replace('nav-', '') + '-section';
+                    switchView(targetSectionId);
+                });
+            });
+
+            // 2. Clic sur "Voir Détails" dans la liste
+            dossierListBody.addEventListener('click', function(e) {
+                if (e.target.classList.contains('btn-view')) {
+                    const ref = e.target.getAttribute('data-ref');
+                    showDossierDetails(ref);
+                }
+            });
+
+            // 3. Gestion du bouton "Suivant" (uniquement alerte/validation du choix)
+            btnNext.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const selectedDeclarant = document.querySelector('input[name="declarant_type"]:checked');
+                
+                if (selectedDeclarant) {
+                    const typeFr = selectedDeclarant.value;
+                    alert(`Sélection validée : ${typeFr}. En production, cette action mènerait au formulaire de détails.`);
+                } else {
+                    alert("Veuillez choisir un type de déclarant pour continuer.");
+                    declarantForm.reportValidity(); 
+                }
+            });
+
+
+            // 4. Bouton "Retour à la Liste"
+            document.getElementById('btn-retour-liste').addEventListener('click', function() {
+                switchView('pending-section');
+            });
+            
+            // 5. Bouton "Valider le Dossier" (simulation)
+            document.getElementById('btn-valider-dossier').addEventListener('click', function() {
+                if (currentDossierRef) {
+                    alert(`✅ DOSSIER VALIDÉ PAR L'ADMIN :\nLa référence ${currentDossierRef} est VALIDE.\nProchaine étape : Attribution de la plaque.`);
+                    
+                    // 💡 EN PRODUCTION : fetch (PATCH) pour mettre à jour le statut dans Supabase
+                    
+                    document.querySelector(`tr[data-ref="${currentDossierRef}"]`).remove();
+                    switchView('pending-section');
+                }
+            });
+
+            // 6. Bouton "Rejeter le Dossier" (simulation)
+            document.getElementById('btn-rejeter-dossier').addEventListener('click', function() {
+                if (currentDossierRef) {
+                    const motif = prompt(`⚠️ MOTIF DE REJET :\nVeuillez entrer le motif de rejet pour le dossier ${currentDossierRef} :`);
+                    if (motif) {
+                        alert(`❌ DOSSIER REJETÉ PAR L'ADMIN :\nLa référence ${currentDossierRef} a été REJETÉE. Motif: ${motif}.`);
+                        
+                         // 💡 EN PRODUCTION : fetch (PATCH) pour mettre à jour le statut et le motif dans Supabase
+                         
+                         document.querySelector(`tr[data-ref="${currentDossierRef}"]`).remove();
+                        switchView('pending-section');
+                    }
+                }
+            });
+
+            // Logique pour le menu hamburger
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+
+            // Initialisation: Démarre sur la page Nouvel Enregistrement
+            switchView('new-entry-section');
+
+            // 🚀 Vous pouvez appeler ici la fonction pour charger les dossiers au démarrage
+            // fetchDossiersEnAttente().then(dossiers => {
+            //     // Traitement pour injecter les dossiers dans dossierListBody
+            // });
+        });
+    </script>
+</body>
+</html>

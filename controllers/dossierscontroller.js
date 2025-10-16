@@ -1,4 +1,4 @@
-// controllers/dossiersController.js
+/// controllers/dossiersController.js
 import supabase from '../config/db.js';
 
 /* ==========================================================
@@ -14,6 +14,15 @@ export const addDossier = async (req, res) => {
     const acteur_id = proprietaire_id || mandataire_id;
     const acteur_type = proprietaire_id ? 'proprietaire' : 'mandataire';
 
+    // 🔹 Génération automatique de la référence
+    // Format : REF-année-département-motoID
+    const currentYear = new Date().getFullYear();
+    const departementId = req.user?.departement_id || 'XX'; 
+    const reference_dossier = `REF-${currentYear}-PN-${moto_id}`;
+
+    console.log("🔹 Référence générée :", reference_dossier);
+
+    // 🔹 Insertion dans la table
     const { data: dossier, error } = await supabase
       .from('dossiers')
       .insert([{
@@ -26,16 +35,30 @@ export const addDossier = async (req, res) => {
         date_soumission: new Date(),
         agent_id,
         proprietaire_id,
-        mandataire_id
+        mandataire_id,
+        reference_dossier
       }])
       .select('*')
       .single();
 
-    if (error) return res.status(400).json({ message: error.message });
+    if (error) {
+      console.error("❌ Erreur Supabase :", error);
+      return res.status(400).json({ message: error.message });
+    }
 
-    res.status(201).json({ message: 'Dossier créé avec succès', dossier });
+    console.log("🔹 Dossier inséré :", dossier);
+
+    // 🔹 Retour du dossier avec référence garantie
+    res.status(201).json({ 
+      message: 'Dossier créé avec succès', 
+      dossier: {
+        ...dossier,
+        reference_dossier // assure que la référence est renvoyée
+      }
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("❌ Erreur serveur :", err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
@@ -47,6 +70,7 @@ export const getDossiers = async (req, res) => {
   try {
     const role = req.user.role;
     const userId = req.user.id;
+    const userDepartement = req.user.departement_id;
     const { moto_marque, moto_modele, statut, acteur_nom } = req.query;
 
     let query = supabase.from('dossiers').select(`
@@ -58,18 +82,24 @@ export const getDossiers = async (req, res) => {
 
     // --- Filtrage selon le rôle ---
     if (role === 'agent_saisie' || role === 'agent_total') query = query.eq('agent_id', userId);
-    else if (role === 'admin') query = query.eq('statut', 'en_attente');
-    else if (role === 'dd') query = query.eq('statut', 'provisoire');
+    else if (role === 'admin') query = query.in('statut', ['en_attente', 'en_attente_officialisation']);
+    else if (role === 'dd') query = query.eq('statut', 'en_attente_officialisation');
+
+    // --- Filtrage selon le département de l’utilisateur ---
+    if (userDepartement) query = query.eq('departement_id', userDepartement);
 
     const { data, error } = await query;
     if (error) return res.status(400).json({ message: error.message });
 
     let filteredData = data;
 
-    if (moto_marque) filteredData = filteredData.filter(d => d.moto?.marque?.toLowerCase().includes(moto_marque.toLowerCase()));
-    if (moto_modele) filteredData = filteredData.filter(d => d.moto?.modele?.toLowerCase().includes(moto_modele.toLowerCase()));
+    // --- Filtrage côté front selon query params ---
+    if (moto_marque)
+      filteredData = filteredData.filter(d => d.moto?.marque?.toLowerCase().includes(moto_marque.toLowerCase()));
+    if (moto_modele)
+      filteredData = filteredData.filter(d => d.moto?.modele?.toLowerCase().includes(moto_modele.toLowerCase()));
     if (acteur_nom) {
-      filteredData = filteredData.filter(d => 
+      filteredData = filteredData.filter(d =>
         d.proprietaire?.nom?.toLowerCase().includes(acteur_nom.toLowerCase()) ||
         d.mandataire?.nom?.toLowerCase().includes(acteur_nom.toLowerCase())
       );
@@ -84,18 +114,19 @@ export const getDossiers = async (req, res) => {
 };
 
 /* ==========================================================
-   ✏️ METTRE À JOUR UN DOSSIER
+   ✏️ METTRE À JOUR UN DOSSIER AVEC STATUT AUTOMATIQUE
    ========================================================== */
 export const updateDossier = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
 
-    // ⚠️ Ne jamais mettre à jour acteur_id ou acteur_type manuellement
     delete updateData.acteur_id;
     delete updateData.acteur_type;
 
-    // ✅ Vérifier si les IDs fournis existent
+    const role = req.user.role;
+
+    // ✅ Vérification des IDs
     if (updateData.proprietaire_id) {
       const { data: prop, error: propErr } = await supabase
         .from('proprietaires')
@@ -114,10 +145,20 @@ export const updateDossier = async (req, res) => {
       if (mandErr || !mand) return res.status(400).json({ message: "Mandataire introuvable" });
     }
 
-    // --- Si on change l'acteur principal, on le met à jour automatiquement ---
+    // --- Mise à jour automatique de l'acteur principal ---
     if (updateData.proprietaire_id || updateData.mandataire_id) {
       updateData.acteur_id = updateData.proprietaire_id || updateData.mandataire_id;
       updateData.acteur_type = updateData.proprietaire_id ? 'proprietaire' : 'mandataire';
+    }
+
+    // --- GESTION AUTOMATIQUE DES STATUTS ---
+    if (role === 'admin' && updateData.numero_immatriculation) {
+      updateData.statut = 'en_attente_officialisation';
+    }
+
+    if (role === 'dd' && updateData.valide === true) {
+      updateData.statut = 'validé';
+      updateData.date_validation_dd = new Date();
     }
 
     const { data, error } = await supabase

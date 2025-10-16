@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Validateur - Immatriculation</title>
+    <style>
+        /* --- Style Général & Variables (Réutilisé) --- */
+        :root {
+            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
+            --secondary-color: #00796b; /* Vert pour les actions */
+            --danger-color: #d32f2f; /* Rouge pour le rejet */
+            --accent-color: #fbc02d; /* Jaune pour l'attention */
+            --background-color: #f5f7fa; /* Gris très clair */
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 8px;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Barre de Navigation Latérale (Sidebar) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--white-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, padding-left 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .sidebar-nav a svg {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-nav a.active {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-footer #user-name { font-weight: bold; display: block; }
+        .sidebar-footer #user-department { font-size: 0.9em; opacity: 0.8; display: block; }
+
+        /* --- Zone de Contenu Principal --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            background-color: var(--white-color);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .menu-toggle svg { width: 28px; height: 28px; }
+
+        .main-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            display: none;
+            background-color: var(--white-color);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        .content-section.active { display: block; }
+
+        /* --- Styles du Tableau de Liste & Général --- */
+        .form-section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 0; 
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        /* Styles de la liste */
+        .dossier-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .dossier-table th, .dossier-table td { text-align: left; padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
+        .dossier-table th { background-color: var(--primary-color); color: var(--white-color); font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+        .dossier-table tr:hover { background-color: var(--background-color); cursor: pointer; }
+        .action-cell { text-align: center; width: 100px; }
+        .btn-view { background-color: var(--primary-color); color: var(--white-color); border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.3s; }
+        .btn-view:hover { background-color: #0a3a7c; }
+
+        /* Styles du Formulaire (Réutilisé pour Nouvel Enregistrement) */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        .form-section-subtitle {
+            grid-column: 1 / -1;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color); 
+            margin-top: 30px; 
+            margin-bottom: 10px;
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select {
+            padding: 12px; border: 1px solid var(--border-color);
+            border-radius: var(--border-radius); font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.2);
+        }
+
+
+        /* --- Boutons d'Action (Validation) --- */
+        .form-actions {
+            display: flex;
+            justify-content: flex-end; 
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px; border: none;
+            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary { background-color: var(--border-color); color: var(--text-color); }
+        .btn-secondary:hover { background-color: #d0d0d0; transform: translateY(-2px); }
+
+        /* Bouton Valider (Primaire/Bleu) et Enregistrer (Nouvel Enregistrement) */
+        .btn-primary {
+            background-color: var(--primary-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(13, 71, 161, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #0a3a7c; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(13, 71, 161, 0.4);
+        }
+        
+        /* Bouton Rejeter (Rouge) */
+        .btn-danger {
+            background-color: var(--danger-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(211, 47, 47, 0.3);
+        }
+        .btn-danger:hover {
+            background-color: #b71c1c; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(211, 47, 47, 0.4);
+        }
+
+        /* Styles des Détails de Confirmation */
+         .confirmation-summary {
+            background-color: var(--background-color);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+        .confirmation-summary h4 {
+            color: var(--primary-color); margin-top: 25px; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px dashed var(--border-color); font-size: 1.15rem;
+        }
+        .confirmation-summary h4:first-child { margin-top: 0; }
+        .confirmation-summary p { display: flex; justify-content: space-between; margin: 8px 0; font-size: 1rem; }
+        .confirmation-summary span.label { font-weight: 500; color: #555; margin-right: 15px; }
+        .confirmation-summary strong.value { font-weight: 700; color: var(--text-color); text-align: right; }
+
+        /* Message d'alerte/info */
+        .info-message {
+            padding: 15px;
+            background-color: rgba(13, 71, 161, 0.05); /* Bleu très léger */
+            border-left: 4px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+        .info-message p { margin: 5px 0; font-size: 0.95rem; }
+        .info-message strong { color: var(--primary-color); }
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 768px) {
+            .sidebar { position: absolute; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .menu-toggle { display: block; }
+            .main-header { padding: 15px; }
+            .content-area { padding: 15px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h1>Validation</h1></div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#" id="nav-pending" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Dossiers en Attente
+                    </a>
+                </li>
+                 <li>
+                    <a href="#" id="nav-new-entry" class="nav-link active">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Nouvel Enregistrement
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-validated" class="nav-link">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.18c-1.554-1.92-3.83-3.08-6.188-3.08-5.71 0-10.333 4.623-10.333 10.333S6.18 21.333 12 21.333c2.35 0 4.626-1.16 6.188-3.08l1.414 1.414c1.17-1.78 1.88-3.86 1.88-6.17a10.333 10.333 0 00-10.333-10.333c-2.31 0-4.39.71-6.17 1.88L3.982 5.618C5.894 3.706 8.78 2.333 12 2.333c3.22 0 6.106 1.373 8.018 3.285z" /></svg>
+                        Historique Validations
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-stats" class="nav-link">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 3-3M6 20h12a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        Statistiques
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <span id="user-name">Mme. Léa Dubois</span>
+            <span id="user-department">Chef de Service (Validation)</span>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <header class="main-header">
+            <button class="menu-toggle" id="menu-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <h2 id="page-title">Nouvel Enregistrement (Admin)</h2>
+        </header>
+
+        <main class="content-area">
+
+            <section id="new-entry-section" class="content-section active">
+                <h3 class="form-section-title">Enregistrement d'un Nouveau Dossier (Informations Moto Uniquement)</h3>
+                
+                <form id="admin-registration-form">
+                    <div class="form-grid">
+                        
+                        
+
+<h4 class="form-section-subtitle">A. Caractéristiques de Base du Véhicule</h4>
+                        
+                        <div class="form-group"><label for="numero_chassis">N° Série (Châssis)</label><input type="text" id="numero_chassis" required></div>
+                        
+                        <div class="form-group"><label for="marque">Marque</label><input type="text" id="marque" required></div>
+
+                        <div class="form-group"><label for="modele">Modèle</label><input type="text" id="modele" required></div>
+                        <div class="form-group"><label for="type">Type de Véhicule</label><input type="text" id="type" placeholder="Ex: Moto, Tricycle..." required></div>
+
+                        <div class="form-group">
+                            <label for="couleur">Couleur</label>
+                            <select id="couleur" required>
+                                <option value="">-- Sélectionner une Couleur --</option>
+                                <option value="NOIR">Noir</option>
+                                <option value="BLANC">Blanc</option>
+                                <option value="GRIS">Gris</option>
+                                <option value="ARGENT">Argent</option>
+                                <option value="ROUGE">Rouge</option>
+                                <option value="BLEU">Bleu</option>
+                                <option value="VERT">Vert</option>
+                                <option value="JAUNE">Jaune</option>
+                                <option value="MARRON">Marron</option>
+                                <option value="ORANGE">Orange</option>
+                                <option value="VIOLET">Violet</option>
+                                <option value="ROSE">Rose</option>
+                                <option value="OR">Or (Métallisé)</option>
+                                <option value="CHROME">Chrome</option>
+                                <option value="MULTICOLORE">Multicolore</option>
+                                <option value="AUTRE">Autre (préciser à l'écrit)</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label for="carrosserie">Carrosserie</label><input type="text" id="carrosserie" placeholder="Ex: Solo, Side-car"></div>
+                        <div class="form-group"><label for="cylindree">Cylindrée (cm³)</label><input type="number" id="cylindree" min="50" required></div>
+                        <div class="form-group"><label for="puissance_admin">Puissance Administrative (CV)</label><input type="number" id="puissance_admin" min="1" required></div>
+                        <div class="form-group"><label for="nombre_places">Nombre de Places</label><input type="number" id="nombre_places" min="1" max="5" required></div>
+                        <div class="form-group"><label for="etat">État du Véhicule</label><input type="text" id="etat" placeholder="Ex: Neuf, Occasion"></div>
+
+                        
+
+<h4 class="form-section-subtitle">B. Caractéristiques Techniques (Moteur & Poids)</h4>
+                        <div class="form-group"><label for="type_moteur">Type Moteur</label><input type="text" id="type_moteur" placeholder="Ex: 4 Temps, 2 Temps"></div>
+                        <div class="form-group"><label for="energie">Énergie</label><input type="text" id="energie" placeholder="Ex: Essence, Diesel"></div>
+                        <div class="form-group"><label for="reference_moteur">Référence Moteur</label><input type="text" id="reference_moteur"></div>
+                        <div class="form-group"><label for="puissance_moteur">Puissance Moteur (kW)</label><input type="number" id="puissance_moteur" min="1"></div>
+                        
+                        <div class="form-group"><label for="boite_vitesse">Boîte de Vitesse</label><input type="text" id="boite_vitesse" placeholder="Ex: Manuelle 5 vit., Auto"></div>
+                        <div class="form-group"><label for="poids_vide">Poids à Vide (kg)</label><input type="number" id="poids_vide" min="50"></div>
+                        <div class="form-group"><label for="charge_utile">Charge Utile (kg)</label><input type="number" id="charge_utile" min="0"></div>
+                        <div class="form-group"><label for="poids_charge_autorisee">Poids Total Charge Autorisée (PTCA) (kg)</label><input type="number" id="poids_charge_autorisee" min="50"></div>
+                        
+
+<h4 class="form-section-subtitle">C. Historique et Traçabilité</h4>
+                        
+                        <div class="form-group"><label for="date_fabrication">Année de Fabrication</label><input type="number" id="date_fabrication" min="1900" max="2050" placeholder="Ex: 2024" maxlength="4" oninput="enforceMaxLength(this)" required></div>
+                        
+                        <div class="form-group"><label for="premiere_mise_circulation">Année 1ère Circulation</label><input type="number" id="premiere_mise_circulation" min="1900" max="2050" placeholder="Ex: 2025" maxlength="4" oninput="enforceMaxLength(this)" required></div>
+                        
+                        <div class="form-group">
+                            <label for="usage">Usage</label>
+                            <select id="usage" required>
+                                <option value="TAXI MOTO">TAXI MOTO</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group"><label for="serie_immatriculation">Série Immatriculation (Antérieure)</label><input type="text" id="serie_immatriculation" placeholder="Série antérieure" disabled></div>
+                        
+                        <div class="form-group"><label for="reg-acquisition">Source d'Acquisition</label><input type="text" id="reg-acquisition" value="Importation neuve (Automatique)" disabled></div>
+                        
+                        <div class="form-group"><label for="reg-date-acq">Année d'Acquisition</label><input type="number" id="reg-date-acq" min="1900" max="2050" placeholder="Ex: 2025" maxlength="4" oninput="enforceMaxLength(this)" required></div>
+                        
+                        <div class="form-group"><label for="reg-ref">Référence du Dossier</label><input type="text" id="reg-ref" value="2025-KYL-MTO-00XXX" disabled></div>
+                        <div class="form-group"><label for="reg-agent">Agent de Saisie</label><input type="text" id="reg-agent" value="Mme. Léa Dubois (Admin)" disabled></div>
+                        
+
+</div>
+                    
+                    <div class="form-actions">
+                         <button type="button" class="btn btn-secondary" onclick="document.getElementById('admin-registration-form').reset();">Annuler / Réinitialiser</button>
+                        <button type="submit" class="btn btn-primary">Suivant</button>
+                    </div>
+                </form>
+            </section>
+            
+            <section id="pending-section" class="content-section">
+                <h3 class="form-section-title">Liste des Dossiers à Traiter</h3>
+
+                <table class="dossier-table">
+                    <thead>
+                        <tr>
+                            <th>Référence Dossier</th>
+                            <th>Déclarant</th>
+                            <th>Véhicule</th>
+                            <th>Déposé par</th>
+                            <th class="action-cell">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dossier-list-body">
+                        <tr data-ref="2025-KYL-MTO-00147">
+                            <td data-label="Référence Dossier">2025-KYL-MTO-00147</td>
+                            <td data-label="Déclarant">NDONGO Yves (Mandataire)</td>
+                            <td data-label="Véhicule">YAMAHA C-80</td>
+                            <td data-label="Déposé par">Jean Dupont</td>
+                            <td class="action-cell"><button class="btn-view" data-ref="2025-KYL-MTO-00147">Voir Détails</button></td>
+                        </tr>
+                         <tr data-ref="2025-KYL-MTO-00146">
+                            <td data-label="Référence Dossier">2025-KYL-MTO-00146</td>
+                            <td data-label="Déclarant">MAKAYA Pierre (Propriétaire)</td>
+                            <td data-label="Véhicule">HONDA XL-125</td>
+                            <td data-label="Déposé par">Agent C. M.</td>
+                            <td class="action-cell"><button class="btn-view" data-ref="2025-KYL-MTO-00146">Voir Détails</button></td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </section>
+            
+             <section id="details-section" class="content-section">
+                <h3 class="form-section-title">Validation du Dossier: <span id="detail-ref-title"></span></h3>
+
+                <div class="info-message">
+                    <p style="margin: 0;"><strong>Vérification :</strong> Veuillez inspecter l'ensemble des informations et des pièces justificatives avant de prendre une décision. Le statut actuel du dossier est **"En Attente de Validation Supérieure"**.</p>
+                </div>
+                
+                <div class="confirmation-summary" id="detail-summary">
+                    </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-retour-liste">Retour à la Liste</button>
+                    <button type="button" class="btn btn-danger" id="btn-rejeter-dossier">Rejeter le Dossier</button>
+                    <button type="button" class="btn btn-primary" id="btn-valider-dossier">Valider le Dossier</button>
+                </div>
+            </section>
+
+
+            <section id="validated-section" class="content-section">
+                 <h3 class="form-section-title">Historique des Validations</h3>
+                </section>
+            
+             <section id="stats-section" class="content-section">
+                 <h3 class="form-section-title">Statistiques et Rapports</h3>
+                </section>
+        </main>
+    </div>
+
+    <script>
+        // Fonction pour forcer la limite de 4 caractères sur les champs type="number" (Année)
+        function enforceMaxLength(element) {
+            if (element.value.length > element.maxLength) {
+                element.value = element.value.slice(0, element.maxLength);
+            }
+        }
+        
+        // DONNÉES SIMULÉES DE LA BASE DE DONNÉES
+        const dossiersData = {
+            '2025-KYL-MTO-00147': {
+                declarantType: 'Mandataire',
+                proprioNom: 'MABIALA Jean',
+                proprioPiece: '123456789',
+                mandataireNom: 'NDONGO Yves',
+                mandatairePiece: '987654321',
+                mandataireTel: '06 666 00 00',
+                motoMarque: 'YAMAHA C-80',
+                motoChassis: 'MY1234567890CONG',
+                motoCouleur: 'Noir',
+                motoAcquisition: 'Importation neuve',
+                motoDateAcquisition: '01/10/2025',
+                agentTraitant: 'Jean Dupont',
+                dateCreation: '13/10/2025 à 10:45'
+            },
+            '2025-KYL-MTO-00146': {
+                declarantType: 'Propriétaire',
+                proprioNom: 'MAKAYA Pierre',
+                proprioPiece: '555444333',
+                mandataireNom: 'N/A',
+                mandatairePiece: 'N/A',
+                mandataireTel: '05 123 45 67',
+                motoMarque: 'HONDA XL-125',
+                motoChassis: 'HN999888777AFRI',
+                motoCouleur: 'Rouge',
+                motoAcquisition: 'Achat local',
+                motoDateAcquisition: '10/09/2025',
+                agentTraitant: 'Agent C. M.',
+                dateCreation: '12/10/2025 à 16:20'
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+            const contentSections = document.querySelectorAll('.content-area .content-section');
+            const pageTitle = document.getElementById('page-title');
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const dossierListBody = document.getElementById('dossier-list-body');
+            const detailSummary = document.getElementById('detail-summary');
+            const detailRefTitle = document.getElementById('detail-ref-title');
+            const adminRegForm = document.getElementById('admin-registration-form');
+
+            let currentDossierRef = null;
+            
+            // Mappage des titres de page
+            const sectionTitles = {
+                'pending-section': 'Dossiers en Attente de Validation',
+                'new-entry-section': 'Nouvel Enregistrement (Informations Moto)',
+                'details-section': 'Validation du Dossier',
+                'validated-section': 'Historique des Validations',
+                'stats-section': 'Statistiques et Rapports'
+            };
+
+            function switchView(targetId) {
+                // Gère la navigation entre les sections de contenu
+                navLinks.forEach(link => link.classList.remove('active'));
+                contentSections.forEach(section => section.classList.remove('active'));
+
+                const navId = targetId.replace('-section', '');
+                const activeLink = document.querySelector(`#nav-${navId}`);
+                const activeSection = document.getElementById(targetId);
+
+                if (activeLink) activeLink.classList.add('active');
+                if (activeSection) activeSection.classList.add('active');
+                
+                // Gère le titre
+                pageTitle.textContent = sectionTitles[targetId] || "Détails du Dossier";
+
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('open');
+                }
+            }
+
+            // Affiche les détails d'un dossier
+            function showDossierDetails(ref) {
+                const data = dossiersData[ref];
+                if (!data) return;
+
+                currentDossierRef = ref;
+                detailRefTitle.textContent = ref;
+
+                // Construction dynamique du HTML du résumé
+                let htmlContent = `
+                    <h4>A. Informations Propriétaire / Déclarant</h4>
+                    <p><span class="label">Type de déclarant:</span> <strong class="value">${data.declarantType}</strong></p>
+                    <p><span class="label">Nom du Propriétaire:</span> <strong class="value">${data.proprioNom}</strong></p>
+                    <p><span class="label">N° Pièce Propriétaire:</span> <strong class="value">${data.proprioPiece}</strong></p>
+                    ${data.declarantType === 'Mandataire' ? `
+                        <hr style="border-style: dashed; border-color: #ddd;">
+                        <p><span class="label">Nom Mandataire:</span> <strong class="value">${data.mandataireNom}</strong></p>
+                        <p><span class="label">N° Pièce Mandataire:</span> <strong class="value">${data.mandatairePiece}</strong></p>
+                        <p><span class="label">Téléphone Mandataire:</span> <strong class="value">${data.mandataireTel}</strong></p>
+                    ` : ''}
+
+                    <h4 style="margin-top: 30px;">B. Informations de la Moto</h4>
+                    <p><span class="label">Marque / Modèle:</span> <strong class="value">${data.motoMarque}</strong></p>
+                    <p><span class="label">N° Série (Châssis):</span> <strong class="value">${data.motoChassis}</strong></p>
+                    <p><span class="label">Couleur:</span> <strong class="value">${data.motoCouleur}</strong></p>
+                    <p><span class="label">Source d'Acquisition:</span> <strong class="value">${data.motoAcquisition}</strong></p>
+                    <p><span class="label">Date d'Acquisition:</span> <strong class="value">${data.motoDateAcquisition}</strong></p>
+                    
+                    <h4 style="margin-top: 30px;">C. Traçabilité du Dossier</h4>
+                    <p><span class="label">Référence du Dossier:</span> <strong class="value">${ref}</strong></p>
+                    <p><span class="label">Agent Traitant:</span> <strong class="value">${data.agentTraitant}</strong></p>
+                    <p><span class="label">Date de Création:</span> <strong class="value">${data.dateCreation}</strong></p>
+                `;
+
+                detailSummary.innerHTML = htmlContent;
+                switchView('details-section');
+            }
+
+
+            // --- Événements ---
+
+            // 1. Navigation latérale
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetSectionId = this.id.replace('nav-', '') + '-section';
+                    switchView(targetSectionId);
+                });
+            });
+
+            // 2. Clic sur "Voir Détails" dans la liste
+            dossierListBody.addEventListener('click', function(e) {
+                if (e.target.classList.contains('btn-view')) {
+                    const ref = e.target.getAttribute('data-ref');
+                    showDossierDetails(ref);
+                }
+            });
+
+            // 3. Bouton "Retour à la Liste"
+            document.getElementById('btn-retour-liste').addEventListener('click', function() {
+                switchView('pending-section');
+            });
+            
+            // 4. Soumission du Nouvel Enregistrement (Admin)
+            adminRegForm.addEventListener('submit', async function(e) {
+                 e.preventDefault();
+                 
+                 // ⭐⭐⭐⭐⭐ COMMENTAIRE TAP À L'OEIL : INTÉGRATION SUPABASE AVEC FETCH ⭐⭐⭐⭐⭐
+                 
+                 // 1. Récupérer les données du formulaire
+                 const formData = {
+                     numero_chassis: document.getElementById('numero_chassis').value,
+                     marque: document.getElementById('marque').value,
+                     modele: document.getElementById('modele').value,
+                     couleur: document.getElementById('couleur').value,
+                     cylindree: parseInt(document.getElementById('cylindree').value),
+                     // ... ajouter tous les autres champs nécessaires ici (type, puissance_admin, etc.)
+                 };
+
+                 // 2. Définir les informations de l'API Supabase
+                 // !!! REMPLACEZ CES VALEURS PAR VOS VRAIES CLÉS SUPABASE !!!
+                 const SUPABASE_URL = 'https://votre-project-id.supabase.co';
+                 const API_KEY = 'votre-clé-anon-ou-service-role';
+                 const TABLE_NAME = 'motos'; // Nom de votre table
+
+                 const apiUrl = `${SUPABASE_URL}/rest/v1/${TABLE_NAME}`;
+
+                 try {
+                     // 3. Effectuer la requête POST (insertion) avec fetch
+                     const response = await fetch(apiUrl, {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'apikey': API_KEY, // Clé API Supabase
+                             'Authorization': `Bearer ${API_KEY}`, // Jeton d'autorisation
+                             'Prefer': 'return=minimal' // Pour une réponse plus rapide et légère
+                         },
+                         body: JSON.stringify(formData)
+                     });
+
+                     // 4. Gérer la réponse de la base de données
+                     if (response.ok) {
+                         // L'insertion a réussi (Code 201 Created ou 204 No Content avec 'return=minimal')
+                         alert("✅ Informations Moto enregistrées avec succès dans Supabase et dossier mis en statut 'À Valider'.");
+                         adminRegForm.reset();
+                         switchView('pending-section');
+                     } else {
+                         // L'API a retourné une erreur (ex: violation de contrainte)
+                         const errorData = await response.json();
+                         alert(`❌ ERREUR SUPABASE : Échec de l'enregistrement de la moto. Statut: ${response.status}. Détails: ${errorData.message || 'Erreur inconnue'}`);
+                         console.error("Erreur Supabase:", errorData);
+                     }
+                 } catch (error) {
+                     // Erreur réseau (ex: URL incorrecte, problème de connexion)
+                     alert("🚨 ERREUR RÉSEAU : Impossible de communiquer avec le serveur Supabase.");
+                     console.error("Erreur Fetch:", error);
+                 }
+                 
+                 // ⭐⭐⭐⭐⭐ FIN DU COMMENTAIRE TAP À L'OEIL ⭐⭐⭐⭐⭐
+            });
+
+
+            // 5. Bouton "Valider le Dossier"
+            document.getElementById('btn-valider-dossier').addEventListener('click', function() {
+                if (currentDossierRef) {
+                    alert(`✅ DOSSIER VALIDÉ PAR L'ADMIN :\nLa référence ${currentDossierRef} est VALIDE.\nProchaine étape : Attribution de la plaque.`);
+                    // Simulation : retire le dossier de la liste et retourne à la liste
+                    document.querySelector(`tr[data-ref="${currentDossierRef}"]`).remove();
+                    switchView('pending-section');
+                }
+            });
+
+            // 6. Bouton "Rejeter le Dossier"
+            document.getElementById('btn-rejeter-dossier').addEventListener('click', function() {
+                if (currentDossierRef) {
+                    const motif = prompt(`⚠️ MOTIF DE REJET :\nVeuillez entrer le motif de rejet pour le dossier ${currentDossierRef} :`);
+                    if (motif) {
+                        alert(`❌ DOSSIER REJETÉ PAR L'ADMIN :\nLa référence ${currentDossierRef} a été REJETÉE. Motif: ${motif}.`);
+                        // Simulation : retire le dossier de la liste et retourne à la liste
+                         document.querySelector(`tr[data-ref="${currentDossierRef}"]`).remove();
+                        switchView('pending-section');
+                    }
+                }
+            });
+
+            // Logique pour le menu hamburger
+            menuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+
+            // Initialisation: Démarre sur la page Nouvel Enregistrement
+            switchView('new-entry-section');
+        });
+    </script>
+</body>
+</html>

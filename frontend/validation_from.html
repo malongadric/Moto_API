@@ -76,7 +76,7 @@ body {
     <p>L'enregistrement du dossier d'immatriculation a été soumis et validé dans la base de données. Le traitement peut maintenant commencer.</p>
     
     <div class="reference-info">
-        Référence du Dossier : <span class="reference-number" id="ref-number">REF-2025-PN-XXXX</span>
+        Référence du Dossier : <span class="reference-number" id="ref-number">REF-XXXX</span>
     </div>
     
     <a href="agent_dashboard.html" class="btn" id="btn-dashboard">Retourner au Tableau de Bord</a>
@@ -85,39 +85,27 @@ body {
 <script>
 (async () => {
     try {
-        // 🔹 Récupération des IDs et infos utilisateur
+        // 🔹 Récupération des IDs et infos utilisateur depuis localStorage
         const proprietaireId = localStorage.getItem('proprietaire_id');
         const mandataireId = localStorage.getItem('mandataire_id');
         const motoId = localStorage.getItem('moto_id');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const token = localStorage.getItem('token');
 
-        console.log("🟢 proprietaireId:", proprietaireId);
-        console.log("🟢 mandataireId:", mandataireId);
-        console.log("🟢 motoId:", motoId);
-
         if ((!proprietaireId && !mandataireId) || !motoId || !token) {
             throw new Error("Informations manquantes ou token absent. Veuillez refaire l'enregistrement.");
         }
 
-        // Génération de la référence visible à l'écran
-        const reference = `REF-2025-PN-${motoId}`;
-        document.getElementById('ref-number').textContent = reference;
-
-        // Construction des données à envoyer
+        // 🔹 Préparer les données à envoyer au backend
         const dossierData = {
             proprietaire_id: proprietaireId ? Number(proprietaireId) : null,
             mandataire_id: mandataireId ? Number(mandataireId) : null,
             moto_id: Number(motoId),
-            departement_id: user.departement_id || null,
-            cree_par: user.id || user.user_id || null,
-            statut: 'validé',
-            date_soumission: new Date().toISOString()
+            agent_id: user.id || user.user_id || null
+            // statut et reference_dossier sont générés automatiquement côté backend
         };
 
-        console.log("📤 Données envoyées :", dossierData);
-
-        // Envoi au backend
+        // 🔹 Envoi au backend
         const resp = await fetch('https://moto-api-cika.onrender.com/api/dossiers', {
             method: 'POST',
             headers: {
@@ -135,11 +123,16 @@ body {
         const result = await resp.json();
         console.log("✅ Dossier créé avec succès :", result);
 
-        // 🔹 Nettoyage localStorage uniquement après succès
-        ['proprietaire_id','mandataire_id','moto_id'].forEach(key => localStorage.removeItem(key));
+        // 🔹 Affichage de la référence renvoyée par le backend
+        if (result.dossier?.reference_dossier) {
+            document.getElementById('ref-number').textContent = result.dossier.reference_dossier;
+        }
 
-        // Redirection après 5 secondes
-        setTimeout(() => window.location.href = 'agent_dashboard.html', 5000);
+        // 🔹 Nettoyage du localStorage après succès
+        ['proprietaire_id', 'mandataire_id', 'moto_id'].forEach(key => localStorage.removeItem(key));
+
+        // 🔹 Redirection automatique après 10 secondes
+        setTimeout(() => window.location.href = 'agent_dashboard.html', 10000);
 
     } catch (err) {
         console.error("❌ Erreur lors de l'enregistrement du dossier :", err);

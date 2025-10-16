@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
+<html lang="fr"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Agent Adaptatif - Immatriculation</title>
@@ -248,19 +246,19 @@
             <ul>
                 <li>
                     <a href="#" id="nav-form" class="nav-link active">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         Nouvel Enregistrement
                     </a>
                 </li>
                 <li>
                     <a href="#" id="nav-list" class="nav-link">
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         Consulter / Modifier
                     </a>
                 </li>
                 <li>
                     <a href="#" id="nav-history" class="nav-link">
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Historique
                     </a>
                 </li>
@@ -275,7 +273,7 @@
     <div class="main-content">
         <header class="main-header">
             <button class="menu-toggle" id="menu-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
             <h2 id="page-title">Nouvel Enregistrement</h2>
         </header>
@@ -286,7 +284,7 @@
                     <div class="form-grid">
                         
                         <h3 class="form-section-title">Informations d'Identification</h3>
-                        <div class="form-group"><label for="numero_chassis">N° Châssis</label><input type="text" id="numero_chassis" name="numero_chassis" placeholder="17 caractères" maxlength="17" required></div>
+                        <div class="form-group"><label for="numero_chassis">N° Châssis</label><input type="text" id="numero_chassis" name="numero_chassis" placeholder="17 caractères" maxlength="17" required=""></div>
                         <div class="form-group"><label for="serie_immatriculation">Série Immatriculation</label><input type="text" name="serie_immatriculation" id="serie_immatriculation" placeholder="Ex: 1234-A5"></div>
                         <div class="form-group"><label for="marque">Marque</label><select id="marque" name="marque"><option value="">-- Choisir --</option></select></div>
                         <div class="form-group"><label for="modele">Modèle</label><input type="text" id="modele" name="modele" placeholder="Ex: FZ16"></div>
@@ -342,16 +340,16 @@
                         <div class="form-group">
                             <label for="usage">Usage</label>
                             <select id="usage" name="usage">
-                                <option value="taxi_moto" selected>TAXI MOTO</option>
+                                <option value="taxi_moto" selected="">TAXI MOTO</option>
                             </select>
                         </div>
                         <div class="form-group"><label for="etat">État</label><select id="etat" name="etat"><option value="1">Neuf</option><option value="2">Occasion</option><option value="3">Réformé</option></select></div>
 
                         <h3 class="form-section-title">Traçabilité du Dossier (Automatique)</h3>
-                        <div class="form-group"><label for="trace-departement">Département de Saisie</label><input type="text" id="trace-departement" readonly></div>
-                        <div class="form-group"><label for="trace-agent">Créé par</label><input type="text" id="trace-agent" readonly></div>
-                        <div class="form-group"><label for="trace-date">Date de Saisie</label><input type="text" id="trace-date" readonly></div>
-                        <div class="form-group"><label for="trace-heure">Heure de l'Enregistrement</label><input type="text" id="trace-heure" readonly></div>
+                        <div class="form-group"><label for="trace-departement">Département de Saisie</label><input type="text" id="trace-departement" readonly=""></div>
+                        <div class="form-group"><label for="trace-agent">Créé par</label><input type="text" id="trace-agent" readonly=""></div>
+                        <div class="form-group"><label for="trace-date">Date de Saisie</label><input type="text" id="trace-date" readonly=""></div>
+                        <div class="form-group"><label for="trace-heure">Heure de l'Enregistrement</label><input type="text" id="trace-heure" readonly=""></div>
                     </div>
                     <div class="form-actions"><button type="submit" class="btn btn-primary">Suivant</button></div>
                 </form>
@@ -361,7 +359,7 @@
     <h3 class="form-section-title">Liste des Motos</h3>
 
     <!-- Barre de recherche -->
-    <input type="text" id="search-input" placeholder="Rechercher une moto..." style="margin-bottom: 10px; padding: 5px; width: 100%;" />
+    <input type="text" id="search-input" placeholder="Rechercher une moto..." style="margin-bottom: 10px; padding: 5px; width: 100%;">
 
     <!-- Conteneur du tableau -->
     <div class="table-container">
@@ -388,8 +386,32 @@
 
 
             
+            
              <section id="history-section" class="content-section">
-                </section>
+    <!-- Barre de recherche -->
+    <input type="text" id="search-history" placeholder="Rechercher par action, châssis, immatriculation ou agent..." style="margin-bottom:10px; padding:5px; width:100%;">
+
+    <!-- Tableau historique -->
+    <table id="history-table" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#f2f2f2;">
+                <th style="border:1px solid #ccc; padding:8px;">ID Dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Réf Dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Agent</th>
+                <th style="border:1px solid #ccc; padding:8px;">Acteur</th>
+                <th style="border:1px solid #ccc; padding:8px;">Immatriculation</th>
+                <th style="border:1px solid #ccc; padding:8px;">Date</th>
+                <th style="border:1px solid #ccc; padding:8px;">Statut</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Les lignes seront générées dynamiquement par JavaScript -->
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div id="history-pagination" style="margin-top:10px;"></div>
+</section>
         </main>
     </div>
 <!-- Ton HTML reste inchangé jusqu'au script -->
@@ -698,7 +720,7 @@ document.addEventListener('DOMContentLoaded', function() {
         historySection.innerHTML = "<p>Chargement...</p>";
 
         try {
-            const response = await fetch("https://moto-api-cika.onrender.com/api/history", {
+            const response = await fetch("https://moto-api-cika.onrender.com/api/dossiers", {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             const history = await response.json();
@@ -738,8 +760,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
-
-
 
 </body>
 </html>
