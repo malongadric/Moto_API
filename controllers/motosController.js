@@ -24,7 +24,7 @@ export const getMotos = async (req, res) => {
     const { departement_id: userDept, role: userRole } = req.user
 
     const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 10
+    const limit = parseInt(req.query.limit) || 50
     const start = (page - 1) * limit
     const end = start + limit - 1
 

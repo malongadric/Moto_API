@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Agent Adaptatif - Immatriculation</title>
+    <style>
+        /* --- Styles existants conservés --- */
+        :root {
+            --primary-color: #0d47a1;
+            --secondary-color: #00796b;
+            --accent-color: #fbc02d;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 8px;
+            --sidebar-width: 260px;
+        }
+        body { font-family:'Segoe UI', Tahoma, Geneva, Verdana,sans-serif; margin:0; background-color:var(--background-color); color:var(--text-color); display:flex; height:100vh; overflow:hidden; }
+        .sidebar { width:var(--sidebar-width); background-color:var(--primary-color); color:var(--white-color); display:flex; flex-direction:column; box-shadow:2px 0 5px rgba(0,0,0,0.1); transition: transform 0.3s ease-in-out; z-index:1000; }
+        .sidebar-header { padding:20px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.1); }
+        .sidebar-header h1 { margin:0; font-size:1.5rem; letter-spacing:1px; }
+        .sidebar-nav ul { list-style:none; padding:20px 0; margin:0; }
+        .sidebar-nav a { display:flex; align-items:center; padding:15px 25px; color:var(--white-color); text-decoration:none; font-weight:500; transition: background-color 0.3s, padding-left 0.3s; border-left:4px solid transparent; }
+        .sidebar-nav a svg { margin-right:15px; width:20px; height:20px; flex-shrink:0; }
+        .sidebar-nav a:hover { background-color: rgba(255,255,255,0.05); }
+        .sidebar-nav a.active { background-color: rgba(0,0,0,0.2); border-left:4px solid var(--accent-color); font-weight:bold; }
+        .sidebar-footer { margin-top:auto; padding:20px; text-align:center; border-top:1px solid rgba(255,255,255,0.1); }
+        .sidebar-footer #user-name { font-weight:bold; display:block; }
+        .sidebar-footer #user-department { font-size:0.9em; opacity:0.8; display:block; }
+        .main-content { flex:1; display:flex; flex-direction:column; height:100vh; overflow-x:hidden; }
+        .main-header { display:flex; align-items:center; background-color:var(--white-color); padding:15px 30px; border-bottom:1px solid var(--border-color); box-shadow:var(--shadow); z-index:10; }
+        .menu-toggle { display:none; background:none; border:none; cursor:pointer; margin-right:20px; }
+        .menu-toggle svg { width:28px; height:28px; }
+        .main-header h2 { margin:0; font-size:1.8rem; color:var(--primary-color); }
+        .content-area { flex:1; padding:30px; overflow-y:auto; }
+        .content-section { display:none; background-color:var(--white-color); padding:30px; border-radius:var(--border-radius); box-shadow:var(--shadow); }
+        .content-section.active { display:block; }
+        .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:25px; }
+        .form-section-title { grid-column:1/-1; font-size:1.3rem; font-weight:600; color:var(--primary-color); margin-top:20px; margin-bottom:10px; padding-bottom:10px; border-bottom:2px solid var(--secondary-color); }
+        .form-group { display:flex; flex-direction:column; }
+        .form-group label { margin-bottom:8px; font-weight:600; font-size:0.9rem; }
+        .form-group input, .form-group select { padding:12px; border:1px solid var(--border-color); border-radius:var(--border-radius); font-size:1rem; transition:border-color 0.3s, box-shadow 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline:none; border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(13,71,161,0.2); }
+        .form-group input[readonly] { background-color: var(--background-color); color:#777; }
+        .form-actions { grid-column:1/-1; display:flex; justify-content:flex-end; margin-top:30px; }
+        .btn { padding:12px 30px; border:none; border-radius:var(--border-radius); font-size:1rem; font-weight:bold; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; transition:all 0.3s; }
+        .btn-primary { background-color:var(--secondary-color); color:var(--white-color); box-shadow:0 2px 4px rgba(0,121,107,0.3); }
+        .btn-primary:hover { background-color:#004d40; transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,121,107,0.4); }
+        .search-bar { display:flex; gap:15px; margin-bottom:25px; }
+        .search-bar input { flex-grow:1; padding:12px; font-size:1rem; border:1px solid var(--border-color); border-radius:var(--border-radius); }
+        .table-container { overflow-x:auto; }
+        .data-table { width:100%; border-collapse:collapse; margin-top:20px; }
+        .data-table th, .data-table td { padding:15px; text-align:left; border-bottom:1px solid var(--border-color); white-space:nowrap; }
+        .data-table th { background-color:var(--background-color); font-weight:600; cursor:pointer; }
+        .history-list { list-style:none; padding:0; }
+        .history-list li { padding:15px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; }
+        .history-list li:last-child { border-bottom:none; }
+        .history-list .history-icon { margin-right:15px; color:var(--secondary-color); }
+        .history-list .history-date { margin-left:auto; color:#777; font-size:0.9em; }
+        @media (max-width:1024px) { :root { --sidebar-width:220px; } .content-area { padding:20px; } .main-header h2 { font-size:1.5rem; } }
+        @media (max-width:768px) { .sidebar { position:absolute; transform:translateX(-100%); } .sidebar.open { transform:translateX(0); } .menu-toggle { display:block; } .main-header { padding:15px; } .content-area { padding:15px; } .form-grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header"><h1>Immatriculation</h1></div>
+    <nav class="sidebar-nav">
+        <ul>
+            <li><a href="#" id="nav-form" class="nav-link active">Nouvel Enregistrement</a></li>
+            <li><a href="#" id="nav-list" class="nav-link">Consulter / Modifier</a></li>
+            <li><a href="#" id="nav-history" class="nav-link">Historique</a></li>
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <span id="user-name">Jean Dupont</span>
+        <span id="user-department">Agent - Département du Kouilou</span>
+    </div>
+</aside>
+
+<div class="main-content">
+    <header class="main-header">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <h2 id="page-title">Nouvel Enregistrement</h2>
+    </header>
+
+    <main class="content-area">
+        <section id="form-section" class="content-section active">
+            <!-- Formulaire existant -->
+            <form id="moto-form">
+                <div class="form-grid">
+                    <!-- Vos champs ici (conservés comme dans votre code actuel) -->
+                    <h3 class="form-section-title">Traçabilité du Dossier (Automatique)</h3>
+                    <div class="form-group"><label for="trace-departement">Département de Saisie</label><input type="text" id="trace-departement" readonly></div>
+                    <div class="form-group"><label for="trace-agent">Créé par</label><input type="text" id="trace-agent" readonly></div>
+                    <div class="form-group"><label for="trace-date">Date de Saisie</label><input type="text" id="trace-date" readonly></div>
+                    <div class="form-group"><label for="trace-heure">Heure de l'Enregistrement</label><input type="text" id="trace-heure" readonly></div>
+                </div>
+                <div class="form-actions"><button type="submit" class="btn btn-primary">Suivant</button></div>
+            </form>
+        </section>
+
+        <section id="list-section" class="content-section">
+            <div class="search-bar">
+                <input type="text" id="search-moto" placeholder="Rechercher par marque, modèle, couleur...">
+            </div>
+            <div id="moto-list"></div>
+        </section>
+
+        <section id="history-section" class="content-section">
+            <div id="history-list"></div>
+        </section>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+    const pageTitle = document.getElementById('page-title');
+    const motoForm = document.getElementById('moto-form');
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const searchInput = document.getElementById('search-moto');
+    const motoListContainer = document.getElementById('moto-list');
+    const historyListContainer = document.getElementById('history-list');
+
+    const sectionTitles = {
+        'form-section': 'Nouvel Enregistrement',
+        'list-section': 'Consulter / Modifier les dossiers',
+        'history-section': 'Historique des activités'
+    };
+
+    // 🔁 Switch section
+    function switchView(targetId) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        contentSections.forEach(section => section.classList.remove('active'));
+        document.getElementById(targetId).classList.add('active');
+        pageTitle.textContent = sectionTitles[targetId];
+        if(window.innerWidth<=768) sidebar.classList.remove('open');
+    }
+
+    navLinks.forEach(link=>{
+        link.addEventListener('click', e=>{
+            e.preventDefault();
+            const targetSectionId=this.id.replace('nav-','')+'-section';
+            switchView(targetSectionId);
+        });
+    });
+
+    menuToggle.addEventListener('click', ()=> sidebar.classList.toggle('open'));
+
+    // 🕓 Traçabilité
+    function updateTraceability() {
+        const now = new Date();
+        const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+        const agentName = storedUser.nom || 'Inconnu';
+        const departementNom = storedUser.departement_nom || 'N/A';
+
+        document.getElementById('trace-agent').value = agentName;
+        document.getElementById('trace-departement').value = departementNom;
+        document.getElementById('trace-date').value = now.toLocaleDateString('fr-FR');
+        document.getElementById('trace-heure').value = now.toLocaleTimeString('fr-FR');
+    }
+    updateTraceability();
+
+    // 🚀 Submit Moto Form
+    motoForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+        const token = localStorage.getItem('token');
+        if(!token){ alert("Session expirée"); return; }
+
+        const formData = new FormData(motoForm);
+        const data = Object.fromEntries(formData.entries());
+        const payload = {
+            numero_chassis: data.numero_chassis,
+            marque: data.marque,
+            modele: data.modele,
+            couleur: data.couleur,
+            proprietaire_nom: data.nom_proprietaire,
+            proprietaire_prenom: data.prenom_proprietaire,
+            proprietaire_cni: data.cni_proprietaire,
+            mandataire_nom: data.nom_mandataire || null,
+            mandataire_prenom: data.prenom_mandataire || null,
+            mandataire_cni: data.cni_mandataire || null,
+            departement_id: storedUser.departement_id,
+            departement_nom: storedUser.departement_nom,
+            saisie_par: storedUser.nom
+        };
+
+        try{
+            const response = await fetch("https://moto-api-cika.onrender.com/api/motos", {
+                method:"POST",
+                headers: {"Content-Type":"application/json","Authorization":`Bearer ${token}`},
+                body:JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if(!response.ok) throw new Error(result.message||"Erreur");
+            alert("✅ Enregistrement réussi");
+            window.location.href="/frontend/page_de_choix.html";
+        }catch(err){ alert("❌ Erreur :"+err.message); }
+    });
+
+    // 🔹 Liste des motos
+    async function loadMotos(query='') {
+        const token = localStorage.getItem('token');
+        try{
+            const response = await fetch("https://moto-api-cika.onrender.com/api/motos?search="+encodeURIComponent(query), {
+                headers: {"Authorization":`Bearer ${token}`}
+            });
+            const motos = await response.json();
+            let html=`<div class="table-container"><table class="data-table"><thead><tr>
+            <th>Châssis</th><th>Marque</th><th>Modèle</th><th>Couleur</th><th>Propriétaire</th></tr></thead><tbody>`;
+            motos.forEach(m=>{
+                html+=`<tr>
+                    <td>${m.numero_chassis}</td>
+                    <td>${m.marque}</td>
+                    <td>${m.modele}</td>
+                    <td>${m.couleur}</td>
+                    <td>${m.proprietaire_nom} ${m.proprietaire_prenom}</td>
+                </tr>`;
+            });
+            html+=`</tbody></table></div>`;
+            motoListContainer.innerHTML = html;
+        }catch(err){ motoListContainer.innerHTML="<p>Erreur de chargement</p>"; }
+    }
+    loadMotos();
+
+    searchInput.addEventListener('input', ()=> loadMotos(searchInput.value));
+
+    // 🔹 Historique
+    async function loadHistory() {
+        const token = localStorage.getItem('token');
+        try{
+            const res = await fetch("https://moto-api-cika.onrender.com/api/history", {headers: {"Authorization":`Bearer ${token}`}});
+            const history = await res.json();
+            let html='<ul class="history-list">';
+            history.forEach(h=>{
+                html+=`<li><span class="history-icon">🛵</span>${h.action} - ${h.agent} <span class="history-date">${new Date(h.date).toLocaleString('fr-FR')}</span></li>`;
+            });
+            html+='</ul>';
+            historyListContainer.innerHTML = html;
+        }catch(err){ historyListContainer.innerHTML="<p>Erreur de chargement</p>"; }
+    }
+    loadHistory();
+});
+</script>
+
+</body>
+</html>

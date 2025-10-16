@@ -1,9 +1,9 @@
-<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Agent Adaptatif - Immatriculation Moto</title>
+    <title>Espace Agent Adaptatif - Immatriculation</title>
     <style>
         /* --- Style Général & Variables --- */
         :root {
@@ -11,7 +11,7 @@
             --secondary-color: #00796b; /* Vert pour les actions */
             --accent-color: #fbc02d; /* Jaune pour l'attention */
             --background-color: #f5f7fa; /* Gris très clair */
-            --text-color: #333; 
+            --text-color: #333;
             --border-color: #e0e0e0;
             --white-color: #ffffff;
             --shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -177,8 +177,11 @@
 
         /* --- Boutons --- */
         .form-actions {
-            grid-column: 1 / -1; display: flex;
-            justify-content: flex-end; margin-top: 30px;
+            grid-column: 1 / -1; 
+            display: flex;
+            justify-content: flex-end; 
+            margin-top: 30px;
+            gap: 15px; /* Espace entre les boutons */
         }
 
         .btn {
@@ -187,7 +190,18 @@
             cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
             transition: all 0.3s;
         }
+        
+        /* Bouton Retour */
+        .btn-secondary {
+            background-color: var(--border-color); 
+            color: var(--text-color);
+        }
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+            transform: translateY(-2px);
+        }
 
+        /* Bouton Suivant */
         .btn-primary {
             background-color: var(--secondary-color); color: var(--white-color);
             box-shadow: 0 2px 4px rgba(0, 121, 107, 0.3);
@@ -212,12 +226,15 @@
         .history-list .history-date { margin-left: auto; color: #777; font-size: 0.9em; }
 
         /* --- RESPONSIVE DESIGN --- */
+
+        /* Tablettes & Petits écrans */
         @media (max-width: 1024px) {
             :root { --sidebar-width: 220px; }
             .content-area { padding: 20px; }
             .main-header h2 { font-size: 1.5rem; }
         }
 
+        /* Mobiles */
         @media (max-width: 768px) {
             .sidebar {
                 position: absolute;
@@ -233,6 +250,7 @@
             .content-area { padding: 15px; }
             .form-grid { grid-template-columns: 1fr; }
         }
+
     </style>
 </head>
 <body>
@@ -249,13 +267,13 @@
                 </li>
                 <li>
                     <a href="#" id="nav-list" class="nav-link">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                         Consulter / Modifier
                     </a>
                 </li>
                 <li>
                     <a href="#" id="nav-history" class="nav-link">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         Historique
                     </a>
                 </li>
@@ -280,99 +298,98 @@
             <section id="form-section" class="content-section active">
                 <form id="moto-form">
                     <div class="form-grid">
+                        <h3 class="form-section-title">Informations du Propriétaire</h3>
                         
-                        <h3 class="form-section-title">Informations de la Moto</h3>
-                        <div class="form-group"><label for="moto-chassis">N° Châssis (VIN)</label><input type="text" id="moto-chassis" placeholder="17 caractères" maxlength="17" required></div>
-                        <div class="form-group"><label for="moto-marque">Marque de la Moto</label><input type="text" id="moto-marque" placeholder="Ex: Haojue, Lifan"></div>
-                        <div class="form-group"><label for="moto-modele">Modèle de la Moto</label><input type="text" id="moto-modele" placeholder="Ex: GN 125, LF150-10B"></div>
-                        <div class="form-group"><label for="moto-carrosserie">Carrosserie (Type)</label><select id="moto-carrosserie" name="carrosserie"><option value="motocycle">Motocycle</option><option value="tricycle">Tricycle</option><option value="quadricycle">Quadricycle</option></select></div>
-                        <div class="form-group"><label for="moto-cylindree">Cylindrée</label><input type="text" id="moto-cylindree" placeholder="Ex: 125 cm3, 150 cm3"></div>
-                        <div class="form-group"><label for="moto-puissance-admin">Puissance Admin (CV)</label><input type="number" id="moto-puissance-admin" placeholder="Ex: 1, 2"></div>
-                        <div class="form-group"><label for="moto-couleur">Couleur de la Moto</label><select id="moto-couleur"><option>---</option><option>Rouge</option><option>Noir</option><option>Bleu</option><option>Gris</option><option>Blanc</option><option>Jaune</option></select></div>
-                        <div class="form-group"><label for="moto-energie">Énergie</label><select id="moto-energie" name="energie"><option>Essence</option><option>Diesel</option><option>Électrique</option></select></div>
-                        <div class="form-group"><label for="moto-boite">Boîte de vitesse</label><select id="moto-boite" name="boite_vitesse"><option>Manuelle</option><option>Automatique</option><option>Semi-automatique</option><option>Sans</option></select></div>
-                        <div class="form-group"><label for="moto-usage">Usage de la Moto</label><select id="moto-usage" name="usage"><option>Personnel</option><option>Commercial (Taxi)</option><option>Administratif</option></select></div>
-                        <div class="form-group"><label for="moto-etat">État de la Moto</label><select id="moto-etat" name="etat"><option>Neuf</option><option>Occasion</option><option>Réformé</option></select></div>
-                        <div class="form-group"><label for="moto-date-fab">Date Fabrication</label><input type="date" id="moto-date-fab"></div>
-                        <div class="form-group"><label for="moto-date-circu">1ère Mise en Circulation</label><input type="date" id="moto-date-circu"></div>
+                        <div class="form-group">
+    <label for="type">Type de propriétaire</label>
+    <select id="type" required>
+        <option value="">-- Sélectionnez le type --</option>
+        <option value="Physique">Physique</option>
+        <option value="Morale">Morale</option>
+    </select>
+</div>
+
+<div class="form-group"><label for="nom">Nom</label><input type="text" id="nom" placeholder="Nom du propriétaire" required></div>
+<div class="form-group"><label for="prenom">Prénom</label><input type="text" id="prenom" placeholder="Prénom du propriétaire"></div>
+<div class="form-group"><label for="date_naissance">Date de Naissance</label><input type="date" id="date_naissance"></div>
+<div class="form-group"><label for="cni">CNI</label><input type="text" id="cni" placeholder="Numéro de la carte nationale d'identité"></div>
+<div class="form-group"><label for="telephone">Téléphone</label><input type="tel" id="telephone" placeholder="9 chiffres maximum" maxlength="9"></div>
+<div class="form-group"><label for="profession">Profession</label><input type="text" id="profession" placeholder="Profession"></div>
+<div class="form-group"><label for="email">Messagerie Elèctronique</label><input type="email" id="email" placeholder="adresse@email.com"></div>
+<div class="form-group"><label for="nationalite">Nationalité</label><input type="text" id="nationalite" placeholder="Congolaise"></div>
+<div class="form-group"><label for="ville">Ville</label><input type="text" id="ville" placeholder="Ville de résidence"></div>
+<div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" placeholder="Adresse complète"></div>
 
                     </div>
-                    <div class="form-actions"><button type="submit" class="btn btn-primary">Suivant</button></div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="alert('Simulation: Retour à l\'écran de démarrage ou à l\'étape précédente.');">Retour</button>
+                        <button type="submit" class="btn btn-primary">Suivant</button>
+                    </div>
                 </form>
             </section>
 
             <section id="list-section" class="content-section">
-                <h2>Consulter / Modifier les dossiers de Motos</h2>
                 <div class="search-bar">
                     <input type="text" placeholder="Rechercher par N° de châssis, plaque, nom...">
                     <button class="btn btn-primary">Rechercher</button>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
-                        <thead><tr><th>N° Châssis</th><th>Propriétaire</th><th>Marque/Modèle de la Moto</th><th>Type</th><th>Statut</th><th>Actions</th></tr></thead>
+                        <thead><tr><th>N° Châssis</th><th>Propriétaire</th><th>Carrosserie</th><th>Date Saisie</th><th>Statut</th><th>Actions</th></tr></thead>
                         <tbody>
-                            <tr><td>ABC123456789DEF01</td><td>(Lien vers Dossier Proprio)</td><td>Lifan LF150</td><td>Motocycle</td><td>En attente validation</td><td><a href="#">Modifier</a></td></tr>
-                            <tr><td>XYZ987654321ABC02</td><td>(Lien vers Dossier Proprio)</td><td>TVS King</td><td>Tricycle</td><td>Validé</td><td><a href="#">Voir</a></td></tr>
+                            <tr><td>ABC123456789DEF01</td><td>KODIA Jean</td><td>Motocycle</td><td>12/10/2025</td><td>En attente validation</td><td><a href="#">Modifier</a></td></tr>
+                            <tr><td>XYZ987654321ABC02</td><td>MABIALA Pierre</td><td>Tricycle</td><td>11/10/2025</td><td>Validé</td><td><a href="#">Voir</a></td></tr>
                         </tbody>
                     </table>
                 </div>
             </section>
             
              <section id="history-section" class="content-section">
-                 <h2>Historique des activités</h2>
                 <ul class="history-list">
                     <li>
                         <span class="history-icon">📝</span>
-                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis ABC123456789DEF01.</span>
-                        <span class="history-date">Aujourd'hui, 09:35</span>
+                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis ABC123456789DEF01 pour KODIA Jean.</span>
+                        <span class="history-date">Aujourd'hui, 03:15</span>
                     </li>
                     <li>
                         <span class="history-icon">✏️</span>
-                        <span class="history-details"><strong>Modification :</strong> Mise à jour pour châssis XYZ987654321ABC02.</span>
+                        <span class="history-details"><strong>Modification :</strong> Mise à jour du N° de téléphone pour MABIALA Pierre.</span>
                         <span class="history-date">Hier, 14:30</span>
                     </li>
                      <li>
                         <span class="history-icon">📝</span>
-                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis XYZ987654321ABC02.</span>
+                        <span class="history-details"><strong>Nouvel enregistrement :</strong> Moto châssis XYZ987654321ABC02 pour MABIALA Pierre.</span>
                         <span class="history-date">Hier, 11:02</span>
                     </li>
                 </ul>
             </section>
         </main>
     </div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
     const navLinks = document.querySelectorAll('.nav-link');
     const contentSections = document.querySelectorAll('.content-section');
     const pageTitle = document.getElementById('page-title');
-    const motoForm = document.getElementById('moto-form');
+    const proprietaireForm = document.getElementById('moto-form'); // ton formulaire actuel
     const menuToggle = document.getElementById('menu-toggle');
     const sidebar = document.getElementById('sidebar');
-
-    const sectionTitles = {
-        'form-section': 'Nouvel Enregistrement',
-        'list-section': 'Consulter / Modifier les dossiers de Motos',
-        'history-section': 'Historique des activités'
-    };
 
     function switchView(targetId) {
         navLinks.forEach(link => link.classList.remove('active'));
         contentSections.forEach(section => section.classList.remove('active'));
-
         const activeLink = document.querySelector(`#nav-${targetId.split('-')[0]}`);
         const activeSection = document.getElementById(targetId);
-
         if (activeLink) activeLink.classList.add('active');
         if (activeSection) activeSection.classList.add('active');
-
-        pageTitle.textContent = sectionTitles[targetId];
-
-        if (window.innerWidth <= 768) {
-            sidebar.classList.remove('open');
-        }
+        pageTitle.textContent = {
+            'form-section': 'Nouvel Enregistrement',
+            'list-section': 'Consulter / Modifier les dossiers',
+            'history-section': 'Historique des activités'
+        }[targetId];
+        if (window.innerWidth <= 768) sidebar.classList.remove('open');
     }
 
-    // Navigation entre sections
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -381,72 +398,68 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Soumission du formulaire
-    motoForm.addEventListener('submit', async function(e) {
+    proprietaireForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
-        const motoData = {
-            numero_chassis: document.getElementById('moto-chassis').value,
-            marque: document.getElementById('moto-marque').value,
-            modele: document.getElementById('moto-modele').value,
-            carrosserie: document.getElementById('moto-carrosserie').value,
-            cylindree: document.getElementById('moto-cylindree').value,
-            puissance_admin: document.getElementById('moto-puissance-admin').value,
-            couleur: document.getElementById('moto-couleur').value,
-            energie: document.getElementById('moto-energie').value,
-            boite: document.getElementById('moto-boite').value,
-            usage: document.getElementById('moto-usage').value,
-            etat: document.getElementById('moto-etat').value,
-            date_fab: document.getElementById('moto-date-fab').value,
-            date_circu: document.getElementById('moto-date-circu').value,
-            cree_par: localStorage.getItem('userId')
+        const token = localStorage.getItem('token');
+        const moto_id = localStorage.getItem('moto_id');
+
+        if (!token || !moto_id) {
+            alert("Erreur : session expirée ou moto non enregistrée.");
+            return;
+        }
+
+        // Récupération des valeurs du formulaire
+        const payload = {
+            moto_id: parseInt(moto_id),
+            type: document.getElementById('type').value, 
+            nom: document.getElementById('nom').value,
+            prenom: document.getElementById('prenom').value,
+            date_naissance: document.getElementById('date_naissance').value,
+            cni: document.getElementById('cni').value,
+            telephone: document.getElementById('telephone').value,
+            profession: document.getElementById('profession').value,
+            email: document.getElementById('email').value,
+            nationalite: document.getElementById('nationalite').value,
+            ville: document.getElementById('ville').value,
+            adresse: document.getElementById('adresse').value
         };
 
-        const token = localStorage.getItem('token');
-
         try {
-            const response = await fetch('http://moto-api-cika.onrender.com/api/motos', {
-                method: 'POST',
+            const response = await fetch("https://moto-api-cika.onrender.com/api/proprietaires", {
+                method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify(motoData)
+                body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            const result = await response.json();
 
-            if (!response.ok) {
-                throw new Error(data.message || "Erreur lors de l'enregistrement");
-            }
+            if (!response.ok) throw new Error(result.message || "Impossible d'enregistrer le propriétaire");
 
-            // Vérifie si la moto est bien renvoyée
-            if (data.moto_id && data.moto.numero_chassis) {
-                alert(`Moto enregistrée avec succès : ${data.moto.numero_chassis}`);
-                // Stocke le moto_id pour l'utiliser ensuite
-                localStorage.setItem('moto_id', data.moto_id);
-                window.location.href = 'enregistrement_pro.html';
-            } else {
-                alert("Moto enregistrée, mais la réponse du serveur ne contient pas toutes les informations.");
-                console.log("Réponse serveur :", data);
-                window.location.href = 'enregistrement_pro.html';
-            }
+            // On peut stocker proprietaire_id si besoin pour étape suivante
+            localStorage.setItem('proprietaire_id', result.id);
+
+            alert("✅ Propriétaire enregistré avec succès !");
+            proprietaireForm.reset();
+            // Redirection si nécessaire, ex: page suivante
+            window.location.href = "/frontend/validation_from.html";
 
         } catch (error) {
-            console.error("Erreur :", error);
-            alert("Erreur lors de l'enregistrement : " + error.message);
+            console.error("Erreur:", error);
+            alert("❌ Erreur lors de l'enregistrement du propriétaire : " + error.message);
         }
     });
 
-    // Menu hamburger responsive
     menuToggle.addEventListener('click', function() {
         sidebar.classList.toggle('open');
     });
 
-    // Initialisation de la vue
     switchView('form-section');
 });
-</script>
 
+    </script>
 </body>
 </html>

@@ -1,274 +1,818 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connexion / Inscription</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Roboto', sans-serif; }
-    body {
-      background: linear-gradient(135deg, #0D2C54, #1C3F7A);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+    <title>Page de connexion</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="index,follow">
+    <meta name="generator" content="GrapesJS Studio">
+    <style>
+        :root {
+            /* Couleurs pour le thème bleu/blanc */
+            --gjs-t-color-primary: #1E90FF;
+            /* Bleu vif (utilisé pour les bordures de focus) */
+            --gjs-t-color-secondary: #004D99;
+            /* Bleu foncé (utilisé pour les titres) */
+            --gjs-t-color-accent: #ffb347;
+            --gjs-t-color-success: #28a745;
+            --gjs-t-color-warning: #ffc107;
+            --gjs-t-color-error: #dc3545;
+        }
 
-    .auth-container {
-      background: #fff;
-      width: 400px;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-      animation: fadeIn 1s ease-in-out;
-    }
+        /* ... (Les styles CSS restent inchangés) ... */
 
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #0D2C54;
-      font-weight: 700;
-    }
+        *,
+        ::before,
+        ::after {
+            box-sizing: border-box;
+            border-width: 0;
+            border-style: solid;
+            border-color: #e5e7eb;
+        }
 
-    .tabs {
-      display: flex;
-      margin-bottom: 25px;
-      border-bottom: 2px solid #eee;
-    }
-    .tab {
-      flex: 1;
-      text-align: center;
-      padding: 10px 0;
-      cursor: pointer;
-      color: #888;
-      font-weight: 500;
-      transition: color 0.3s;
-    }
-    .tab.active {
-      color: #0D2C54;
-      border-bottom: 3px solid #0D2C54;
-    }
+        html,
+        :host {
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -moz-tab-size: 4;
+            tab-size: 4;
+            font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            font-feature-settings: normal;
+            font-variation-settings: normal;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    form { display: none; flex-direction: column; }
-    form.active { display: flex; }
+        body {
+            margin: 0;
+            line-height: inherit;
+        }
 
-    input, select {
-      padding: 12px 15px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-      transition: all 0.3s;
-    }
-    input:focus, select:focus {
-      border-color: #0D2C54;
-      box-shadow: 0 0 8px rgba(13,44,84,0.3);
-      outline: none;
-    }
+        hr {
+            height: 0;
+            color: inherit;
+            border-top-width: 1px;
+        }
 
-    button {
-      padding: 12px;
-      background: #0D2C54;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    button:hover {
-      background: #0a1d3f;
-      transform: translateY(-2px);
-    }
+        abbr:where([title]) {
+            text-decoration: underline dotted;
+        }
 
-    .message {
-      margin-bottom: 15px;
-      font-size: 14px;
-      text-align: center;
-    }
-    .error { color: #d9534f; }
-    .success { color: #28a745; }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-size: inherit;
+            font-weight: inherit;
+        }
 
-    @keyframes fadeIn {
-      0% { opacity: 0; transform: translateY(-20px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
+        a {
+            color: inherit;
+            text-decoration: inherit;
+        }
 
-    @media(max-width: 450px) {
-      .auth-container { width: 90%; padding: 30px; }
-    }
-  </style>
+        b,
+        strong {
+            font-weight: bolder;
+        }
+
+        code,
+        kbd,
+        samp,
+        pre {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-feature-settings: normal;
+            font-variation-settings: normal;
+            font-size: 1em;
+        }
+
+        small {
+            font-size: 80%;
+        }
+
+        sub,
+        sup {
+            font-size: 75%;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline;
+        }
+
+        sub {
+            bottom: -0.25em;
+        }
+
+        sup {
+            top: -0.5em;
+        }
+
+        table {
+            text-indent: 0;
+            border-color: inherit;
+            border-collapse: collapse;
+        }
+
+        button,
+        input,
+        optgroup,
+        select,
+        textarea {
+            font-family: inherit;
+            font-feature-settings: inherit;
+            font-variation-settings: inherit;
+            font-size: 100%;
+            font-weight: inherit;
+            line-height: inherit;
+            letter-spacing: inherit;
+            color: inherit;
+            margin: 0;
+            padding: 0;
+        }
+
+        button,
+        select {
+            text-transform: none;
+        }
+
+        button,
+        input:where([type='button']),
+        input:where([type='reset']),
+        input:where([type='submit']) {
+            -webkit-appearance: button;
+            background-color: transparent;
+            background-image: none;
+        }
+
+        :-moz-focusring {
+            outline: auto;
+        }
+
+        :-moz-ui-invalid {
+            box-shadow: none;
+        }
+
+        progress {
+            vertical-align: baseline;
+        }
+
+        ::-webkit-inner-spin-button,
+        ::-webkit-outer-spin-button {
+            height: auto;
+        }
+
+        [type='search'] {
+            -webkit-appearance: textfield;
+            outline-offset: -2px;
+        }
+
+        ::-webkit-search-decoration {
+            -webkit-appearance: none;
+        }
+
+        ::-webkit-file-upload-button {
+            -webkit-appearance: button;
+            font: inherit;
+        }
+
+        summary {
+            display: list-item;
+        }
+
+        blockquote,
+        dl,
+        dd,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        hr,
+        figure,
+        p,
+        pre {
+            margin: 0;
+        }
+
+        fieldset {
+            margin: 0;
+            padding: 0;
+        }
+
+        legend {
+            padding: 0;
+        }
+
+        ol,
+        ul,
+        menu {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        dialog {
+            padding: 0;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            opacity: 1;
+            color: #9ca3af;
+        }
+
+        button,
+        [role="button"] {
+            cursor: pointer;
+        }
+
+        :disabled {
+            cursor: default;
+        }
+
+        img,
+        svg,
+        video,
+        canvas,
+        audio,
+        iframe,
+        embed,
+        object {
+            display: block;
+            vertical-align: middle;
+        }
+
+        img,
+        video {
+            max-width: 100%;
+            height: auto;
+        }
+
+        [hidden] {
+            display: none;
+        }
+
+        .cls-w0eemd {
+            /* Couleur de fond du body - laissé blanc/clair */
+            background-color: rgb(240 248 255 / 1);
+            /* Alice Blue */
+            color: rgb(17 24 39 / 1);
+        }
+
+        .main-content {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            padding-top: 6rem;
+            padding-bottom: 6rem;
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 36rem;
+        }
+
+        .card-container {
+            border-width: 1px;
+            box-shadow: 0 0 #0000, 0 0 #0000, 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            /* Ombre plus visible */
+            padding: 2.5rem;
+            border-radius: 0.75rem;
+            /* Bordures plus rondes */
+            /* FOND SEMI-TRANSPARENT ET FLOUTÉ (65% Opacité + Flou) */
+            background-color: rgba(255, 255, 255, 0.224);
+            backdrop-filter: blur(-15px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .card-header {
+            margin-bottom: 2rem;
+            text-align: center;
+            /* Centrage du titre */
+        }
+
+        .heading-title {
+            font-weight: 700;
+            /* Plus gras */
+            font-size: 2rem;
+            /* Plus grand */
+            margin-bottom: 0;
+            /* Suppression de l'espace pour le sous-titre */
+            color: var(--gjs-t-color-secondary);
+            /* Bleu foncé */
+        }
+
+        /* Sous-titre (supprimé dans le HTML, conservé ici si besoin) */
+        /* .heading-subtitle { ... } */
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .field-group-nom {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .label-nom {
+            font-weight: 600;
+            color: var(--gjs-t-color-secondary);
+            /* Bleu foncé */
+        }
+
+        .input-nom {
+            width: 100%;
+            border-width: 1px;
+            border-color: #D1D5DB;
+            /* Gris clair */
+            border-radius: 0.375rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.625rem;
+            /* Un peu plus de padding */
+            padding-bottom: 0.625rem;
+            color: rgb(17 24 39 / 1);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .input-nom::placeholder {
+            color: rgb(156 163 175 / 1);
+        }
+
+        .input-nom:focus {
+            outline: 0;
+            border-color: var(--gjs-t-color-primary);
+            /* Bordure bleue au focus */
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.25);
+            /* Ombre bleue légère */
+        }
+
+        .field-group-dpartement {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .label-dpartement {
+            font-weight: 600;
+            color: var(--gjs-t-color-secondary);
+            /* Bleu foncé */
+        }
+
+        .select-dpartement {
+            width: 100%;
+            border-width: 1px;
+            border-color: #D1D5DB;
+            border-radius: 0.375rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.625rem;
+            padding-bottom: 0.625rem;
+            /* La transparence est gérée par le conteneur, mais on garde le fond blanc pour les navigateurs non compatibles */
+            background-color: rgb(255 255 255 / 1);
+            color: rgb(17 24 39 / 1);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .select-dpartement:focus {
+            outline: 0;
+            border-color: var(--gjs-t-color-primary);
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.25);
+        }
+
+        .field-group-profil {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .label-profil {
+            font-weight: 600;
+            color: var(--gjs-t-color-secondary);
+            /* Bleu foncé */
+        }
+
+        .select-profil {
+            width: 100%;
+            border-width: 1px;
+            border-color: #D1D5DB;
+            border-radius: 0.375rem;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+            padding-top: 0.625rem;
+            padding-bottom: 0.625rem;
+            /* La transparence est gérée par le conteneur, mais on garde le fond blanc pour les navigateurs non compatibles */
+            background-color: rgb(255 255 255 / 1);
+            color: rgb(17 24 39 / 1);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .select-profil:focus {
+            outline: 0;
+            border-color: var(--gjs-t-color-primary);
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.25);
+        }
+
+        .field-group-code-daccs {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .label-code-daccs {
+            font-weight: 600;
+            color: var(--gjs-t-color-secondary);
+            /* Bleu foncé */
+        }
+
+        .input-wrapper-code-daccs {
+            position: relative;
+        }
+
+        .input-code-daccs {
+            width: 100%;
+            border-width: 1px;
+            border-color: #D1D5DB;
+            border-radius: 0.375rem;
+            padding-left: 0.75rem;
+            padding-right: 2.75rem;
+            padding-top: 0.625rem;
+            padding-bottom: 0.625rem;
+            color: rgb(17 24 39 / 1);
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .input-code-daccs::placeholder {
+            color: rgb(156 163 175 / 1);
+        }
+
+        .input-code-daccs:focus {
+            outline: 0;
+            border-color: var(--gjs-t-color-primary);
+            box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.25);
+        }
+
+        .toggle-visibility-button {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translate(0, -50%) rotate(0) skewX(0) skewY(0) scaleX(1) scaleY(1);
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            color: var(--gjs-t-color-primary);
+            background-color: transparent;
+            border: none;
+        }
+
+        .toggle-visibility-button:hover {
+            background-color: rgb(240 248 255 / 1);
+            /* Alice Blue très clair */
+        }
+
+        .toggle-visibility-button:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            box-shadow: 0 0 0 2px var(--gjs-t-color-primary);
+        }
+
+        .action-group-submit {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .button-connexion {
+            width: 100%;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            padding-top: 0.75rem;
+            /* Plus de padding */
+            padding-bottom: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            /* Bordures plus rondes */
+            transition-property: background-color, opacity;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+            /* COULEUR DU BOUTON EN BLEU TRÈS FONCÉ */
+            background-color: #004D99;
+            color: white;
+            border: none;
+        }
+
+        .button-connexion:hover {
+            opacity: 0.9;
+            /* Effet au survol maintenu */
+            background-color: #003366;
+            /* Bleu encore plus foncé au survol (ajustement subtil) */
+        }
+
+        /* La classe helper-links est conservée mais le contenu a été supprimé */
+        .helper-links {
+            display: flex;
+            justify-content: center;
+        }
+
+        #page-login {
+            position: relative;
+            min-height: 100vh;
+            /* DEBUT DU COMMENTAIRE TAPE-À-L'OEIL */
+            /*
+             * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             * ATTENTION : METTRE ICI LE LIEN VERS VOTRE IMAGE DE FOND POUR UN THÈME BLEU COHÉRENT.
+             * L'IMAGE ACTUELLE EST UNE IMAGE PAR DÉFAUT QUI NE CORRESPOND PAS AU THÈME BLEU.
+             * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+             */
+            background-image: url("Sans titre-1.png");
+            /* Fin du lien par défaut. Remplacez-le. */
+            /* FIN DU COMMENTAIRE TAPE-À-L'OEIL */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .gjs-t-body {
+            background-color: inherit;
+            color: inherit;
+            font-size: 1rem;
+            line-height: 1.75rem;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .gjs-t-h1 {
+            color: var(--gjs-t-color-secondary);
+            font-size: 1.5rem;
+            line-height: 2.5rem;
+        }
+
+        .gjs-t-h2 {
+            color: var(--gjs-t-color-secondary);
+            /* Ajusté au bleu foncé */
+            font-size: 1rem;
+            /* Taille ajustée pour être plus sobre */
+            line-height: 1.75rem;
+        }
+
+        .gjs-t-button {
+            background-color: var(--gjs-t-color-primary);
+            color: white;
+            border-radius: 0.5rem;
+        }
+
+        .gjs-t-link {
+            color: var(--gjs-t-color-primary);
+            text-decoration: underline;
+        }
+
+        .gjs-t-border {
+            border-radius: 0.75rem;
+            /* Ajusté pour correspondre à card-container */
+            border-color: #e0e0e0;
+        }
+
+        #page-login::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 77, 153, 0.4);
+            /* Overlay bleu foncé semi-transparent */
+            z-index: 0;
+            pointer-events: none;
+        }
+
+
+        @media (max-width: 992px) {
+            .main-content {
+                padding-top: 4rem;
+                padding-bottom: 4rem;
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+            }
+
+            .card-container {
+                padding: 2rem;
+            }
+
+            .card-header {
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content {
+                padding-top: 3rem;
+                padding-bottom: 3rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .card-container {
+                padding: 1.25rem;
+            }
+
+            .card-header {
+                margin-bottom: 1.25rem;
+            }
+        }
+    </style>
 </head>
-<body>
 
-<div class="auth-container">
-  <h2>Votre Compte</h2>
+<body id="page-login" class="gjs-t-body cls-w0eemd">
+    <main id="ipu0j" class="main-content">
+        <section id="i5mqb" class="auth-card">
+            <div id="ic6eb" class="gjs-t-border card-container">
+                <header id="i43x5" class="card-header">
+                    <h1 id="i93qi" class="gjs-t-h1 heading-title">Connexion</h1>
+                </header>
+                <form method="post" id="iotvr" class="login-form">
+                    <div id="i1w5h" class="field-group-nom">
+                        <label for="nom" id="im1am" class="gjs-t-h2 label-nom">Nom</label>
+                        <input type="text" id="nom" name="nom" required autocomplete="name" placeholder="Entrez votre nom" class="gjs-t-border input-nom" />
+                    </div>
+                    <div id="ih7xj" class="field-group-dpartement">
+                        <label for="departement" id="ikvzy" class="gjs-t-h2 label-dpartement">Département</label>
 
-  <div class="tabs">
-    <div class="tab active" id="login-tab">Connexion</div>
-    <div class="tab" id="register-tab">Inscription</div>
-  </div>
+                        <select id="departement" name="departement_id" required class="gjs-t-border select-dpartement">
+                            <option value="" disabled selected hidden id="ih72g">Sélectionnez un département</option>
+                            <option value="1">Commune de nkayi</option>
+                            <option value="2">Département de la lékoumou</option>
+                            <option value="3">Commune de ouesso</option>
+                            <option value="4">Département de brazzaville</option>
+                            <option value="5">Département du Kouilou</option>
+                            <option value="6">Commune de pointe-noire</option>
+                            <option value="7">Département de la Likouala</option>
+                            <option value="8">Département de la cuvette</option>
+                            <option value="9">Département du niari</option>
+                            <option value="10">Commune de dolisie</option>
+                            <option value="11">Département de la bouenza</option>
+                            <option value="12">Département du pool</option>
+                            <option value="13">Département de la sangha</option>
+                            <option value="14">Département des plateaux</option>
+                            <option value="15">Commune de mossendjo</option>
+                            <option value="16">Département de la cuvette-ouest</option>
+                        </select>
+                    </div>
+                    <div id="iuvln" class="field-group-profil">
+                        <label for="profil" id="i9s5j" class="gjs-t-h2 label-profil">Profil</label>
+                        <select id="profil" name="profil" required class="gjs-t-border select-profil">
+                            <option value="" disabled selected hidden id="is79t">Sélectionnez un profil</option>
+                            <option value="agent" id="ipyv6">Agent</option>
+                            <option value="admin" id="iupdy">Admin</option>
+                            <option value="directeur departemental" id="ibbhj">Directeur Départemental</option>
+                            <option value="SD" id="i6dpx">Super Directeur</option>
+                        </select>
+                    </div>
+                    <div id="iga0z" class="field-group-code-daccs">
+                        <label for="code" id="if6j2" class="gjs-t-h2 label-code-daccs">Code d'accès</label>
+                        <div id="ifc1e" class="input-wrapper-code-daccs">
+                            <input type="password" id="code" name="code" required autocomplete="current-password" placeholder="Entrez votre code d'accès (max. 8 caractères)" class="gjs-t-border input-code-daccs" maxlength="8" />
+                            <button type="button" aria-label="Afficher ou masquer le code d'accès" aria-pressed="false" id="togglePassword" class="toggle-visibility-button">
+                                <img id="toggleIcon" src="https://api.iconify.design/lucide-eye.svg" alt="Basculer la visibilité" width="20" height="20" loading="lazy" />
+                            </button>
+                        </div>
+                    </div>
+                    <div id="iq4sf" class="action-group-submit">
+                        <button type="submit" id="i4onl" class="gjs-t-button button-connexion">Se connecter</button>
+                        <div id="i7uh8" class="helper-links">
+                            </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+  <script>
+document.addEventListener('DOMContentLoaded', () => {
 
-  <div id="message" class="message"></div>
-
-  <!-- Login Form -->
-  <form id="login-form" class="active">
-    <input type="email" id="login-email" placeholder="Email" required>
-    <input type="password" id="login-password" placeholder="Mot de passe" required>
-    <button type="submit">Se connecter</button>
-  </form>
-
-  <!-- Register Form -->
-  <form id="register-form">
-    <input type="text" id="reg-nom" placeholder="Nom complet" required>
-    <input type="email" id="reg-email" placeholder="Email" required>
-    <input type="password" id="reg-password" placeholder="Mot de passe" required>
-    <select id="reg-profil" required>
-      <option value="">Sélectionnez un profil</option>
-      <option value="agent">Agent</option>
-      <option value="agent_saisie">Agent Saisie</option>
-      <option value="admin">Admin</option>
-    </select>
-    <select id="reg-departement" required>
-      <option value="">Chargement des départements...</option>
-    </select>
-    <button type="submit">S'inscrire</button>
-  </form>
-</div>
-
-<script>
-  // ======= Switch Tabs =======
-  const loginTab = document.getElementById('login-tab');
-  const registerTab = document.getElementById('register-tab');
-  const loginForm = document.getElementById('login-form');
-  const registerForm = document.getElementById('register-form');
-  const messageEl = document.getElementById('message');
-
-  loginTab.addEventListener('click', () => {
-    loginTab.classList.add('active');
-    registerTab.classList.remove('active');
-    loginForm.classList.add('active');
-    registerForm.classList.remove('active');
-    messageEl.textContent = '';
-  });
-
-  registerTab.addEventListener('click', () => {
-    registerTab.classList.add('active');
-    loginTab.classList.remove('active');
-    registerForm.classList.add('active');
-    loginForm.classList.remove('active');
-    messageEl.textContent = '';
-  });
-
-  // ======= Backend URLs =======
-  const BASE_URL = 'https://moto-api-cika.onrender.com/api/auth';
-  const DEPT_URL = 'http:///moto-api-cika.onrender.com/departements';
-
-  // ======= Load Departements =======
-  async function loadDepartements() {
-    const select = document.getElementById('reg-departement');
-    try {
-      const res = await fetch(DEPT_URL);
-      const data = await res.json();
-      select.innerHTML = '';
-      if(res.ok){
-        data.departements.forEach(dep => {
-          const option = document.createElement('option');
-          option.value = dep.id;
-          option.textContent = dep.nom; // colonne du nom du département
-          select.appendChild(option);
+    // === Afficher/Masquer le code d’accès ===
+    const input = document.getElementById('code');
+    const btn = document.getElementById('togglePassword');
+    const icon = document.getElementById('toggleIcon');
+    if (btn && input && icon) {
+        btn.addEventListener('click', () => {
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.src = isPassword 
+                ? 'https://api.iconify.design/lucide-eye-off.svg'
+                : 'https://api.iconify.design/lucide-eye.svg';
         });
-      } else {
-        select.innerHTML = '<option value="">Erreur chargement</option>';
-        console.error(data.message);
-      }
-    } catch(err){
-      select.innerHTML = '<option value="">Erreur serveur</option>';
-      console.error(err);
     }
-  }
 
-  document.addEventListener('DOMContentLoaded', loadDepartements);
+    // === Mapping des départements ===
+    const departements = {
+        1: "Commune de nkayi",
+        2: "Département de la lékoumou",
+        3: "Commune de ouesso",
+        4: "Département de brazzaville",
+        5: "Département du Kouilou",
+        6: "Commune de pointe-noire",
+        7: "Département de la Likouala",
+        8: "Département de la cuvette",
+        9: "Département du niari",
+        10: "Commune de dolisie",
+        11: "Département de la bouenza",
+        12: "Département du pool",
+        13: "Département de la sangha",
+        14: "Département des plateaux",
+        15: "Commune de mossendjo",
+        16: "Département de la cuvette-ouest"
+    };
 
-// ======= Login =======
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  messageEl.textContent = '';
-  const email = document.getElementById('login-email').value;
-  const mot_de_passe = document.getElementById('login-password').value;
+    // === Configuration ===
+    const loginForm = document.getElementById('iotvr');
+    const API_URL = 'https://moto-api-cika.onrender.com/api/auth/login'; // ton backend sur Render
 
-  try {
-    const res = await fetch(`${BASE_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, mot_de_passe })
+    // === Soumission du formulaire ===
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(loginForm);
+        const deptId = parseInt(formData.get('departement_id'));
+        const data = {
+            nom: formData.get('nom'),
+            code: formData.get('code'),
+            profil: formData.get('profil'),
+            departement_id: deptId
+        };
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(result.message || 'Erreur lors de la connexion.');
+                return;
+            }
+
+            // === Connexion réussie ===
+            alert('Connexion réussie ✅');
+
+            // === Stockage des infos dans localStorage ===
+            if (result && result.user) {
+                localStorage.setItem('utilisateur_nom', result.user.nom || data.nom || '');
+                localStorage.setItem('utilisateur_departement_id', result.user.departement_id || data.departement_id || '');
+                localStorage.setItem('utilisateur_departement_nom', departements[deptId] || 'N/A');
+                localStorage.setItem('utilisateur_profil', result.user.profil || data.profil || '');
+                localStorage.setItem('token', result.token || '');
+
+                // Optionnel : stocker moto_id si renvoyé
+                if (result.moto_id) {
+                    localStorage.setItem('moto_id', result.moto_id);
+                }
+            }
+
+            // === Redirection selon le profil ===
+            switch (data.profil) {
+                case 'admin':
+                   window.location.href = '/frontend/admin_dashboard.html';
+                    break;
+                case 'agent':
+                    window.location.href = '/frontend/agent_dashboard.html';
+                    break;
+                case 'directeur departemental':
+                    window.location.href = '/frontend/directeur_dashboard.html';
+                    break;
+                case 'SD':
+                    window.location.href = '/frontend/sd_dashboard.html';
+                    break;
+                case 'super_directeur':
+                    window.location.href = '/frontend/super_directeur_dashboard.html';
+                    break;
+                default:
+                    window.location.href = '/frontend/index.html';
+            }
+
+        } catch (error) {
+            console.error('Erreur lors de la requête de connexion:', error);
+            alert('Une erreur s’est produite. Vérifiez votre connexion Internet.');
+        }
     });
-    const data = await res.json();
-
-    if(res.ok){
-      messageEl.textContent = 'Connexion réussie !';
-      messageEl.className = 'message success';
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirection selon le profil
-     switch(data.user.profil){
-  case 'agent_saisie':
-    window.location.href = 'moto1.html';
-    break;
-  case 'agent':
-    window.location.href = 'accueil_admin.html';
-    break;
-  case 'admin':
-    window.location.href = 'accueil_admin.html';
-    break;
-  default:
-    window.location.href = 'moto1.html';
-}
-
-    } else {
-      messageEl.textContent = data.message;
-      messageEl.className = 'message error';
-    }
-  } catch(err){
-    messageEl.textContent = 'Erreur serveur';
-    messageEl.className = 'message error';
-  }
 });
-
-  // ======= Register =======
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    messageEl.textContent = '';
-    const nom = document.getElementById('reg-nom').value;
-    const email = document.getElementById('reg-email').value;
-    const mot_de_passe = document.getElementById('reg-password').value;
-    const profil = document.getElementById('reg-profil').value;
-    const departement_id = parseInt(document.getElementById('reg-departement').value);
-
-    try {
-      const res = await fetch(`${BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nom, email, mot_de_passe, profil, departement_id })
-      });
-      const data = await res.json();
-      if(res.ok){
-        messageEl.textContent = 'Inscription réussie ! Connectez-vous.';
-        messageEl.className = 'message success';
-        loginTab.click();
-      } else {
-        messageEl.textContent = data.message;
-        messageEl.className = 'message error';
-      }
-    } catch(err){
-      messageEl.textContent = 'Erreur serveur';
-      messageEl.className = 'message error';
-    }
-  });
 </script>
 
 </body>
+
 </html>

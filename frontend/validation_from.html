@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation du Dossier Réussie</title>
+    <style>
+        /* --- Style Général & Variables --- */
+        :root {
+            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
+            --secondary-color: #00796b; /* Vert pour la réussite */
+            --background-color: #f5f7fa; /* Gris très clair (utilisé ici comme fallback) */
+            --text-color: #333;
+            --white-color: #ffffff;
+            --shadow: 0 8px 25px rgba(0,0,0,0.3); 
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center; 
+            align-items: center;   
+            min-height: 100vh;
+            
+            /* ============== */
+            /*  FOND DU BODY */
+            /* ==============*/
+            background-color: #f5f7fa;
+            background-image: url("image_fond_validé.png"); /* Image de fond */
+            background-size: cover;
+            background-position: center; /* Centre l'image */
+            background-attachment: fixed;
+        }
+
+        /*  boîte de Confirmation*/
+        .confirmation-container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            padding: 50px 30px;
+            border: 2px solid var(--secondary-color);
+            border-radius: var(--border-radius);
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px); 
+            box-shadow: var(--shadow);
+        }
+        
+        .success-icon {
+            color: var(--secondary-color);
+            margin-bottom: 25px;
+        }
+        
+        .success-icon svg {
+            width: 80px;
+            height: 80px;
+        }
+
+        .confirmation-container h1 {
+            font-size: 2rem;
+            color: var(--secondary-color);
+            margin-bottom: 15px;
+        }
+        
+        .confirmation-container p {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin-bottom: 30px;
+        }
+
+        .reference-info {
+            font-size: 1.2rem; 
+            font-weight: bold; 
+            margin-bottom: 40px;
+            padding: 15px;
+            background-color: #e8f5e9; /* Vert très clair */
+            border-radius: 5px;
+        }
+        
+        .reference-number {
+            color: #c62828; /* Rouge Alerte */
+        }
+
+        .btn {
+            padding: 12px 30px; border: none;
+            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: all 0.3s;
+            background-color: var(--primary-color); 
+            color: var(--white-color);
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #0a3579;
+        }
+
+        @media (max-width: 480px) {
+            .confirmation-container {
+                padding: 30px 20px;
+            }
+            .confirmation-container h1 {
+                font-size: 1.6rem;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="confirmation-container">
+        <div class="success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        
+        <h1>Dossier Validé avec Succès !</h1>
+        
+        <p>
+            L'enregistrement du dossier d'immatriculation a été **soumis et validé** dans la base de données. 
+            Le traitement peut maintenant commencer.
+        </p>
+        
+        <div class="reference-info">
+            Référence du Dossier : <span class="reference-number">REF-2025-PN-12345</span>
+        </div>
+        
+        <a href="agent_dashboard.html" class="btn">
+            Retourner au Tableau de Bord
+        </a>
+    </div>
+
+</body>
+</html>

@@ -111,9 +111,11 @@ export const addProprietaire = async (req, res) => {
     if (insertError) throw insertError;
 
     res.status(201).json({
-      message: 'Propriétaire ajouté avec succès',
-      proprietaire: data[0]
-    });
+  message: 'Propriétaire ajouté avec succès',
+  id: data[0].id,        // <- l'ID directement
+  proprietaire: data[0]  // <- si tu veux garder toutes les infos
+});
+
 
   } catch (err) {
     console.error('Erreur addProprietaire:', err);
