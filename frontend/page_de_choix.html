@@ -557,8 +557,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (selectedDeclarant) {
             const typeFr = selectedDeclarant.value;
             let pageUrl = '';
-            if (typeFr === 'Propriétaire') pageUrl = '/frontend/proprietaire-form.html';
-            else if (typeFr === 'Mandataire') pageUrl = '/frontend/mandataire-form.html';
+            if (typeFr === 'Propriétaire') pageUrl = 'proprietaire-form.html';
+            else if (typeFr === 'Mandataire') pageUrl = 'mandataire-form.html';
             if (pageUrl) window.location.href = pageUrl;
         } else {
             alert("Veuillez choisir un type de déclarant pour continuer.");

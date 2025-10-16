@@ -6,86 +6,15 @@ import supabase from '../config/db.js';
    ========================================================== */
 export const addDossier = async (req, res) => {
   try {
-    const {
-      moto_id,
-      proprietaire,
-      mandataire,
-      immatriculation_prov,
-      immatriculation_def,
-      agent_id
-    } = req.body;
+    const { moto_id, proprietaire_id, mandataire_id, immatriculation_prov, immatriculation_def, agent_id } = req.body;
 
     if (!moto_id) return res.status(400).json({ message: "ID de la moto obligatoire" });
+    if (!proprietaire_id && !mandataire_id) return res.status(400).json({ message: "Vous devez fournir au moins un propriétaire ou un mandataire" });
 
-    let proprietaire_id = null;
-    let mandataire_id = null;
-
-    // --- Gestion du propriétaire ---
-    if (proprietaire) {
-      const { nom, prenom, telephone, cni } = proprietaire;
-      if (!nom || !prenom || !telephone || !cni) {
-        return res.status(400).json({ message: "Nom, prénom, téléphone et CNI du propriétaire sont obligatoires" });
-      }
-
-      // Vérifier si le propriétaire existe déjà
-      const { data: existingProp } = await supabase
-        .from('proprietaires')
-        .select('id')
-        .or(`telephone.eq.${telephone},cni.eq.${cni}`)
-        .maybeSingle();
-
-      if (existingProp) {
-        proprietaire_id = existingProp.id;
-      } else {
-        const { data: propData, error: propError } = await supabase
-          .from('proprietaires')
-          .insert([proprietaire])
-          .select('id')
-          .single();
-
-        if (propError) return res.status(400).json({ message: propError.message });
-        proprietaire_id = propData.id;
-      }
-    }
-
-    // --- Gestion du mandataire ---
-    if (mandataire) {
-      const { nom, prenom, telephone, cni } = mandataire;
-      if (!nom || !prenom || !telephone || !cni) {
-        return res.status(400).json({ message: "Nom, prénom, téléphone et CNI du mandataire sont obligatoires" });
-      }
-
-      // Vérifier si le mandataire existe déjà
-      const { data: existingMand } = await supabase
-        .from('mandataires')
-        .select('id')
-        .or(`telephone.eq.${telephone},cni.eq.${cni}`)
-        .maybeSingle();
-
-      if (existingMand) {
-        mandataire_id = existingMand.id;
-      } else {
-        const { data: mandData, error: mandError } = await supabase
-          .from('mandataires')
-          .insert([mandataire])
-          .select('id')
-          .single();
-
-        if (mandError) return res.status(400).json({ message: mandError.message });
-        mandataire_id = mandData.id;
-      }
-    }
-
-    if (!proprietaire_id && !mandataire_id) {
-      return res.status(400).json({ message: "Vous devez fournir au moins un propriétaire ou un mandataire" });
-    }
-
-    // --- Détermination de l'acteur principal ---
     const acteur_id = proprietaire_id || mandataire_id;
     const acteur_type = proprietaire_id ? 'proprietaire' : 'mandataire';
 
-    // --- Création du dossier ---
-    const { data: dossier, error: dossierError } = await supabase
+    const { data: dossier, error } = await supabase
       .from('dossiers')
       .insert([{
         moto_id,
@@ -102,18 +31,15 @@ export const addDossier = async (req, res) => {
       .select('*')
       .single();
 
-    if (dossierError) return res.status(400).json({ message: dossierError.message });
+    if (error) return res.status(400).json({ message: error.message });
 
-    res.status(201).json({
-      message: 'Dossier créé avec succès',
-      dossier
-    });
-
+    res.status(201).json({ message: 'Dossier créé avec succès', dossier });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
+
 /* ==========================================================
    📋 LISTER TOUS LES DOSSIERS
    ========================================================== */
@@ -135,19 +61,19 @@ export const getDossiers = async (req, res) => {
     else if (role === 'admin') query = query.eq('statut', 'en_attente');
     else if (role === 'dd') query = query.eq('statut', 'provisoire');
 
-    // --- Filtres dynamiques ---
-    if (statut) query = query.eq('statut', statut);
-    if (acteur_nom) query = query.or(
-      `proprietaire.nom.ilike.%${acteur_nom}%,mandataire.nom.ilike.%${acteur_nom}%`
-    );
-
-    // ⚠️ Supabase ne supporte pas directement ilike sur jointures imbriquées, donc on filtre côté JS si nécessaire
     const { data, error } = await query;
     if (error) return res.status(400).json({ message: error.message });
 
     let filteredData = data;
+
     if (moto_marque) filteredData = filteredData.filter(d => d.moto?.marque?.toLowerCase().includes(moto_marque.toLowerCase()));
     if (moto_modele) filteredData = filteredData.filter(d => d.moto?.modele?.toLowerCase().includes(moto_modele.toLowerCase()));
+    if (acteur_nom) {
+      filteredData = filteredData.filter(d => 
+        d.proprietaire?.nom?.toLowerCase().includes(acteur_nom.toLowerCase()) ||
+        d.mandataire?.nom?.toLowerCase().includes(acteur_nom.toLowerCase())
+      );
+    }
 
     res.json({ dossiers: filteredData });
 
@@ -163,11 +89,36 @@ export const getDossiers = async (req, res) => {
 export const updateDossier = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     // ⚠️ Ne jamais mettre à jour acteur_id ou acteur_type manuellement
     delete updateData.acteur_id;
     delete updateData.acteur_type;
+
+    // ✅ Vérifier si les IDs fournis existent
+    if (updateData.proprietaire_id) {
+      const { data: prop, error: propErr } = await supabase
+        .from('proprietaires')
+        .select('id')
+        .eq('id', updateData.proprietaire_id)
+        .single();
+      if (propErr || !prop) return res.status(400).json({ message: "Propriétaire introuvable" });
+    }
+
+    if (updateData.mandataire_id) {
+      const { data: mand, error: mandErr } = await supabase
+        .from('mandataires')
+        .select('id')
+        .eq('id', updateData.mandataire_id)
+        .single();
+      if (mandErr || !mand) return res.status(400).json({ message: "Mandataire introuvable" });
+    }
+
+    // --- Si on change l'acteur principal, on le met à jour automatiquement ---
+    if (updateData.proprietaire_id || updateData.mandataire_id) {
+      updateData.acteur_id = updateData.proprietaire_id || updateData.mandataire_id;
+      updateData.acteur_type = updateData.proprietaire_id ? 'proprietaire' : 'mandataire';
+    }
 
     const { data, error } = await supabase
       .from('dossiers')

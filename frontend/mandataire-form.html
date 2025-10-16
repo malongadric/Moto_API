@@ -366,6 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Soumission du formulaire : enregistre propriétaire puis mandataire
     mandataireForm.addEventListener('submit', async function(e) {
         e.preventDefault();
 
@@ -378,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // --- Données du propriétaire ---
+        // --- 1) Préparer les données Propriétaire ---
         const proprietaireData = {
             nom: document.getElementById('nom').value.trim(),
             prenom: document.getElementById('prenom').value.trim(),
@@ -395,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cree_par: storedUser.id || storedUser.user_id || null
         };
 
-        // --- Données du mandataire ---
+        // --- 2) Préparer les données Mandataire ---
         const mandataireData = {
             nom: document.getElementById('mandat_nom').value.trim(),
             prenom: document.getElementById('mandat_prenom').value.trim(),
@@ -408,12 +409,18 @@ document.addEventListener('DOMContentLoaded', function() {
             ville: document.getElementById('mandat_ville').value.trim() || null,
             adresse: document.getElementById('mandat_adresse').value.trim() || null,
             lien_proprietaire: document.getElementById('lien_proprietaire').value.trim() || null,
+            moto_id: localStorage.getItem('moto_id') ? Number(localStorage.getItem('moto_id')) : null,
             departement_id: storedUser.departement_id || null,
             cree_par: storedUser.id || storedUser.user_id || null
         };
 
+        if (!mandataireData.moto_id) {
+            alert("❌ Impossible d'enregistrer le mandataire : moto_id manquant.");
+            return;
+        }
+
         try {
-            // ====== 1️⃣ Enregistrement du propriétaire ======
+            // ------- 3) Enregistrer le Propriétaire -------
             const respProp = await fetch('https://moto-api-cika.onrender.com/api/proprietaires', {
                 method: 'POST',
                 headers: {
@@ -424,53 +431,58 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (!respProp.ok) {
-                const errText = await respProp.text();
-                throw new Error(`Erreur Propriétaire: ${errText}`);
+                let errText;
+                try { errText = await respProp.json(); }
+                catch { errText = await respProp.text(); }
+                throw new Error(`Erreur Propriétaire: ${JSON.stringify(errText)}`);
             }
 
             const proprietaireCreated = await respProp.json();
-            console.log('✅ Réponse propriétaire brute:', proprietaireCreated);
-
-            // Vérifie toutes les formes possibles
-            const proprietaire_id =
-                proprietaireCreated.id ||
-                (proprietaireCreated.data && proprietaireCreated.data.id) ||
-                proprietaireCreated.proprietaire_id ||
-                null;
-
+            const proprietaire_id = proprietaireCreated.proprietaire?.id || proprietaireCreated.id || proprietaireCreated._id;
             if (!proprietaire_id) {
+                console.warn('Réponse propriétaire (sans id):', proprietaireCreated);
                 throw new Error('Impossible de récupérer proprietaire_id depuis la réponse.');
             }
 
-            console.log('🆔 Propriétaire créé avec ID =', proprietaire_id);
-            localStorage.setItem('proprietaire_id', proprietaire_id);
+            localStorage.setItem('proprietaire_id', String(proprietaire_id));
+            console.log('Propriétaire créé id =', proprietaire_id);
 
-            // ====== 2️⃣ Enregistrement du mandataire lié ======
+            // ------- 4) Enregistrer le Mandataire -------
             mandataireData.proprietaire_id = proprietaire_id;
 
-            const respMand = await fetch('https://moto-api-cika.onrender.com/api/mandataire', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(mandataireData)
-            });
+           // ... le reste du code reste identique
 
-            if (!respMand.ok) {
-                const errText = await respMand.text();
-                throw new Error(`Erreur Mandataire: ${errText}`);
-            }
+const respMand = await fetch('https://moto-api-cika.onrender.com/api/mandataire', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(mandataireData)
+});
 
-            const mandataireCreated = await respMand.json();
-            console.log('✅ Mandataire créé avec succès:', mandataireCreated);
+if (!respMand.ok) {
+    let errText;
+    try { errText = await respMand.json(); }
+    catch { errText = await respMand.text(); }
+    throw new Error(`Erreur Mandataire: ${JSON.stringify(errText)}`);
+}
 
-            alert('✅ Enregistrement réussi : Propriétaire et Mandataire enregistrés avec succès.');
-            mandataireForm.reset();
+const mandataireCreated = await respMand.json();
+const mandataire_id = mandataireCreated.id ?? mandataireCreated._id ?? mandataireCreated.mandataire_id;
+if (mandataire_id) localStorage.setItem('mandataire_id', String(mandataire_id));
+
+console.log('Mandataire créé :', mandataireCreated);
+alert('✅ Enregistrement réussi : propriétaire et mandataire créés et liés.');
+mandataireForm.reset();
+
+// --- REDIRECTION APRÈS SUCCÈS ---
+window.location.href = 'validation_from.html'; // <-- adapte le chemin de ta page
+
 
         } catch (err) {
-            console.error('❌ Erreur complète :', err);
-            alert('❌ Une erreur est survenue : ' + err.message);
+            console.error('Erreur lors de la séquence propriétaire->mandataire :', err);
+            alert('❌ Une erreur est survenue : ' + (err.message || err));
         }
     });
 
