@@ -33,51 +33,89 @@ const getCode = (profil, departement_id) => {
   }
 }
 
-// ----------------- LOGIN -----------------
+// ----------------- LOGIN CORRIGÉ -----------------
 export const login = async (req, res) => {
   try {
-    const { nom, departement_id, profil, code } = req.body
+    const { nom, departement_id, profil, code } = req.body;
 
     if (!nom || !departement_id || !profil || !code) {
-      return res.status(400).json({ message: 'Nom, département, profil et code requis' })
+      return res.status(400).json({ message: 'Nom, département, profil et code requis' });
     }
 
-    // Chercher l'utilisateur
     let { data: user, error } = await supabase
       .from('utilisateurs')
       .select('*')
       .eq('nom', nom)
       .eq('departement_id', departement_id)
       .eq('profil', profil)
-      .single()
+      .single();
 
-    // Si pas trouvé -> créer automatiquement
+    // Si utilisateur pas trouvé -> création automatique
     if (error && error.code === 'PGRST116') {
       const { data: newUser, error: insertErr } = await supabase
         .from('utilisateurs')
-        .insert([{ nom, profil, departement_id, actif: true, cree_le: new Date() }])
-        .select()
-      if (insertErr) return res.status(500).json({ message: 'Erreur création utilisateur', erreur: insertErr.message })
-      user = newUser[0]
+        .insert([
+          {
+            nom,
+            profil,
+            departement_id: Number(departement_id),
+            actif: true,
+            cree_le: new Date()
+          }
+        ])
+        .select();
+
+      if (insertErr) {
+        return res.status(500).json({ message: 'Erreur création utilisateur', erreur: insertErr.message });
+      }
+
+      user = newUser[0];
     } else if (error) {
-      return res.status(500).json({ message: 'Erreur serveur', erreur: error.message })
+      return res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
     }
 
-    // Vérifier le code
-    const expectedCode = getCode(profil, departement_id)
+    // Vérification du code
+    const getCode = (profil, departement_id) => {
+      const departementPart = `A${departement_id}2025`;
+      switch(profil){
+        case 'agent': return `${departementPart}B`;
+        case 'admin': return `${departementPart}D`;
+        case 'directeur departemental': return `${departementPart}DD`;
+        case 'SD': return `${departementPart}S`;
+        case 'super_directeur': return `${departementPart}SD`;
+        default: return '';
+      }
+    }
+
+    const expectedCode = getCode(profil, departement_id);
     if (code !== expectedCode) {
-      return res.status(400).json({ message: 'Code incorrect' })
+      return res.status(400).json({ message: 'Code incorrect' });
     }
 
-    // Générer JWT
-    const token = jwt.sign({ ...formatUser(user) }, process.env.JWT_SECRET, { expiresIn: '12h' })
+    // Formatage user pour token et frontend
+    const formattedUser = {
+      id: user.id,
+      nom: user.nom,
+      profil: user.profil,
+      departement_id: Number(user.departement_id) || 0,
+      permissions: getPermissions(user.profil)
+    };
 
-    res.json({ message: 'Connexion réussie', user: formatUser(user), token })
+    // Génération du JWT
+    const token = jwt.sign(formattedUser, process.env.JWT_SECRET, { expiresIn: '12h' });
+
+    res.json({
+      message: 'Connexion réussie',
+      user: formattedUser,
+      token
+    });
 
   } catch (err) {
-    res.status(500).json({ message: 'Erreur serveur', erreur: err.message })
+    console.error('Erreur login :', err);
+    res.status(500).json({ message: 'Erreur serveur', erreur: err.message });
   }
-}
+};
+
 
 // ----------------- GET USERS / STATS -----------------
 export const getUsers = async (req, res) => {

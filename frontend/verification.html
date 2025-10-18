@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation Dossier - Référence Spécifique</title>
+    <style>
+        /* --- Style Général & Variables --- */
+        :root {
+            --primary-color: #0d47a1; 
+            --secondary-color: #00796b; 
+            --danger-color: #d32f2f; 
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 8px 30px rgba(0,0,0,0.4);
+            --border-radius: 8px; /* Légèrement réduit */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto;
+            
+            /* --- ARRIÈRE-PLAN AVEC IMAGE PERSONNALISÉE --- */
+            background-image: url('/* LIEN VERS VOTRE IMAGE DE FOND */'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* --- Zone de Contenu Principal (Le formulaire flottant) --- */
+        .main-content {
+            width: 90%;
+            max-width: 700px; /* RÉDUIT : 900px -> 700px */
+            margin: 30px auto; /* Marge réduite */
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(5px);
+        }
+
+        .main-header {
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            padding: 15px 20px; /* RÉDUIT : 20px -> 15px */
+            text-align: center;
+        }
+        
+        .main-header h2 {
+            margin: 0;
+            font-size: 1.6rem; /* Légèrement réduit */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content-area {
+            padding: 20px; /* RÉDUIT : 30px -> 20px */
+        }
+
+        /* --- Style des composants (Similaire à l'original) --- */
+        .form-section-title {
+            font-size: 1.2rem; /* Légèrement réduit */
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 0; 
+            margin-bottom: 8px; /* Réduit */
+            padding-bottom: 8px; /* Réduit */
+            border-bottom: 2px solid var(--secondary-color);
+        }
+
+        .confirmation-summary {
+            background-color: var(--background-color);
+            padding: 20px; /* RÉDUIT : 25px -> 20px */
+            border-radius: var(--border-radius);
+            margin-bottom: 20px; /* Réduit */
+            border: 1px solid var(--border-color);
+        }
+        .confirmation-summary h4 {
+            color: var(--primary-color); margin-top: 20px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color); font-size: 1.1rem; /* Réduit */
+        }
+        .confirmation-summary h4:first-child { margin-top: 0; }
+        .confirmation-summary p { display: flex; justify-content: space-between; margin: 6px 0; font-size: 0.95rem; /* Réduit */ }
+        .confirmation-summary span.label { font-weight: 500; color: #555; margin-right: 15px; }
+        .confirmation-summary strong.value { font-weight: 700; color: var(--text-color); text-align: right; }
+
+        .info-message {
+            padding: 12px; /* Réduit */
+            border-left: 4px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 15px; /* Réduit */
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end; 
+            margin-top: 20px; /* Réduit */
+            gap: 10px; /* Réduit */
+        }
+        
+        .btn { 
+            padding: 8px 20px; /* RÉDUIT la taille des boutons */
+            border: none; 
+            border-radius: 6px; 
+            font-size: 0.9rem; /* Réduit */
+            font-weight: bold; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            transition: all 0.3s; 
+        }
+        .btn-secondary { background-color: var(--border-color); color: var(--text-color); }
+        .btn-primary { background-color: var(--secondary-color); color: var(--white-color); }
+        .btn-danger { background-color: var(--danger-color); color: var(--white-color); }
+
+        .btn-secondary:hover, .btn-primary:hover, .btn-danger:hover { transform: translateY(-1px); }
+
+        /* Média Query pour mobile (Ajustements pour l'espace) */
+        @media (max-width: 768px) {
+            .main-content { margin: 15px auto; width: 95%; max-width: 100%; }
+            .content-area { padding: 15px; }
+            .form-actions { flex-direction: column; gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <header class="main-header">
+            <h2 id="page-title">Validation du Dossier</h2>
+        </header>
+
+        <main class="content-area">
+             <section id="details-section" class="content-section active">
+                <h3 class="form-section-title">Validation du Dossier: <span id="detail-ref-title"></span></h3>
+
+                <div class="info-message">
+                    <p style="margin: 0; font-size: 0.9rem;"><strong>Vérification :</strong> Veuillez inspecter l'ensemble des informations et des pièces justificatives avant de prendre une décision. Le statut actuel est **"En Attente de Validation Supérieure"**.</p>
+                </div>
+                
+                <div class="confirmation-summary" id="detail-summary">
+                    </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="btn-retour-liste">Retour à la Liste</button>
+                    <button type="button" class="btn btn-danger" id="btn-rejeter-dossier">Rejeter le Dossier</button>
+                    <button type="button" class="btn btn-primary" id="btn-valider-dossier">Valider le Dossier</button>
+                </div>
+            </section>
+        </main>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    const detailSummary = document.getElementById('detail-summary');
+    const detailRefTitle = document.getElementById('detail-ref-title');
+    const pageTitle = document.getElementById('page-title');
+
+    // 🔹 Récupération de l'ID ou référence depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const dossierId = urlParams.get('id');      // ex: id=16
+    const dossierRef = urlParams.get('ref');    // ex: ref=REF-2025-PN-29
+
+    // 🔹 Récupération du token depuis le localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+        detailSummary.innerHTML = '<p>❌ Vous devez être connecté pour voir ce dossier.</p>';
+        detailRefTitle.textContent = "Erreur";
+        return;
+    }
+
+    const fetchOptions = {
+        headers: {
+            'Authorization': `Bearer ${token}`  // juste le token pour GET
+        }
+    };
+
+    try {
+        let url = 'https://moto-api-cika.onrender.com/api/dossiers';
+        if (dossierId) url += `/${dossierId}`;
+        else if (dossierRef) url += `?reference=${encodeURIComponent(dossierRef)}`;
+
+        const response = await fetch(url, fetchOptions);
+
+        if (response.status === 401) throw new Error('Non autorisé : veuillez vous reconnecter');
+        if (response.status === 404) throw new Error('Dossier non trouvé');
+        if (response.status === 400) throw new Error('Impossible de récupérer les dossiers');
+
+        const result = await response.json();
+        let data = result;
+
+        // Si on récupère une liste, prend le premier dossier correspondant
+        if (Array.isArray(result)) {
+            if (result.length === 0) throw new Error('Dossier non trouvé');
+            data = result[0];
+        }
+
+        // 🔹 Affichage des infos
+        detailRefTitle.textContent = data.reference_dossier || dossierId || dossierRef;
+        pageTitle.textContent = `Validation du Dossier: ${data.reference_dossier || dossierId || dossierRef}`;
+
+        let htmlContent = `
+            <h4>A. Informations Propriétaire / Déclarant</h4>
+            <p><span class="label">Type de déclarant:</span> <strong>${data.acteur_type}</strong></p>
+            ${data.proprietaire ? `
+                <p><span class="label">Nom Propriétaire:</span> <strong>${data.proprietaire.nom} ${data.proprietaire.prenom}</strong></p>
+                <p><span class="label">N° Pièce Propriétaire:</span> <strong>${data.proprietaire.cni}</strong></p>
+            ` : ''}
+            ${data.mandataire ? `
+                <hr style="border-style: dashed; border-color: #ddd;">
+                <p><span class="label">Nom Mandataire:</span> <strong>${data.mandataire.nom} ${data.mandataire.prenom}</strong></p>
+                <p><span class="label">N° Pièce Mandataire:</span> <strong>${data.mandataire.cni}</strong></p>
+                <p><span class="label">Téléphone Mandataire:</span> <strong>${data.mandataire.telephone}</strong></p>
+            ` : ''}
+            <h4 style="margin-top: 20px;">B. Informations de la Moto</h4>
+            ${data.moto ? `
+                <p><span class="label">Marque / Modèle:</span> <strong>${data.moto.marque} ${data.moto.modele}</strong></p>
+                <p><span class="label">N° Série (Châssis):</span> <strong>${data.moto.numero_chassis}</strong></p>
+                <p><span class="label">Couleur:</span> <strong>${data.moto.couleur}</strong></p>
+                <p><span class="label">Source d'Acquisition:</span> <strong>${data.moto.source_acquisition}</strong></p>
+                <p><span class="label">Date d'Acquisition:</span> <strong>${data.moto.date_acquisition}</strong></p>
+            ` : ''}
+            <h4 style="margin-top: 20px;">C. Traçabilité du Dossier</h4>
+            <p><span class="label">Référence du Dossier:</span> <strong>${data.reference_dossier}</strong></p>
+            <p><span class="label">Agent Traitant:</span> <strong>${data.agent.nom} ${data.agent.prenom}</strong></p>
+            <p><span class="label">Date de Création:</span> <strong>${new Date(data.date_soumission).toLocaleString()}</strong></p>
+        `;
+
+        detailSummary.innerHTML = htmlContent;
+
+    } catch (error) {
+        detailSummary.innerHTML = `<p>❌ Impossible de récupérer le dossier : ${error.message}</p>`;
+        detailRefTitle.textContent = "Erreur";
+        console.error(error);
+    }
+
+    // --- Boutons pour valider ou rejeter ---
+    document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
+        try {
+            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossierId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ statut: 'validé' })
+            });
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
+            alert(`✅ DOSSIER VALIDÉ : La référence ${dossierId} est VALIDE.`);
+        } catch (err) {
+            alert(`❌ Échec de validation : ${err.message}`);
+        }
+    });
+
+    document.getElementById('btn-rejeter-dossier').addEventListener('click', async () => {
+        const motif = prompt(`⚠️ MOTIF DE REJET :`);
+        if (!motif) return;
+        try {
+            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossierId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ statut: 'rejeté', motif })
+            });
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
+            alert(`❌ DOSSIER REJETÉ : Motif : ${motif}`);
+        } catch (err) {
+            alert(`❌ Échec de rejet : ${err.message}`);
+        }
+    });
+
+    document.getElementById('btn-retour-liste').addEventListener('click', () => {
+        window.location.href = 'liste_dossiers.html';
+    });
+});
+</script>
+
+
+</body>
+</html>

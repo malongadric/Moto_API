@@ -1,48 +1,45 @@
+// middlewares/auth.js
 import jwt from 'jsonwebtoken'
 
-const ROLE_HIERARCHY = {
-  super_directeur: 4,
-  SD: 3,
-  admin: 2,
-  directeur_departemental: 2,
-  agent: 1,
-  agent_saisie: 1
-}
-
-// Vérifier le token JWT
+// 🔹 Vérifier le token JWT et décoder le profil
 export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization']
-  if (!authHeader) return res.status(401).json({ message: 'Token manquant' })
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) return res.status(401).json({ message: 'Token manquant' });
 
-  const token = authHeader.split(' ')[1]
-  if (!token) return res.status(401).json({ message: 'Token manquant' })
+  const token = authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Token manquant' });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    req.user = decoded
-    next()
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // On met uniquement les infos utiles dans req.user
+    req.user = {
+      id: decoded.id,
+      nom: decoded.nom,
+      email: decoded.email,
+      profil: decoded.profil,           // <-- important : doit correspondre au champ "profil" dans la DB/token
+      departement_id: decoded.departement_id
+    };
+
+    next();
   } catch (err) {
-    console.warn(`Token invalide pour ${req.ip}: ${err.message}`)
-    return res.status(403).json({ message: 'Token invalide', erreur: err.message })
+    console.warn(`Token invalide pour ${req.ip}: ${err.message}`);
+    return res.status(401).json({ message: 'Token invalide', erreur: err.message });
   }
-}
+};
 
-// Vérifier le rôle
-export const checkRole = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ message: 'Utilisateur non authentifié' })
+// 🔹 Vérifier le profil autorisé
+export const checkRole = (...allowedProfiles) => (req, res, next) => {
+  const userProfil = req.user?.profil;
+  if (!userProfil) return res.status(401).json({ message: 'Utilisateur non authentifié' });
 
-    const userRoleLevel = ROLE_HIERARCHY[req.user.profil] || 0
-    const allowedLevels = allowedRoles.map(r => ROLE_HIERARCHY[r] || 0)
-
-    const hasAccess = allowedLevels.some(level => userRoleLevel >= level)
-    if (!hasAccess) {
-      console.warn(`Accès refusé pour ${req.user.email} (${req.user.profil}) sur ${req.originalUrl}`)
-      return res.status(403).json({
-        message: `Accès refusé : le profil "${req.user.profil}" n'est pas autorisé pour cette route`
-      })
-    }
-
-    next()
+  // Si le profil de l'utilisateur n'est pas dans la liste autorisée
+  if (!allowedProfiles.includes(userProfil)) {
+    console.warn(`Accès refusé pour ${req.user.email} (${userProfil}) sur ${req.originalUrl}`);
+    return res.status(403).json({
+      message: `Droits insuffisants : le profil "${userProfil}" n'est pas autorisé pour cette route`
+    });
   }
-}
+
+  next();
+};

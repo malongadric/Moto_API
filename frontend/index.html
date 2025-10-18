@@ -696,7 +696,8 @@
             </div>
         </section>
     </main>
-  <script>
+    
+ <script>
 document.addEventListener('DOMContentLoaded', () => {
 
     // === Afficher/Masquer le code d’accès ===
@@ -735,14 +736,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Configuration ===
     const loginForm = document.getElementById('iotvr');
-    const API_URL = 'https://moto-api-cika.onrender.com/api/auth/login'; // ton backend sur Render
+    const API_URL = 'https://moto-api-cika.onrender.com/api/auth/login'; // backend sur Render
 
     // === Soumission du formulaire ===
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(loginForm);
-        const deptId = parseInt(formData.get('departement_id'));
+        const deptId = parseInt(formData.get('departement_id')); // facultatif
         const data = {
             nom: formData.get('nom'),
             code: formData.get('code'),
@@ -767,11 +768,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // === Connexion réussie ===
             alert('Connexion réussie ✅');
 
-            // === Stockage des infos dans localStorage ===
+            // === Stockage des infos utilisateur dans localStorage ===
             if (result && result.user) {
+                localStorage.setItem('user_id', result.user.id || '');
                 localStorage.setItem('utilisateur_nom', result.user.nom || data.nom || '');
                 localStorage.setItem('utilisateur_departement_id', result.user.departement_id || data.departement_id || '');
-                localStorage.setItem('utilisateur_departement_nom', departements[deptId] || 'N/A');
+                localStorage.setItem('utilisateur_departement_nom', departements[result.user.departement_id] || 'N/A');
                 localStorage.setItem('utilisateur_profil', result.user.profil || data.profil || '');
                 localStorage.setItem('token', result.token || '');
 
@@ -782,24 +784,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // === Redirection selon le profil ===
-            switch (data.profil) {
+            switch (result.user.profil) {
                 case 'admin':
                    window.location.href = 'admin_dashboard.html';
-                    break;
+                   break;
                 case 'agent':
-                    window.location.href = 'agent_dashboard.html';
-                    break;
+                   window.location.href = 'agent_dashboard.html';
+                   break;
                 case 'directeur departemental':
-                    window.location.href = 'directeur_dashboard.html';
-                    break;
+                   window.location.href = 'directeur_dashboard.html';
+                   break;
                 case 'SD':
-                    window.location.href = 'sd_dashboard.html';
-                    break;
+                   window.location.href = 'sd_dashboard.html';
+                   break;
                 case 'super_directeur':
-                    window.location.href = 'super_directeur_dashboard.html';
-                    break;
+                   window.location.href = 'super_directeur_dashboard.html';
+                   break;
                 default:
-                    window.location.href = 'index.html';
+                   window.location.href = 'index.html';
             }
 
         } catch (error) {
@@ -809,5 +811,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+
 </body>
 </html>

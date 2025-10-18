@@ -3,13 +3,14 @@ import supabase from '../config/db.js';
 
 /**
  * Attribue un numéro d'immatriculation à une moto
- * ⚠️ Met à jour la séquence correspondante
+ * et met à jour le dossier correspondant
  */
 export const attribuerNumero = async (req, res) => {
   try {
     const { motoId } = req.params;
     const userId = req.user.id;
-    const userRole = req.user.profil; 
+    const userRole = req.user.profil;
+    const departementId = req.user.departement_id;
 
     if (userRole !== 'admin') {
       return res.status(403).json({ message: 'Vous n’avez pas le droit d’attribuer un numéro.' });
@@ -18,7 +19,7 @@ export const attribuerNumero = async (req, res) => {
     // 1️⃣ Vérifie si la moto existe
     const { data: moto, error: motoError } = await supabase
       .from('motos')
-      .select('*')
+      .select('*, dossier_id')
       .eq('id', motoId)
       .single();
 
@@ -27,7 +28,7 @@ export const attribuerNumero = async (req, res) => {
     }
 
     // 2️⃣ Vérifie si la moto a déjà un numéro
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing } = await supabase
       .from('immatriculations')
       .select('id')
       .eq('moto_id', motoId)
@@ -38,10 +39,8 @@ export const attribuerNumero = async (req, res) => {
     }
 
     const typeVehicule = 'TAXI';
-    const departementId = req.user.departement_id;
 
-
-    // 3️⃣ Récupère la séquence actuelle pour ce département et type
+    // Récupère la séquence pour ce département et type
     let { data: sequenceData, error: seqError } = await supabase
       .from('sequences_immatriculations')
       .select('*')
@@ -50,7 +49,6 @@ export const attribuerNumero = async (req, res) => {
       .single();
 
     if (seqError && seqError.code === 'PGRST116') {
-      // pas de séquence existante → crée une nouvelle
       const { data: newSeq, error: newSeqError } = await supabase
         .from('sequences_immatriculations')
         .insert([{ departement_id: departementId, type_vehicule: typeVehicule, last_sequence: 0, last_serie: 'A' }])
@@ -60,21 +58,20 @@ export const attribuerNumero = async (req, res) => {
       sequenceData = newSeq;
     } else if (seqError) throw seqError;
 
-    // 4️⃣ Génère la prochaine immatriculation
+    //  Génère la prochaine immatriculation
     let nextSequence = sequenceData.last_sequence + 1;
     let nextSerie = sequenceData.last_serie;
 
-    // Si dépasse 999, réinitialise séquence et incrémente série
     if (nextSequence > 999) {
       nextSequence = 1;
       nextSerie = String.fromCharCode(nextSerie.charCodeAt(0) + 1);
-      if (nextSerie > 'Z') nextSerie = 'A'; // reboucle après Z
+      if (nextSerie > 'Z') nextSerie = 'A';
     }
 
     const seqFormatted = String(nextSequence).padStart(3, '0');
     const numeroImmatriculation = `${typeVehicule} ${seqFormatted} ${nextSerie}${departementId}`;
 
-    // 5️⃣ Met à jour la table sequences_immatriculations
+    // 5️⃣ Met à jour la séquence
     const { error: updateSeqError } = await supabase
       .from('sequences_immatriculations')
       .update({ last_sequence: nextSequence, last_serie: nextSerie })
@@ -83,7 +80,7 @@ export const attribuerNumero = async (req, res) => {
 
     if (updateSeqError) throw updateSeqError;
 
-    // 6️⃣ Insère la nouvelle immatriculation
+    // 6️⃣ Insère dans la table immatriculations
     const { data: immatriculationData, error: insertError } = await supabase
       .from('immatriculations')
       .insert([{
@@ -96,13 +93,28 @@ export const attribuerNumero = async (req, res) => {
 
     if (insertError) throw insertError;
 
+    // 7️⃣ Met à jour le dossier lié à cette moto
+    if (moto.dossier_id) {
+      const { error: dossierError } = await supabase
+        .from('dossiers')
+        .update({ immatriculation_provisoire: numeroImmatriculation })
+        .eq('id', moto.dossier_id);
+
+      if (dossierError) console.error('Erreur mise à jour dossier:', dossierError);
+    }
+
+    // ✅ Résultat final
     res.status(201).json({
       message: 'Numéro attribué avec succès',
+      numeroImmatriculation,
       immatriculation: immatriculationData
     });
 
   } catch (err) {
     console.error('Erreur attribuerNumero:', err);
-    res.status(500).json({ message: 'Erreur lors de l’attribution du numéro', erreur: err.message });
+    res.status(500).json({
+      message: 'Erreur lors de l’attribution du numéro',
+      erreur: err.message
+    });
   }
 };

@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>CERTIFICAT PROVISOIRE DE MISE EN CIRCULATION D'UNE MOTO TAXI</title>
+    <style>
+        /* ========================================================= */
+        /* 1. RÈGLE D'IMPRESSION A4 ET MARGES */
+        /* ========================================================= */
+        @page {
+            size: A4 portrait; /* Format 210mm x 297mm */
+            margin: 0; /* Supprime les marges par défaut pour un meilleur contrôle */
+        }
+        
+        /* ========================================================= */
+        /* 2. INTÉGRATION DE LA POLICE */
+        /* ========================================================= */
+        @font-face {
+            font-family: 'YardmasterD';
+            /* NOTE: Assurez-vous que le fichier 'Yardmaster D.ttf' est dans le même répertoire */
+            src: url('Yardmaster D.ttf') format('truetype'); 
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* Styles généraux */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0; 
+            
+            /* 🛑 FOND D'IMAGE ET CENTRAGE VERTICAL 🛑 */
+            background-image: url("image_fond_validé.png"); /* ⬅️ REMPLACEZ PAR VOTRE CHEMIN D'IMAGE */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            
+            display: flex;
+            justify-content: center; /* Centre horizontalement */
+            align-items: center; /* Centre verticalement */
+            min-height: 100vh;
+            padding: 20px; 
+            box-sizing: border-box; 
+            position: relative; /* Pour positionner le bouton Envoyer */
+        }
+
+        /* .document EST LE CONTENEUR PRINCIPAL */
+        .document {
+            background-color: #ffffff;
+            padding: 30px 40px; 
+            border: 1px solid #000;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); 
+            width: 210mm; 
+            max-width: 900px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* ========================================================= */
+        /* 3. STYLES DU BOUTON */
+        /* ========================================================= */
+        .print-button {
+            /* Le bouton doit être positionné par rapport au body ou au document, 
+               je le garde absolu par rapport au body parent si le body est positionné relatif */
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #28a745; 
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+        
+        /* Suppression des blocs administratifs */
+        .header-top, .bloc-gauche, .bloc-droite {
+            display: none !important; 
+        }
+        
+        /* Styles pour le titre principal (maintenant stylisé) */
+        header {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 30px; 
+            border-top: 2px solid #000; 
+            padding-top: 15px;
+            padding-bottom: 5px;
+            display: block;
+        }
+
+        header h1 {
+            font-family: 'YardmasterD', 'Times New Roman', serif;
+            font-size: 36px; 
+            font-weight: 900; 
+            color: #333;
+            line-height: 1.2;
+            letter-spacing: 4px; 
+            border-bottom: 2px solid #000; 
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        /* Ligne de démarcation retirée */
+        .demarcation-line {
+            display: none;
+        }
+
+        /* Styles pour les lignes d'information */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .label-inline {
+            font-weight: normal;
+            white-space: nowrap;
+        }
+
+        /* Classe pour tous les champs dynamiques */
+        .data-field {
+            font-weight: bold;
+            flex-grow: 1;
+            padding-left: 5px;
+            display: inline-block;
+            color: #555; /* Couleur de placeholder */
+        }
+
+        .underline {
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+        }
+
+        .right-aligned {
+            text-align: right;
+            margin-left: 20px;
+        }
+
+        .center-aligned {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        /* Style pour la section du numéro principal */
+        .numero-principal {
+            font-family: 'Arial Black', sans-serif;
+            font-size: 2.2em;
+            font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            padding: 15px 0;
+            letter-spacing: 2px;
+        }
+        
+        /* Règle pour forcer l'immatriculation en vert */
+        #serie_immatriculation {
+            color: green !important; 
+        }
+
+        .bordered-top-bottom {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 8px 0;
+            margin-bottom: -1px;
+        }
+
+        .bordered-top-bottom:last-of-type {
+            border-bottom: 1px solid #000;
+            margin-bottom: 10px;
+        }
+
+        /* Règle existante pour le Châssis en rouge */
+        .red-text {
+            color: red;
+            font-weight: bold;
+        }
+
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .flex-item {
+            display: flex;
+            align-items: baseline;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .flex-item.right-aligned {
+            justify-content: flex-end;
+        }
+
+        /* STYLES POUR LA SIGNATURE ET CACHET */
+        .section-signature {
+            margin-top: 80px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 0.9em;
+            width: 100%;
+        }
+
+        .signature-bloc {
+            width: 45%; 
+            text-align: center;
+        }
+        
+        .signature-line {
+            padding-top: 50px; 
+            border-bottom: 1px dashed #000; 
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        .signature-title {
+            font-weight: bold;
+        }
+
+        /* MEDIA QUERY POUR L'IMPRESSION (Garde les styles d'impression pour le PDF) */
+        @media print {
+            body {
+                background-color: #fff;
+                background-image: none; /* Cache l'image de fond */
+                margin: 0;
+                padding: 0;
+                display: block;
+            }
+            .document {
+                box-shadow: none;
+                border: none;
+                width: 100%; 
+                max-width: 100%;
+                margin: 0;
+                padding: 10mm 15mm; 
+            }
+            .print-button { /* Cache le bouton */
+                display: none !important; 
+            }
+            .header-top, .bloc-gauche, .bloc-droite {
+                display: none !important; 
+            }
+            header {
+                display: block !important;
+                margin-top: 10px;
+            }
+            header h1 {
+                font-size: 30px; 
+                letter-spacing: 2.5px; 
+                border-bottom: 1px solid #000;
+                padding-bottom: 5px;
+            }
+            .section-signature {
+                margin-top: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="print-button" onclick="alert('Document envoyé pour validation.')">
+        Envoyer
+    </button>
+    
+    <div class="document" id="document-container">
+        
+        <div class="header-top">...</div>
+
+        <header>
+            <h1>CERTIFICAT PROVISOIRE DE MISE EN <br> CIRCULATION D'UNE MOTO TAXI</h1>
+        </header>
+
+        <div class="info-row">
+            <span class="label-inline">Mr,Mme,Mlle :</span> <span id="nom" class="data-field underline">NOM DU PROPRIÉTAIRE</span> <span id="prenom" class="data-field underline">PRÉNOM(S) DU PROPRIÉTAIRE</span>
+            <span class="label-inline right-aligned">Téléphone :</span> <span id="telephone" class="data-field underline">TÉLÉPHONE</span>
+        </div>
+        <div class="info-row">
+            <span class="label-inline">Profession :</span> <span id="profession" class="data-field underline">PROFESSION</span>
+            <span class="label-inline right-aligned">Adresse :</span> <span id="adresse" class="data-field underline">ADRESSE DU PROPRIÉTAIRE</span>
+        </div>
+
+        <div class="numero-principal">
+            <span id="serie_immatriculation">SERIE D'IMMATRICULATION PROVISOIRE</span>
+        </div>
+
+        <div class="info-row bordered-top-bottom">
+            <span class="label-inline">Genre :</span> <span id="genre_vehicule" class="data-field">léger</span>
+            <span class="label-inline center-aligned">Modèle :</span> <span id="modele" class="data-field">MODÈLE</span>
+            <span class="label-inline right-aligned">Carrosserie :</span> <span id="carrosserie" class="data-field">CARROSSERIE</span>
+        </div>
+
+        <div class="info-row bordered-top-bottom">
+            <span class="label-inline">Marque :</span> <span id="marque" class="data-field">MARQUE</span>
+            <span class="label-inline right-aligned">Type :</span> <span id="type" class="data-field">TYPE</span>
+        </div>
+
+        <div class="info-row bordered-top-bottom">
+            <span class="label-inline">Année de première mise en circulation :</span> <span id="premiere_mise_circulation" class="data-field">AAAA</span>
+        </div>
+
+        <div class="info-row bordered-top-bottom">
+            <span class="label-inline">Chassis :</span> <span id="numero_chassis" class="data-field red-text">NUMÉRO DU CHASSIS</span>
+            <span class="label-inline right-aligned">Couleur :</span> <span id="couleur" class="data-field">COULEUR</span>
+        </div>
+
+        <div class="info-row bordered-top-bottom">
+            <span class="label-inline">Source d'énergie :</span> <span id="energie" class="data-field">ÉNERGIE</span>
+        </div>
+
+        <div class="info-row bordered-top-bottom flex-container">
+            <div class="flex-item">
+                <span class="label-inline">Puissance administrative :</span> <span id="puissance_admin" class="data-field">00 CV</span>
+            </div>
+            <div class="flex-item">
+                <span class="label-inline center-aligned">Cylindrée :</span> <span id="cylindree" class="data-field">000 cm3</span>
+            </div>
+            <div class="flex-item right-aligned">
+                <span class="label-inline">Places assises :</span> <span id="nombre_places" class="data-field">0/0</span>
+            </div>
+        </div>
+
+        <div class="info-row bordered-top-bottom flex-container">
+            <div class="flex-item">
+                <span class="label-inline">Poids autorisé en charge :</span> <span id="poids_charge_autorisee" class="data-field">0 kg</span>
+            </div>
+            <div class="flex-item">
+                <span class="label-inline center-aligned">Poids vide :</span> <span id="poids_vide" class="data-field">0 kg</span>
+            </div>
+            <div class="flex-item right-aligned">
+                <span class="label-inline">Charge utile :</span> <span id="charge_utile" class="data-field">0 kg</span>
+            </div>
+        </div>
+
+        <div class="info-row bordered-top-bottom flex-container">
+            <div class="flex-item">
+                <span class="label-inline">Référence Moteur :</span> <span id="reference_moteur" class="data-field">RÉF. MOTEUR</span>
+            </div>
+            <div class="flex-item right-aligned">
+                <span class="label-inline">Immatriculation Provisoire :</span> <span id="immat_provisoire_info" class="data-field">None</span>
+            </div>
+        </div>
+        
+    </div> 
+    
+    
+    <script>
+// =========================================================
+// 🔗 CONFIGURATION DE L’API
+// =========================================================
+const API_URL = "https://moto-api-cika.onrender.com/api/dossiers"; 
+
+/**
+ * Met à jour le contenu textuel d'un élément HTML par son ID.
+ */
+function updateField(id, value) {
+    const element = document.getElementById(id);
+    if (element && value !== undefined && value !== null) {
+        let textValue = String(value);
+
+        if (['nom', 'numero_chassis', 'serie_immatriculation'].includes(id)) {
+            textValue = textValue.toUpperCase();
+        }
+        if (id === 'puissance_admin' && !textValue.includes('CV')) textValue += ' CV';
+        if (id === 'cylindree' && !textValue.includes('cm3')) textValue += ' cm3';
+        if (['poids_charge_autorisee', 'poids_vide', 'charge_utile'].includes(id) && !textValue.includes('kg')) textValue += ' kg';
+        if (id === 'premiere_mise_circulation') textValue = textValue.substring(0, 4);
+
+        element.textContent = textValue;
+        if (id === 'numero_chassis') element.style.color = 'red';
+        else if (id !== 'serie_immatriculation') element.style.color = '#000';
+    }
+}
+
+/**
+ * Récupère les données du dossier par ID via ton API backend
+ */
+async function fetchDossier(id) {
+    try {
+        const token = localStorage.getItem('token'); // si authentification
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+        const response = await fetch(`${API_URL}/${id}`, { headers });
+        if (!response.ok) throw new Error(`Erreur ${response.status}`);
+
+        const dossier = await response.json();
+        console.log("✅ Dossier chargé :", dossier);
+        return dossier;
+    } catch (error) {
+        console.error("❌ Erreur API :", error);
+        alert("Erreur lors du chargement du dossier.");
+        return null;
+    }
+}
+
+/**
+ * Remplit les champs du certificat avec les données du dossier
+ */
+function afficherDossier(dossier) {
+    if (!dossier) return;
+
+    if (dossier.proprietaire) {
+        updateField('nom', dossier.proprietaire.nom);
+        updateField('prenom', dossier.proprietaire.prenom);
+        updateField('telephone', dossier.proprietaire.telephone);
+        updateField('profession', dossier.proprietaire.profession);
+        updateField('adresse', dossier.proprietaire.adresse);
+    }
+
+    if (dossier.moto) {
+        updateField('marque', dossier.moto.marque);
+        updateField('modele', dossier.moto.modele);
+        updateField('type', dossier.moto.type);
+        updateField('numero_chassis', dossier.moto.numero_chassis);
+        updateField('couleur', dossier.moto.couleur);
+        updateField('energie', dossier.moto.energie);
+        updateField('premiere_mise_circulation', dossier.moto.annee);
+        updateField('cylindree', dossier.moto.cylindree);
+        updateField('puissance_admin', dossier.moto.puissance_admin);
+        updateField('nombre_places', dossier.moto.nombre_places);
+        updateField('poids_charge_autorisee', dossier.moto.poids_charge_autorisee);
+        updateField('poids_vide', dossier.moto.poids_vide);
+        updateField('charge_utile', dossier.moto.charge_utile);
+        updateField('reference_moteur', dossier.moto.reference_moteur);
+    }
+
+    updateField('serie_immatriculation', dossier.immatriculation || "EN ATTENTE");
+    updateField('genre_vehicule', dossier.genre || "MOTO");
+    updateField('carrosserie', dossier.carrosserie || "MOTOCYCLE");
+}
+
+/**
+ * 🔄 Fonction principale de chargement à l’ouverture du document
+ */
+async function loadDocumentData() {
+    // ✅ Récupère l'ID depuis l’URL : certificat.html?id=3
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id") || 1; // fallback
+
+    const dossier = await fetchDossier(id);
+    afficherDossier(dossier);
+}
+
+window.onload = loadDocumentData;
+</script>
+
+
+</body>
+</html>

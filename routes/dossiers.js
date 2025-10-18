@@ -1,17 +1,27 @@
-import express from 'express';
-import { addDossier, getDossiers, updateDossier } from '../controllers/dossierscontroller.js';
-import { verifyToken } from '../middlewares/auth.js';
-import { checkRole } from '../middlewares/role.js';
+// routes/dossiersRoutes.js
+import express from "express";
+import {
+  addDossier,
+  getDossiers,
+  getDossierById,
+  updateDossier
+} from "../controllers/dossierscontroller.js";
+import {  verifyToken } from "../middlewares/auth.js"; // ton middleware d’auth
 
 const router = express.Router();
 
-// 🔹 Créer un dossier (seulement Agent)
-router.post('/', verifyToken, checkRole('agent', 'admin'), addDossier);
+// ➕ Ajouter un dossier
+router.post("/",  verifyToken, addDossier);
 
-// 🔹 Récupérer tous les dossiers selon rôle
-router.get('/', verifyToken, checkRole('agent', 'admin', 'dd'), getDossiers);
+// 📋 Lister tous les dossiers (avec filtres et jointures)
+router.get("/",  verifyToken, getDossiers);
 
-// 🔹 Mettre à jour dossier (Admin / DD)
-router.put('/:dossier_id', verifyToken, checkRole('admin', 'dd'), updateDossier);
+
+
+// 🔎 Obtenir un dossier par ID
+router.get("/:id", verifyToken, getDossierById);
+
+// ✏️ Mettre à jour un dossier
+router.put("/:id", verifyToken, updateDossier);
 
 export default router;

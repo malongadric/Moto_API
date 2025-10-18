@@ -3,43 +3,61 @@ import supabase from '../config/db.js'
 // 🔹 LISTER LES PROPRIÉTAIRES (avec recherche et pagination)
 export const getProprietaires = async (req, res) => {
   try {
-    const userDept = req.user.departement_id
-    const userRole = req.user.role
-    const { search, page = 1, limit = 10 } = req.query
+    const userDept = req.user.departement_id;
+    const userRole = req.user.role;
+    const { search, cni, page = 1, limit = 10 } = req.query;
 
-    const start = (page - 1) * limit
-    const end = start + limit - 1
+    // 🔹 Si un CNI est fourni → recherche directe sans pagination
+    if (cni) {
+      const { data, error } = await supabase
+        .from('proprietaires')
+        .select('*')
+        .eq('cni', cni.toUpperCase());
 
-    let query = supabase.from('proprietaires').select('*', { count: 'exact' }).range(start, end)
+      if (error) throw error;
+      return res.status(200).json(data);
+    }
 
-    // 🔍 Recherche (normalisation)
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
+
+    let query = supabase.from('proprietaires').select('*', { count: 'exact' }).range(start, end);
+
+    // 🔍 Recherche générale
     if (search && search.trim() !== '') {
-      const term = search.trim().toLowerCase()
+      const term = search.trim().toLowerCase();
       query = query.or(
         `nom.ilike.%${term}%,prenom.ilike.%${term}%,telephone.ilike.%${term}%,email.ilike.%${term}%`
-      )
+      );
     }
 
     // 🔒 Filtre par département si pas admin
     if (userRole !== 'admin') {
-      query = query.eq('departement_id', userDept)
+      query = query.eq('departement_id', userDept);
     }
 
-    const { data, count, error } = await query
-    if (error) throw error
+    const { data, count, error } = await query;
+    if (error) throw error;
 
     if (!data || data.length === 0) {
-      return res.status(404).json({ message: search ? 'Aucun propriétaire trouvé.' : 'Aucun propriétaire.' })
+      return res.status(404).json({ message: search ? 'Aucun propriétaire trouvé.' : 'Aucun propriétaire.' });
     }
 
-    res.status(200).json({ total: count, page: parseInt(page), limit: parseInt(limit), proprietaires: data })
+    res.status(200).json({
+      total: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      proprietaires: data
+    });
+
   } catch (err) {
     res.status(500).json({
       message: 'Erreur lors de la récupération des propriétaires',
       erreur: err.message
-    })
+    });
   }
-}
+};
+
 
 // 🔹 AJOUTER UN PROPRIÉTAIRE (moto_id optionnel)
 export const addProprietaire = async (req, res) => {
@@ -62,17 +80,18 @@ export const addProprietaire = async (req, res) => {
     const userDept = req.user.departement_id;
     const userId = req.user.id;
 
-    // Validation
+    // 🔸 Validation de base
     if (!nom || !prenom || !telephone || !cni) {
       return res.status(400).json({
         message: "Nom, prénom, téléphone et CNI sont obligatoires."
       });
     }
 
+    // 🔸 Normalisation des champs
     const normalizedTel = telephone.replace(/\s+/g, '');
     const normalizedCni = cni.toUpperCase();
 
-    // Vérification doublons
+    // 🔸 Vérification des doublons (même téléphone ou même CNI)
     const { data: existing, error: checkError } = await supabase
       .from('proprietaires')
       .select('id')
@@ -84,9 +103,10 @@ export const addProprietaire = async (req, res) => {
       return res.status(400).json({ message: 'Ce propriétaire existe déjà.' });
     }
 
-    // Conversion date_naissance
+    // 🔸 Conversion de la date de naissance
     const dateNaissanceObj = date_naissance ? new Date(date_naissance) : null;
 
+    // 🔸 Insertion du propriétaire
     const { data, error: insertError } = await supabase
       .from('proprietaires')
       .insert([{
@@ -106,16 +126,17 @@ export const addProprietaire = async (req, res) => {
         cree_par: userId || null,
         date_saisie: new Date()
       }])
-      .select();
+      .select()
+      .maybeSingle(); // ✅ Évite l’erreur "JSON object requested"
 
     if (insertError) throw insertError;
 
+    // 🔸 Réponse
     res.status(201).json({
-  message: 'Propriétaire ajouté avec succès',
-  id: data[0].id,        // <- l'ID directement
-  proprietaire: data[0]  // <- si tu veux garder toutes les infos
-});
-
+      message: 'Propriétaire ajouté avec succès',
+      id: data?.id,
+      proprietaire: data
+    });
 
   } catch (err) {
     console.error('Erreur addProprietaire:', err);
@@ -125,6 +146,7 @@ export const addProprietaire = async (req, res) => {
     });
   }
 };
+
 
 // 🔹 Récupérer un propriétaire par ID
 export const getProprietaireById = async (req, res) => {

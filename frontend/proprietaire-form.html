@@ -1,593 +1,313 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Agent Adaptatif - Immatriculation</title>
-    <style>
-        /* --- Style Général & Variables --- */
-        :root {
-            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
-            --secondary-color: #00796b; /* Vert pour les actions */
-            --accent-color: #fbc02d; /* Jaune pour l'attention */
-            --background-color: #f5f7fa; /* Gris très clair */
-            --text-color: #333;
-            --border-color: #e0e0e0;
-            --white-color: #ffffff;
-            --shadow: 0 4px 12px rgba(0,0,0,0.08);
-            --border-radius: 8px;
-            --sidebar-width: 260px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Agent Adaptatif - Immatriculation</title>
+<style>
+    /* --- Variables & Style Global --- */
+    :root {
+        --primary-color: #0d47a1;
+        --secondary-color: #00796b;
+        --accent-color: #fbc02d;
+        --background-color: #f5f7fa;
+        --text-color: #333;
+        --border-color: #e0e0e0;
+        --white-color: #fff;
+        --shadow: 0 4px 12px rgba(0,0,0,0.08);
+        --border-radius: 8px;
+        --sidebar-width: 260px;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0; background-color: var(--background-color);
+        color: var(--text-color); display: flex; height: 100vh; overflow: hidden;
+    }
 
-        /* --- Barre de Navigation Latérale (Sidebar) --- */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--primary-color);
-            color: var(--white-color);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease-in-out;
-            z-index: 1000;
-        }
+    /* --- Sidebar --- */
+    .sidebar {
+        width: var(--sidebar-width);
+        background-color: var(--primary-color);
+        color: var(--white-color);
+        display: flex;
+        flex-direction: column;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease-in-out;
+        z-index: 1000;
+    }
 
-        .sidebar-header {
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+    .sidebar-header {
+        padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-header h1 { margin:0; font-size:1.5rem; letter-spacing:1px; }
 
-        .sidebar-header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            letter-spacing: 1px;
-        }
+    .sidebar-nav ul { list-style:none; padding:20px 0; margin:0; }
+    .sidebar-nav a {
+        display:flex; align-items:center; padding:15px 25px;
+        color: var(--white-color); text-decoration:none; font-weight:500;
+        transition: background-color 0.3s, padding-left 0.3s;
+        border-left:4px solid transparent;
+    }
+    .sidebar-nav a svg { margin-right:15px; width:20px; height:20px; flex-shrink:0; }
+    .sidebar-nav a:hover { background-color: rgba(255,255,255,0.05); }
+    .sidebar-nav a.active { background-color: rgba(0,0,0,0.2); border-left:4px solid var(--accent-color); font-weight:bold; }
 
-        .sidebar-nav ul {
-            list-style: none;
-            padding: 20px 0;
-            margin: 0;
-        }
+    .sidebar-footer { margin-top:auto; padding:20px; text-align:center; border-top:1px solid rgba(255,255,255,0.1); }
+    .sidebar-footer #user-name { font-weight:bold; display:block; }
+    .sidebar-footer #user-department { font-size:0.9em; opacity:0.8; display:block; }
 
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            padding: 15px 25px;
-            color: var(--white-color);
-            text-decoration: none;
-            font-weight: 500;
-            transition: background-color 0.3s, padding-left 0.3s;
-            border-left: 4px solid transparent;
-        }
-        
-        .sidebar-nav a svg {
-            margin-right: 15px;
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
+    /* --- Main Content --- */
+    .main-content { flex:1; display:flex; flex-direction:column; height:100vh; overflow-x:hidden; }
+    .main-header {
+        display:flex; align-items:center; background-color: var(--white-color);
+        padding:15px 30px; border-bottom:1px solid var(--border-color); box-shadow: var(--shadow);
+        z-index:10;
+    }
+    .menu-toggle { display:none; background:none; border:none; cursor:pointer; margin-right:20px; }
+    .menu-toggle svg { width:28px; height:28px; }
+    .main-header h2 { margin:0; font-size:1.8rem; color: var(--primary-color); }
 
-        .sidebar-nav a:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
+    .content-area { flex:1; padding:30px; overflow-y:auto; }
+    .content-section { display:none; background-color:var(--white-color); padding:30px; border-radius:var(--border-radius); box-shadow:var(--shadow); }
+    .content-section.active { display:block; }
 
-        .sidebar-nav a.active {
-            background-color: rgba(0, 0, 0, 0.2);
-            border-left: 4px solid var(--accent-color);
-            font-weight: bold;
-        }
+    /* --- Formulaire --- */
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:25px; }
+    .form-section-title { grid-column:1/-1; font-size:1.3rem; font-weight:600; color:var(--primary-color); margin-top:20px; margin-bottom:10px; padding-bottom:10px; border-bottom:2px solid var(--secondary-color); }
+    .form-group { display:flex; flex-direction:column; }
+    .form-group label { margin-bottom:8px; font-weight:600; font-size:0.9rem; }
+    .form-group input, .form-group select {
+        padding:12px; border:1px solid var(--border-color); border-radius:var(--border-radius); font-size:1rem;
+        transition:border-color 0.3s, box-shadow 0.3s;
+    }
+    .form-group input:focus, .form-group select:focus { outline:none; border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(13,71,161,0.2); }
 
-        .sidebar-footer {
-            margin-top: auto;
-            padding: 20px;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .sidebar-footer #user-name { font-weight: bold; display: block; }
-        .sidebar-footer #user-department { font-size: 0.9em; opacity: 0.8; display: block; }
+    .form-actions { grid-column:1/-1; display:flex; justify-content:flex-end; margin-top:30px; gap:15px; }
+    .btn { padding:12px 30px; border:none; border-radius:var(--border-radius); font-size:1rem; font-weight:bold; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; transition:all 0.3s; }
+    .btn-secondary { background-color:var(--border-color); color:var(--text-color); }
+    .btn-secondary:hover { background-color:#d0d0d0; transform:translateY(-2px); }
+    .btn-primary { background-color:var(--secondary-color); color:var(--white-color); box-shadow:0 2px 4px rgba(0,121,107,0.3); }
+    .btn-primary:hover { background-color:#004d40; transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,121,107,0.4); }
 
-        /* --- Zone de Contenu Principal --- */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow-x: hidden;
-        }
+    /* --- Tableaux --- */
+    .table-container { overflow-x:auto; border-radius:var(--border-radius); box-shadow:var(--shadow); background-color:var(--white-color); }
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th, .data-table td { padding:12px 15px; text-align:left; border-bottom:1px solid var(--border-color); font-size:0.95rem; }
+    .data-table th { background-color:var(--primary-color); color:var(--white-color); cursor:pointer; user-select:none; position:relative; }
+    .data-table th:hover { background-color:#094183; }
+    .data-table tr:hover { background-color: rgba(0,0,0,0.03); }
+    #pagination { display:flex; gap:5px; }
+    #pagination button { padding:5px 10px; border:1px solid var(--border-color); border-radius:var(--border-radius); background-color:var(--white-color); cursor:pointer; transition:all 0.2s; }
+    #pagination button:hover { background-color:var(--secondary-color); color:var(--white-color); border-color:var(--secondary-color); }
+    #pagination button:disabled { background-color:#ccc; cursor:default; color:#666; }
 
-        .main-header {
-            display: flex;
-            align-items: center;
-            background-color: var(--white-color);
-            padding: 15px 30px;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: var(--shadow);
-            z-index: 10;
-        }
-        
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            cursor: pointer;
-            margin-right: 20px;
-        }
-        .menu-toggle svg { width: 28px; height: 28px; }
-
-        .main-header h2 {
-            margin: 0;
-            font-size: 1.8rem;
-            color: var(--primary-color);
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-
-        .content-section {
-            display: none;
-            background-color: var(--white-color);
-            padding: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-        }
-        .content-section.active { display: block; }
-
-        /* --- Styles des Formulaires --- */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-        }
-        
-        .form-section-title {
-            grid-column: 1 / -1;
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-top: 20px; margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--secondary-color);
-        }
-
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
-        .form-group input, .form-group select {
-            padding: 12px; border: 1px solid var(--border-color);
-            border-radius: var(--border-radius); font-size: 1rem;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none; border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.2);
-        }
-
-        /* --- Boutons --- */
-        .form-actions {
-            grid-column: 1 / -1; 
-            display: flex;
-            justify-content: flex-end; 
-            margin-top: 30px;
-            gap: 15px; /* Espace entre les boutons */
-        }
-
-        .btn {
-            padding: 12px 30px; border: none;
-            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
-            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
-            transition: all 0.3s;
-        }
-        
-        /* Bouton Retour */
-        .btn-secondary {
-            background-color: var(--border-color); 
-            color: var(--text-color);
-        }
-        .btn-secondary:hover {
-            background-color: #d0d0d0;
-            transform: translateY(-2px);
-        }
-
-        /* Bouton Suivant */
-        .btn-primary {
-            background-color: var(--secondary-color); color: var(--white-color);
-            box-shadow: 0 2px 4px rgba(0, 121, 107, 0.3);
-        }
-        .btn-primary:hover {
-            background-color: #004d40; transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 121, 107, 0.4);
-        }
-
-        /* --- Section Consultation & Historique --- */
-        .search-bar { display: flex; gap: 15px; margin-bottom: 25px; }
-        .search-bar input { flex-grow: 1; padding: 12px; font-size: 1rem; border: 1px solid var(--border-color); border-radius: var(--border-radius); }
-        .table-container { overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .data-table th, .data-table td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-        .data-table th { background-color: var(--background-color); font-weight: 600; }
-        
-        .history-list { list-style: none; padding: 0; }
-        .history-list li { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
-        .history-list li:last-child { border-bottom: none; }
-        .history-list .history-icon { margin-right: 15px; color: var(--secondary-color); }
-        .history-list .history-date { margin-left: auto; color: #777; font-size: 0.9em; }
-
-         /* --- Table des motos --- */
-.table-container {
-    overflow-x: auto;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    background-color: var(--white-color);
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table th, .data-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.95rem;
-}
-
-.data-table th {
-    background-color: var(--primary-color);
-    color: var(--white-color);
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-}
-
-.data-table th:hover {
-    background-color: #094183; /* légèrement plus foncé au hover */
-}
-
-.data-table tr:hover {
-    background-color: rgba(0,0,0,0.03);
-}
-
-.data-table td {
-    color: var(--text-color);
-}
-
-/* Pagination */
-#pagination {
-    display: flex;
-    gap: 5px;
-}
-
-#pagination button {
-    padding: 5px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--white-color);
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-#pagination button:hover {
-    background-color: var(--secondary-color);
-    color: var(--white-color);
-    border-color: var(--secondary-color);
-}
-
-#pagination button:disabled {
-    background-color: #ccc;
-    cursor: default;
-    color: #666;
-}
-
-/* --- Barre de recherche stylée --- */
-.search-wrapper {
-    position: relative;
-    width: 100%;
-    max-width: 400px; /* ajustable */
-    margin-bottom: 15px;
-}
-
-.search-wrapper input {
-    width: 100%;
-    padding: 10px 40px 10px 15px; /* espace pour l'icône */
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    transition: all 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.search-wrapper input:focus {
-    outline: none;
-    border-color: var(--secondary-color);
-    box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
-}
-
-.search-wrapper .search-icon {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.1rem;
-    color: #888;
-    pointer-events: none; /* l'icône ne bloque pas le clic */
-    transition: color 0.3s;
-}
-
-.search-wrapper input:focus + .search-icon {
-    color: var(--secondary-color);
-}
-
-
-        /* --- RESPONSIVE DESIGN --- */
-
-        /* Tablettes & Petits écrans */
-        @media (max-width: 1024px) {
-            :root { --sidebar-width: 220px; }
-            .content-area { padding: 20px; }
-            .main-header h2 { font-size: 1.5rem; }
-        }
-
-        /* Mobiles */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: absolute;
-                transform: translateX(-100%);
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            .menu-toggle {
-                display: block;
-            }
-            .main-header { padding: 15px; }
-            .content-area { padding: 15px; }
-            .form-grid { grid-template-columns: 1fr; }
-        }
-
-    </style>
+    /* --- Responsive --- */
+    @media(max-width:1024px) { :root{--sidebar-width:220px;} .content-area{padding:20px;} .main-header h2{font-size:1.5rem;} }
+    @media(max-width:768px) { .sidebar{position:absolute; transform:translateX(-100%);} .sidebar.open{transform:translateX(0);} .menu-toggle{display:block;} .main-header{padding:15px;} .content-area{padding:15px;} .form-grid{grid-template-columns:1fr;} }
+</style>
 </head>
 <body>
 
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header"><h1>Immatriculation</h1></div>
-        <nav class="sidebar-nav">
-            <ul>
-                <li>
-                    <a href="#" id="nav-form" class="nav-link active">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                        Nouvel Enregistrement
-                    </a>
-                </li>
-                <li>
-                    <a href="#" id="nav-list" class="nav-link">
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                        Consulter / Modifier
-                    </a>
-                </li>
-                <li>
-                    <a href="#" id="nav-history" class="nav-link">
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        Historique
-                    </a>
-                </li>
-            </ul>
-        </nav>
-        <div class="sidebar-footer">
-            <span id="user-name">Jean Dupont</span>
-            <span id="user-department">Agent - Département du Kouilou</span>
-        </div>
-    </aside>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header"><h1>Immatriculation</h1></div>
+    <nav class="sidebar-nav">
+        <ul>
+            <li><a href="#" id="nav-form" class="nav-link active">Nouvel Enregistrement</a></li>
+            <li><a href="#" id="nav-list" class="nav-link">Consulter / Modifier</a></li>
+            <li><a href="#" id="nav-history" class="nav-link">Historique</a></li>
+        </ul>
+    </nav>
+    <div class="sidebar-footer">
+        <span id="user-name">Jean Dupont</span>
+        <span id="user-department">Agent - Département du Kouilou</span>
+    </div>
+</aside>
 
-    <div class="main-content">
-        <header class="main-header">
-            <button class="menu-toggle" id="menu-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-            <h2 id="page-title">Nouvel Enregistrement</h2>
-        </header>
+<div class="main-content">
+    <header class="main-header">
+        <button class="menu-toggle" id="menu-toggle">☰</button>
+        <h2 id="page-title">Nouvel Enregistrement</h2>
+    </header>
+    <main class="content-area">
 
-        <main class="content-area">
+        <!-- FORMULAIRE PROPRIETAIRE -->
+        <section id="form-section" class="content-section active">
+            <form id="moto-form">
+                <div class="form-grid">
+                    <h3 class="form-section-title">Informations du Propriétaire</h3>
+                    <div class="form-group">
+                        <label for="type">Type de propriétaire</label>
+                        <select id="type" name="type" required>
+                            <option value="">-- Sélectionnez le type --</option>
+                            <option value="Physique">Physique</option>
+                            <option value="Morale">Morale</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label for="nom">Nom</label><input type="text" id="nom" name="nom" placeholder="Nom du propriétaire" required></div>
+                    <div class="form-group"><label for="prenom">Prénom</label><input type="text" id="prenom" name="prenom" placeholder="Prénom"></div>
+                    <div class="form-group"><label for="date_naissance">Date de Naissance</label><input type="date" id="date_naissance" name="date_naissance"></div>
+                    <div class="form-group"><label for="cni">CNI</label><input type="text" id="cni" name="cni" placeholder="Numéro CNI"></div>
+                    <div class="form-group"><label for="telephone">Téléphone</label><input type="tel" id="telephone" name="telephone" placeholder="9 chiffres max" maxlength="9"></div>
+                    <div class="form-group"><label for="profession">Profession</label><input type="text" id="profession" name="profession" placeholder="Profession"></div>
+                    <div class="form-group"><label for="email">Email</label><input type="email" id="email" name="email" placeholder="adresse@email.com"></div>
+                    <div class="form-group"><label for="nationalite">Nationalité</label><input type="text" id="nationalite" name="nationalite" placeholder="Congolaise"></div>
+                    <div class="form-group"><label for="ville">Ville</label><input type="text" id="ville" name="ville" placeholder="Ville de résidence"></div>
+                    <div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" name="adresse" placeholder="Adresse complète"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.history.back();">Retour</button>
+                    <button type="submit" class="btn btn-primary">Suivant</button>
+                </div>
+            </form>
+        </section>
 
-            <section id="form-section" class="content-section active">
-                <form id="moto-form">
-                    <div class="form-grid">
-                        <h3 class="form-section-title">Informations du Propriétaire</h3>
-                        
-                        <div class="form-group">
-    <label for="type">Type de propriétaire</label>
-    <select id="type" required>
-        <option value="">-- Sélectionnez le type --</option>
-        <option value="Physique">Physique</option>
-        <option value="Morale">Morale</option>
-    </select>
+        <!-- LISTE MOTOS -->
+        <section id="list-section" class="content-section">
+            <h3 class="form-section-title">Liste des Motos</h3>
+            <input type="text" id="search-input" placeholder="Rechercher une moto..." style="margin-bottom:10px;padding:5px;width:100%;">
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th data-key="numero_chassis">N° Châssis</th>
+                            <th data-key="marque">Marque</th>
+                            <th data-key="modele">Modèle</th>
+                            <th data-key="couleur">Couleur</th>
+                            <th data-key="proprietaire">Propriétaire</th>
+                            <th data-key="departement_nom">Département</th>
+                        </tr>
+                    </thead>
+                    <tbody id="motos-table-body"></tbody>
+                </table>
+            </div>
+            <div id="pagination" style="margin-top:10px;"></div>
+        </section>
+
+        <!-- HISTORIQUE -->
+        <section id="history-section" class="content-section">
+            <input type="text" id="search-history" placeholder="Rechercher par action, châssis, immatriculation ou agent..." style="margin-bottom:10px;padding:5px;width:100%;">
+            <table id="history-table" style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background-color:#f2f2f2;">
+                        <th>ID Dossier</th><th>Réf Dossier</th><th>Agent</th><th>Acteur</th>
+                        <th>Immatriculation</th><th>Date</th><th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div id="history-pagination" style="margin-top:10px;"></div>
+        </section>
+
+    </main>
 </div>
 
-<div class="form-group"><label for="nom">Nom</label><input type="text" id="nom" placeholder="Nom du propriétaire" required></div>
-<div class="form-group"><label for="prenom">Prénom</label><input type="text" id="prenom" placeholder="Prénom du propriétaire"></div>
-<div class="form-group"><label for="date_naissance">Date de Naissance</label><input type="date" id="date_naissance"></div>
-<div class="form-group"><label for="cni">CNI</label><input type="text" id="cni" placeholder="Numéro de la carte nationale d'identité"></div>
-<div class="form-group"><label for="telephone">Téléphone</label><input type="tel" id="telephone" placeholder="9 chiffres maximum" maxlength="9"></div>
-<div class="form-group"><label for="profession">Profession</label><input type="text" id="profession" placeholder="Profession"></div>
-<div class="form-group"><label for="email">Messagerie Elèctronique</label><input type="email" id="email" placeholder="adresse@email.com"></div>
-<div class="form-group"><label for="nationalite">Nationalité</label><input type="text" id="nationalite" placeholder="Congolaise"></div>
-<div class="form-group"><label for="ville">Ville</label><input type="text" id="ville" placeholder="Ville de résidence"></div>
-<div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" placeholder="Adresse complète"></div>
-
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="alert('Simulation: Retour à l\'écran de démarrage ou à l\'étape précédente.');">Retour</button>
-                        <button type="submit" class="btn btn-primary">Suivant</button>
-                    </div>
-                </form>
-            </section>
-
-             <section id="list-section" class="content-section">
-    <h3 class="form-section-title">Liste des Motos</h3>
-
-    <!-- Barre de recherche -->
-    <input type="text" id="search-input" placeholder="Rechercher une moto..." style="margin-bottom: 10px; padding: 5px; width: 100%;" />
-
-    <!-- Conteneur du tableau -->
-    <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th data-key="numero_chassis">N° Châssis</th>
-                    <th data-key="marque">Marque</th>
-                    <th data-key="modele">Modèle</th>
-                    <th data-key="couleur">Couleur</th>
-                    <th data-key="proprietaire">Propriétaire</th>
-                    <th data-key="departement_nom">Département</th>
-                </tr>
-            </thead>
-            <tbody id="motos-table-body">
-                <!-- Les motos seront injectées ici via JS -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Pagination -->
-    <div id="pagination" style="margin-top: 10px;"></div>
-</section>
-
-
-            
-             <section id="history-section" class="content-section">
-    <!-- Barre de recherche -->
-    <input type="text" id="search-history" placeholder="Rechercher par action, châssis, immatriculation ou agent..." style="margin-bottom:10px; padding:5px; width:100%;">
-
-    <!-- Tableau historique -->
-    <table id="history-table" style="width:100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color:#f2f2f2;">
-                <th style="border:1px solid #ccc; padding:8px;">ID Dossier</th>
-                <th style="border:1px solid #ccc; padding:8px;">Réf Dossier</th>
-                <th style="border:1px solid #ccc; padding:8px;">Agent</th>
-                <th style="border:1px solid #ccc; padding:8px;">Acteur</th>
-                <th style="border:1px solid #ccc; padding:8px;">Immatriculation</th>
-                <th style="border:1px solid #ccc; padding:8px;">Date</th>
-                <th style="border:1px solid #ccc; padding:8px;">Statut</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Les lignes seront générées dynamiquement par JavaScript -->
-        </tbody>
-    </table>
-
-    <!-- Pagination -->
-    <div id="history-pagination" style="margin-top:10px;"></div>
-</section>
-        </main>
-    </div>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
+<script>
+document.addEventListener('DOMContentLoaded', function() {
     const navLinks = document.querySelectorAll('.nav-link');
     const contentSections = document.querySelectorAll('.content-section');
     const pageTitle = document.getElementById('page-title');
-    const proprietaireForm = document.getElementById('moto-form'); // ton formulaire actuel
+    const proprietaireForm = document.getElementById('moto-form');
     const menuToggle = document.getElementById('menu-toggle');
     const sidebar = document.getElementById('sidebar');
 
+    // Navigation
     function switchView(targetId) {
-        navLinks.forEach(link => link.classList.remove('active'));
-        contentSections.forEach(section => section.classList.remove('active'));
+        navLinks.forEach(l=>l.classList.remove('active'));
+        contentSections.forEach(s=>s.classList.remove('active'));
         const activeLink = document.querySelector(`#nav-${targetId.split('-')[0]}`);
         const activeSection = document.getElementById(targetId);
-        if (activeLink) activeLink.classList.add('active');
-        if (activeSection) activeSection.classList.add('active');
+        if(activeLink) activeLink.classList.add('active');
+        if(activeSection) activeSection.classList.add('active');
         pageTitle.textContent = {
-            'form-section': 'Nouvel Enregistrement',
-            'list-section': 'Consulter / Modifier les dossiers',
-            'history-section': 'Historique des activités'
-        }[targetId];
-        if (window.innerWidth <= 768) sidebar.classList.remove('open');
+            'form-section':'Nouvel Enregistrement',
+            'list-section':'Consulter / Modifier les dossiers',
+            'history-section':'Historique des activités'
+        }[targetId]||'';
+        if(window.innerWidth<=768) sidebar.classList.remove('open');
     }
 
-    navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetSectionId = this.id.replace('nav-', '') + '-section';
-            switchView(targetSectionId);
-        });
-    });
+    navLinks.forEach(link=>link.addEventListener('click', e=>{
+        e.preventDefault();
+        switchView(link.id.replace('nav-','')+'-section');
+    }));
 
-    proprietaireForm.addEventListener('submit', async function(e) {
+    if(menuToggle) menuToggle.addEventListener('click', ()=>sidebar.classList.toggle('open'));
+
+    // Footer dynamique
+    function updateSidebarFooter() {
+        const name = localStorage.getItem('utilisateur_nom')||'Utilisateur inconnu';
+        const dept = localStorage.getItem('utilisateur_departement_nom')||'Département non défini';
+        document.getElementById('user-name').textContent = name;
+        document.getElementById('user-department').textContent = `Agent - ${dept}`;
+    }
+    updateSidebarFooter();
+    window.addEventListener('storage', ()=>updateSidebarFooter());
+
+       // Formulaire propriétaire
+if (proprietaireForm) {
+    proprietaireForm.addEventListener('submit', async e => {
         e.preventDefault();
 
-        const token = localStorage.getItem('token');
+        const token = (localStorage.getItem('token') || '').replace(/['"]+/g, '').trim();
         const moto_id = localStorage.getItem('moto_id');
-
         if (!token || !moto_id) {
-            alert("Erreur : session expirée ou moto non enregistrée.");
+            alert('❌ Session expirée ou moto non enregistrée');
             return;
         }
 
-        // Récupération des valeurs du formulaire
-        const payload = {
-            moto_id: parseInt(moto_id),
-            type: document.getElementById('type').value, 
-            nom: document.getElementById('nom').value,
-            prenom: document.getElementById('prenom').value,
-            date_naissance: document.getElementById('date_naissance').value,
-            cni: document.getElementById('cni').value,
-            telephone: document.getElementById('telephone').value,
-            profession: document.getElementById('profession').value,
-            email: document.getElementById('email').value,
-            nationalite: document.getElementById('nationalite').value,
-            ville: document.getElementById('ville').value,
-            adresse: document.getElementById('adresse').value
-        };
+        const data = Object.fromEntries(new FormData(proprietaireForm).entries());
+        if (!data.nom?.trim() || !data.prenom?.trim() || !data.telephone?.trim() || !data.cni?.trim()) {
+            return alert("❌ Nom, prénom, téléphone et CNI sont obligatoires.");
+        }
+
+        const payload = { ...data, moto_id: parseInt(moto_id) };
 
         try {
+            // Vérifier si le propriétaire existe déjà
+            const checkRes = await fetch(`https://moto-api-cika.onrender.com/api/proprietaires?cni=${payload.cni}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const existing = await checkRes.json();
+            if (existing?.length) return alert("⚠️ Ce propriétaire existe déjà.");
+
+            // Créer le propriétaire
             const response = await fetch("https://moto-api-cika.onrender.com/api/proprietaires", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                 body: JSON.stringify(payload)
             });
-
             const result = await response.json();
-
             if (!response.ok) throw new Error(result.message || "Impossible d'enregistrer le propriétaire");
 
-            // On peut stocker proprietaire_id si besoin pour étape suivante
+            // Stocker l'ID du propriétaire dans localStorage pour la validation
             localStorage.setItem('proprietaire_id', result.id);
 
-            alert("✅ Propriétaire enregistré avec succès !");
+            // Lier le propriétaire à la moto
+            const linkResponse = await fetch(`https://moto-api-cika.onrender.com/api/motos/${moto_id}/link-declarant`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify({ proprietaire_id: result.id })
+            });
+            if (!linkResponse.ok) throw new Error("Impossible de lier le propriétaire à la moto");
+
+            alert("✅ Propriétaire enregistré et lié à la moto avec succès !");
             proprietaireForm.reset();
-            // Redirection si nécessaire, ex: page suivante
+
+            // ❌ Ne pas supprimer moto_id ici, validation en a besoin
             window.location.href = "validation_from.html";
 
-        } catch (error) {
-            console.error("Erreur:", error);
-            alert("❌ Erreur lors de l'enregistrement du propriétaire : " + error.message);
+        } catch (err) {
+            console.error(err);
+            alert("❌ " + err.message);
         }
     });
-    
-    menuToggle.addEventListener('click', function() {
-        sidebar.classList.toggle('open');
-    });
+}
 
-    switchView('form-section');
+switchView('form-section');
+
 });
+</script>
 
-    </script>
 </body>
 </html>

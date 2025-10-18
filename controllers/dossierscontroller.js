@@ -1,5 +1,5 @@
-/// controllers/dossiersController.js
-import supabase from '../config/db.js';
+// controllers/dossiersController.js
+import supabase from "../config/db.js";
 
 /* ==========================================================
    🆕 AJOUTER UN DOSSIER
@@ -7,54 +7,60 @@ import supabase from '../config/db.js';
 export const addDossier = async (req, res) => {
   try {
     const { moto_id, proprietaire_id, mandataire_id, immatriculation_prov, immatriculation_def, agent_id } = req.body;
+    const { id: userId, departement_id: userDepartementId } = req.user || {};
 
+    // 🔹 Vérifications de base
     if (!moto_id) return res.status(400).json({ message: "ID de la moto obligatoire" });
-    if (!proprietaire_id && !mandataire_id) return res.status(400).json({ message: "Vous devez fournir au moins un propriétaire ou un mandataire" });
+    if (!proprietaire_id && !mandataire_id)
+      return res.status(400).json({ message: "Vous devez fournir au moins un propriétaire ou un mandataire" });
+    if (!userDepartementId)
+      return res.status(400).json({ message: "Impossible de déterminer le département de l'utilisateur" });
 
     const acteur_id = proprietaire_id || mandataire_id;
-    const acteur_type = proprietaire_id ? 'proprietaire' : 'mandataire';
+    const acteur_type = proprietaire_id ? "proprietaire" : "mandataire";
 
     // 🔹 Génération automatique de la référence
-    // Format : REF-année-département-motoID
     const currentYear = new Date().getFullYear();
-    const departementId = req.user?.departement_id || 'XX'; 
-    const reference_dossier = `REF-${currentYear}-PN-${moto_id}`;
+    const randomCode = Math.floor(1000 + Math.random() * 9000);
+    const reference_dossier = `REF-${currentYear}-${userDepartementId}-MTO-${randomCode}`;
 
     console.log("🔹 Référence générée :", reference_dossier);
 
-    // 🔹 Insertion dans la table
+    // 🔹 Préparation des données à insérer
+    const dossierPayload = {
+      moto_id,
+      acteur_id,
+      acteur_type,
+      immatriculation_prov: immatriculation_prov || null,
+      immatriculation_def: immatriculation_def || null,
+      statut: "en_attente",
+      date_soumission: new Date(),
+      agent_id: agent_id || userId || null,
+      proprietaire_id: proprietaire_id || null,
+      mandataire_id: mandataire_id || null,
+      reference_dossier,
+      departement_id: Number(userDepartementId),
+    };
+
+    // 🔹 Insertion
     const { data: dossier, error } = await supabase
-      .from('dossiers')
-      .insert([{
-        moto_id,
-        acteur_id,
-        acteur_type,
-        immatriculation_prov: immatriculation_prov || null,
-        immatriculation_def: immatriculation_def || null,
-        statut: 'en_attente',
-        date_soumission: new Date(),
-        agent_id,
-        proprietaire_id,
-        mandataire_id,
-        reference_dossier
-      }])
-      .select('*')
+      .from("dossiers")
+      .insert([dossierPayload])
+      .select(`
+        *,
+        departement_id,
+        moto:moto_id(*),
+        proprietaire:proprietaire_id(*),
+        mandataire:mandataire_id(*),
+        agent:agent_id(id, nom, prenom)
+      `)
       .single();
 
-    if (error) {
-      console.error("❌ Erreur Supabase :", error);
-      return res.status(400).json({ message: error.message });
-    }
+    if (error) return res.status(400).json({ message: error.message });
 
-    console.log("🔹 Dossier inséré :", dossier);
-
-    // 🔹 Retour du dossier avec référence garantie
-    res.status(201).json({ 
-      message: 'Dossier créé avec succès', 
-      dossier: {
-        ...dossier,
-        reference_dossier // assure que la référence est renvoyée
-      }
+    res.status(201).json({
+      message: "Dossier créé avec succès",
+      dossier,
     });
 
   } catch (err) {
@@ -63,120 +69,125 @@ export const addDossier = async (req, res) => {
   }
 };
 
+// controllers/dossiersController.js
+import supabase from "../config/db.js";
+
 /* ==========================================================
-   📋 LISTER TOUS LES DOSSIERS
+   📋 LISTER LES DOSSIERS (sans filtre par rôle)
    ========================================================== */
 export const getDossiers = async (req, res) => {
   try {
-    const role = req.user.role;
-    const userId = req.user.id;
-    const userDepartement = req.user.departement_id;
-    const { moto_marque, moto_modele, statut, acteur_nom } = req.query;
+    if (!req.user?.id)
+      return res.status(401).json({ message: "Utilisateur non authentifié" });
 
-    let query = supabase.from('dossiers').select(`
+    const { statut, reference_dossier, acteur_id, page = 1, limit = 10, sortBy = "date_soumission", order = "desc" } = req.query;
+
+    let query = supabase.from("dossiers").select(`
       *,
       moto:moto_id(*),
       proprietaire:proprietaire_id(*),
       mandataire:mandataire_id(*)
     `);
 
-    // --- Filtrage selon le rôle ---
-    if (role === 'agent_saisie' || role === 'agent_total') query = query.eq('agent_id', userId);
-    else if (role === 'admin') query = query.in('statut', ['en_attente', 'en_attente_officialisation']);
-    else if (role === 'dd') query = query.eq('statut', 'en_attente_officialisation');
+    // 🔹 Filtres optionnels
+    if (statut) query = query.eq("statut", statut);
+    if (reference_dossier) query = query.eq("reference_dossier", reference_dossier);
+    if (acteur_id) query = query.eq("acteur_id", Number(acteur_id));
 
-    // --- Filtrage selon le département de l’utilisateur ---
-    if (userDepartement) query = query.eq('departement_id', userDepartement);
+    // 🔹 Pagination
+    const from = (page - 1) * limit;
+    const to = from + parseInt(limit) - 1;
+    query = query.range(from, to);
 
+    // 🔹 Tri
+    query = query.order(sortBy, { ascending: order === "asc" });
+
+    // 🔹 Exécution de la requête
     const { data, error } = await query;
     if (error) return res.status(400).json({ message: error.message });
 
-    let filteredData = data;
+    res.json({
+      message: "Dossiers récupérés avec succès",
+      dossiers: data || [],
+    });
+  } catch (err) {
+    console.error("❌ Erreur serveur :", err);
+    res.status(500).json({ message: "Erreur serveur", erreur: err.message });
+  }
+};
 
-    // --- Filtrage côté front selon query params ---
-    if (moto_marque)
-      filteredData = filteredData.filter(d => d.moto?.marque?.toLowerCase().includes(moto_marque.toLowerCase()));
-    if (moto_modele)
-      filteredData = filteredData.filter(d => d.moto?.modele?.toLowerCase().includes(moto_modele.toLowerCase()));
-    if (acteur_nom) {
-      filteredData = filteredData.filter(d =>
-        d.proprietaire?.nom?.toLowerCase().includes(acteur_nom.toLowerCase()) ||
-        d.mandataire?.nom?.toLowerCase().includes(acteur_nom.toLowerCase())
-      );
+
+
+
+/* ==========================================================
+   🔎 OBTENIR LES DÉTAILS D’UN DOSSIER
+   ========================================================== */
+export const getDossierById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { profil, departement_id } = req.user;
+
+    if (profil === "agent" || profil === "agent_saisie") {
+      return res.status(403).json({ message: "Accès refusé : vous ne pouvez pas consulter ce dossier" });
     }
 
-    res.json({ dossiers: filteredData });
+    let query = supabase.from("dossiers").select(`
+      *,
+      departement_id,
+      moto:moto_id(*),
+      proprietaire:proprietaire_id(*),
+      mandataire:mandataire_id(*),
+      agent:agent_id(id, nom, prenom)
+    `).eq("dossier_id", id);
 
+    if (profil === "directeur_departemental") {
+      query = query.eq("departement_id", departement_id);
+    }
+
+    const { data, error } = await query.single();
+    if (error || !data) return res.status(404).json({ message: "Dossier introuvable" });
+
+    res.json({ message: "Dossier récupéré avec succès", dossier: data });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Erreur serveur :", err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
 
 /* ==========================================================
-   ✏️ METTRE À JOUR UN DOSSIER AVEC STATUT AUTOMATIQUE
+   ✏️ METTRE À JOUR UN DOSSIER
    ========================================================== */
 export const updateDossier = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
+    const { profil, departement_id } = req.user;
 
-    delete updateData.acteur_id;
-    delete updateData.acteur_type;
-
-    const role = req.user.role;
-
-    // ✅ Vérification des IDs
-    if (updateData.proprietaire_id) {
-      const { data: prop, error: propErr } = await supabase
-        .from('proprietaires')
-        .select('id')
-        .eq('id', updateData.proprietaire_id)
-        .single();
-      if (propErr || !prop) return res.status(400).json({ message: "Propriétaire introuvable" });
+    if (profil === "agent" || profil === "agent_saisie") {
+      return res.status(403).json({ message: "Accès refusé : vous ne pouvez pas modifier ce dossier" });
     }
 
-    if (updateData.mandataire_id) {
-      const { data: mand, error: mandErr } = await supabase
-        .from('mandataires')
-        .select('id')
-        .eq('id', updateData.mandataire_id)
-        .single();
-      if (mandErr || !mand) return res.status(400).json({ message: "Mandataire introuvable" });
+    // Statuts automatiques
+    if (profil === "admin" && updateData.numero_immatriculation) {
+      updateData.statut = "en_attente_officialisation";
     }
-
-    // --- Mise à jour automatique de l'acteur principal ---
-    if (updateData.proprietaire_id || updateData.mandataire_id) {
-      updateData.acteur_id = updateData.proprietaire_id || updateData.mandataire_id;
-      updateData.acteur_type = updateData.proprietaire_id ? 'proprietaire' : 'mandataire';
-    }
-
-    // --- GESTION AUTOMATIQUE DES STATUTS ---
-    if (role === 'admin' && updateData.numero_immatriculation) {
-      updateData.statut = 'en_attente_officialisation';
-    }
-
-    if (role === 'dd' && updateData.valide === true) {
-      updateData.statut = 'validé';
+    if (profil === "directeur_departemental" && updateData.valide === true) {
+      updateData.statut = "validé";
       updateData.date_validation_dd = new Date();
     }
 
-    const { data, error } = await supabase
-      .from('dossiers')
-      .update(updateData)
-      .eq('id', id)
-      .select('*')
-      .single();
+    let query = supabase.from("dossiers").update(updateData).eq("dossier_id", id);
 
+    if (profil === "directeur_departemental") {
+      query = query.eq("departement_id", departement_id);
+    }
+
+    const { data, error } = await query.select("*").single();
     if (error) return res.status(400).json({ message: error.message });
 
-    res.json({
-      message: 'Dossier mis à jour avec succès',
-      dossier: data
-    });
-
+    res.json({ message: "Dossier mis à jour avec succès", dossier: data });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Erreur serveur :", err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };

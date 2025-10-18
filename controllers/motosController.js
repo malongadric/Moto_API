@@ -21,16 +21,17 @@ const checkExist = async (table, id) => {
 ========================================================== */
 export const getMotos = async (req, res) => {
   try {
-    const { departement_id: userDept, role: userRole } = req.user
+    const { departement_id: userDept, role: userRole } = req.user;
 
-    const page = parseInt(req.query.page) || 1
-    const limit = parseInt(req.query.limit) || 50
-    const start = (page - 1) * limit
-    const end = start + limit - 1
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
 
     let query = supabase
       .from('motos')
-      .select(`
+      .select(
+        `
         id,
         numero_chassis,
         numero_immatriculation,
@@ -48,78 +49,110 @@ export const getMotos = async (req, res) => {
         structure:structures (nom),
         cree_par,
         date_saisie
-      `, { count: 'exact' })
-      .range(start, end)
+      `,
+        { count: 'exact' }
+      )
+      .range(start, end);
 
     // 🔒 Filtrer par département si pas admin ou super_directeur
-    if (!['admin','super_directeur'].includes(userRole)) {
-      query = query.eq('departement_id', userDept)
+    if (!['admin', 'super_directeur'].includes(userRole)) {
+      query = query.eq('departement_id', userDept);
     }
 
-    const { data, count, error } = await query
-    if (error) throw error
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    // 🔹 Transformer les données pour le front
+    const motosWithFlat = data.map(m => {
+      // Gestion robuste du propriétaire
+      let proprietaireNom = 'Non assigné';
+      if (Array.isArray(m.proprietaire) && m.proprietaire.length > 0) {
+        proprietaireNom = `${m.proprietaire[0].nom || ''} ${m.proprietaire[0].prenom || ''}`.trim();
+      } else if (m.proprietaire && m.proprietaire.nom) {
+        proprietaireNom = `${m.proprietaire.nom || ''} ${m.proprietaire.prenom || ''}`.trim();
+      }
+
+      // Département
+      const departementNom = Array.isArray(m.departement)
+        ? (m.departement[0]?.nom || 'Non défini')
+        : (m.departement?.nom || 'Non défini');
+
+      return {
+        ...m,
+        proprietaireNom,
+        departementNom,
+        marque: m.marque || 'Non défini',
+        modele: m.modele || 'Non défini',
+        couleur: m.couleur || 'Non défini',
+        numero_chassis: m.numero_chassis || 'Non défini',
+      };
+    });
 
     res.json({
       message: 'Liste des motos récupérée avec succès',
       total: count,
       page,
       limit,
-      motos: data
-    })
-
+      motos: motosWithFlat,
+    });
   } catch (err) {
-    console.error('Erreur getMotos:', err)
-    res.status(500).json({ message: 'Erreur lors de la récupération des motos', erreur: err.message })
+    console.error('Erreur getMotos:', err);
+    res.status(500).json({ message: 'Erreur lors de la récupération des motos', erreur: err.message });
   }
-}
+};
 
-/* ==========================================================
-   🆕 AJOUTER UNE MOTO
-========================================================== */
+
+// 🔹 Ajouter une nouvelle moto
 export const addMoto = async (req, res) => {
   try {
-    const body = req.body
-    const { id: userId, departement_id: userDept, role: userRole } = req.user
+    const body = req.body;
+    const { id: userId, departement_id: userDept, profil: userProfil } = req.user;
 
-    // Statut automatique selon rôle
-    const statut = ['agent_saisie', 'agent_total'].includes(userRole) ? 'en_attente_admin' : 'en_attente_dd'
-    const finalDeptId = body.departement_id || userDept
+    // 🔹 Statut automatique selon profil
+    const statut = ['agent_saisie', 'agent_total'].includes(userProfil) 
+        ? 'en_attente_admin' 
+        : 'en_attente_dd';
 
-    // ✅ Vérification numéro de châssis unique
+    // 🔹 Détermination sécurisée du département
+    let finalDeptId = body.departement_id ? parseInt(body.departement_id) : userDept;
+    if (isNaN(finalDeptId)) finalDeptId = userDept; 
+    if (!finalDeptId) return res.status(400).json({ message: 'Département invalide' });
+
+    // 🔹 Vérification numéro de châssis unique
     const { data: existing } = await supabase
       .from('motos')
       .select('id')
       .eq('numero_chassis', body.numero_chassis)
-      .maybeSingle()
-    if (existing !== null) return res.status(400).json({ message: 'Cette moto est déjà enregistrée.' })
+      .maybeSingle();
+    if (existing !== null) return res.status(400).json({ message: 'Cette moto est déjà enregistrée.' });
 
-    // ✅ Vérification propriétaire/mandataire
+    // 🔹 Vérification propriétaire/mandataire
     try {
-      if (body.proprietaire_id) await checkExist('proprietaires', body.proprietaire_id)
-      if (body.mandataire_id) await checkExist('proprietaires', body.mandataire_id)
+      if (body.proprietaire_id) await checkExist('proprietaires', body.proprietaire_id);
+      if (body.mandataire_id) await checkExist('proprietaires', body.mandataire_id);
     } catch (err) {
-      return res.status(400).json({ message: err.message })
+      return res.status(400).json({ message: err.message });
     }
 
-    // ✅ Conversion sécurisée des types
+    // 🔹 Conversion sécurisée des nombres
     const parseNumber = (val, name) => {
-      if (!val) return null
-      const num = parseFloat(val)
-      if (isNaN(num)) throw new Error(`${name} invalide`)
-      return num
-    }
+      if (!val) return null;
+      const num = parseFloat(val);
+      if (isNaN(num)) throw new Error(`${name} invalide`);
+      return num;
+    };
 
-    const poidsVideNum = parseNumber(body.poids_vide, 'Poids vide')
-    const nombrePlacesNum = parseNumber(body.nombre_places, 'Nombre de places')
-    const cylindreeNum = parseNumber(body.cylindree, 'Cylindrée')
-    const puissanceMoteurNum = parseNumber(body.puissance_moteur, 'Puissance moteur')
-    const chargeUtileNum = parseNumber(body.charge_utile, 'Charge utile')
-    const puissanceAdminNum = parseNumber(body.puissance_admin, 'Puissance admin')
-    const poidsChargeAutoriseeNum = parseNumber(body.poids_charge_autorisee, 'Poids charge autorisée')
-    const dateFabricationObj = body.date_fabrication ? new Date(body.date_fabrication) : null
-    const premiereMCObj = body.premiere_mise_circulation ? new Date(body.premiere_mise_circulation) : null
+    const poidsVideNum = parseNumber(body.poids_vide, 'Poids vide');
+    const nombrePlacesNum = parseNumber(body.nombre_places, 'Nombre de places');
+    const cylindreeNum = parseNumber(body.cylindree, 'Cylindrée');
+    const puissanceMoteurNum = parseNumber(body.puissance_moteur, 'Puissance moteur');
+    const chargeUtileNum = parseNumber(body.charge_utile, 'Charge utile');
+    const puissanceAdminNum = parseNumber(body.puissance_admin, 'Puissance admin');
+    const poidsChargeAutoriseeNum = parseNumber(body.poids_charge_autorisee, 'Poids charge autorisée');
+    const dateFabricationObj = body.date_fabrication ? new Date(body.date_fabrication) : null;
+    const premiereMCObj = body.premiere_mise_circulation ? new Date(body.premiere_mise_circulation) : null;
 
-    // ✅ Insertion
+    // 🔹 Insertion dans la table motos
     const { data, error } = await supabase
       .from('motos')
       .insert([{
@@ -153,17 +186,22 @@ export const addMoto = async (req, res) => {
         statut,
         date_saisie: new Date()
       }])
-      .select()
+      .select();
 
-    if (error) throw error
+    if (error) throw error;
 
-    res.status(201).json({ message: 'Moto enregistrée avec succès', moto_id: data[0].id, moto: data[0] })
+    // 🔹 Retour au frontend
+    res.status(201).json({ 
+      message: 'Moto enregistrée avec succès', 
+      id: data[0].id, // ✅ à stocker dans localStorage côté frontend
+      moto: data[0] 
+    });
 
   } catch (err) {
-    console.error('Erreur complète addMoto:', err)
-    res.status(500).json({ message: 'Erreur lors de l’ajout de la moto', erreur: err.message })
+    console.error('Erreur complète addMoto:', err);
+    res.status(500).json({ message: 'Erreur lors de l’ajout de la moto', erreur: err.message });
   }
-}
+};
 
 /* ==========================================================
    🛠️ ATTRIBUTION IMMATRICULATION PAR L'ADMIN

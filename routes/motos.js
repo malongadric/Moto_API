@@ -10,30 +10,23 @@ import { verifyToken, checkRole } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-/* ================================
-   🆕 Ajouter une moto (Agent / Admin)
-================================ */
+// Ajouter une moto
 router.post(
   '/',
   verifyToken,
-  checkRole('agent_saisie', 'agent_total', 'admin'),
+  checkRole('agent_saisie', 'agent_total', 'agent', 'admin'),
   addMoto
 );
 
-/* ================================
-   📋 Lister les motos
-   🔒 Filtrage par département si pas admin
-================================ */
+// Lister les motos
 router.get(
   '/',
   verifyToken,
-  checkRole('agent_saisie', 'agent_total', 'admin', 'dd'),
+  checkRole('agent_saisie', 'agent_total', 'agent', 'admin', 'directeur_departemental'),
   getMotos
 );
 
-/* ================================
-   🛠️ Admin → Attribuer immatriculation
-================================ */
+// Attribuer immatriculation
 router.put(
   '/:id/assign-immatriculation',
   verifyToken,
@@ -41,23 +34,19 @@ router.put(
   assignImmatriculation
 );
 
-/* ================================
-   ✅ DD → Valider la carte grise officielle
-================================ */
+// Valider la carte grise
 router.put(
   '/:id/validate-carte-grise',
   verifyToken,
-  checkRole('dd'),
+  checkRole('directeur_departemental'),
   validateCarteGrise
 );
 
-/* ================================
-   🔗 Liaison moto ↔ propriétaire / mandataire
-================================ */
+// Liaison moto ↔ propriétaire / mandataire
 router.put(
   '/:id/link-declarant',
   verifyToken,
-  checkRole('agent_saisie', 'agent_total', 'admin'),
+  checkRole('agent_saisie', 'agent_total', 'agent', 'admin'),
   linkDeclarant
 );
 

@@ -313,9 +313,18 @@
                         
                     </div>
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="alert('Simulation: Annulation du formulaire.');">Retour</button>
-                        <button type="submit" class="btn btn-primary">Enregistrer et Continuer</button>
-                    </div>
+    <button 
+        type="button" 
+        class="btn btn-secondary" 
+        onclick="window.history.back();"
+    >
+        Retour
+    </button>
+    <button type="submit" class="btn btn-primary">
+        Enregistrer et Continuer
+    </button>
+</div>
+
                 </form>
             </section>
 
@@ -358,6 +367,54 @@ document.addEventListener('DOMContentLoaded', function() {
         pageTitle.textContent = sectionTitles[targetId] || '';
         if (window.innerWidth <= 768) sidebar.classList.remove('open');
     }
+
+      // 🔹 Mise à jour footer utilisateur
+function updateSidebarFooter() {
+    const agentName = localStorage.getItem('utilisateur_nom') || 'Utilisateur inconnu';
+    const departementNom = localStorage.getItem('utilisateur_departement_nom') || 'Département non défini';
+    const footerName = document.getElementById('user-name');
+    const footerDept = document.getElementById('user-department');
+    if (footerName) footerName.textContent = agentName;
+    if (footerDept) footerDept.textContent = `Agent - ${departementNom}`;
+}
+
+// 🔹 Traçabilité auto
+function updateTraceability() {
+    const now = new Date();
+    const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    
+    const traceAgent = document.getElementById('trace-agent');
+    const traceDept = document.getElementById('trace-departement');
+    const traceDate = document.getElementById('trace-date');
+    const traceHeure = document.getElementById('trace-heure');
+
+    if (traceAgent) traceAgent.value = localStorage.getItem('utilisateur_nom') || 'Inconnu';
+    if (traceDept) traceDept.value = localStorage.getItem('utilisateur_departement_nom') || 'N/A';
+    if (traceDate) traceDate.value = now.toLocaleDateString('fr-FR', dateOptions);
+    if (traceHeure) traceHeure.value = now.toLocaleTimeString('fr-FR', timeOptions);
+}
+
+// 🔹 Initialisation
+updateSidebarFooter();
+updateTraceability();
+setInterval(() => { updateSidebarFooter(); updateTraceability(); }, 1000);
+
+// 🔹 Mise à jour si localStorage change
+window.addEventListener('storage', (event) => {
+    if (['utilisateur_nom', 'utilisateur_departement_nom'].includes(event.key)) {
+        updateSidebarFooter();
+        updateTraceability();
+    }
+});
+// 🔄 Si un autre onglet change les infos (ex: après login)
+window.addEventListener('storage', (event) => {
+    if (event.key === 'user') {
+        updateSidebarFooter();
+        updateTraceability();
+    }
+});
+
 
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
