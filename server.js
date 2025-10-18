@@ -14,6 +14,8 @@ import departements from './routes/departement.js';
 import dossiers from './routes/dossiers.js';
 import paiement from './routes/paiement.js';
 
+import dossierAdminRoutes from './routes/dossierAdminRoutes.js';
+
 
 
 
@@ -62,6 +64,12 @@ app.get('/api/test-supabase', async (req, res) => {
   if (error) return res.json({ message: 'Erreur', erreur: error.message });
   res.json({ message: 'OK', data });
 });
+
+
+
+
+app.use('/api/dossier_admin', dossierAdminRoutes);
+
 
 
 

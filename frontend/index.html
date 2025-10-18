@@ -700,6 +700,46 @@
  <script>
 document.addEventListener('DOMContentLoaded', () => {
 
+    // === Fonction pour afficher les messages stylés ===
+    function showMessage(message, type = 'info', icon = '') {
+        // Crée le conteneur si pas déjà présent
+        let container = document.getElementById('message-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'message-container';
+            container.style.position = 'fixed';
+            container.style.top = '1rem';
+            container.style.left = '50%';
+            container.style.transform = 'translateX(-50%)';
+            container.style.zIndex = '9999';
+            container.style.minWidth = '300px';
+            container.style.padding = '1rem 1.5rem';
+            container.style.borderRadius = '0.5rem';
+            container.style.fontSize = '1rem';
+            container.style.fontWeight = '600';
+            container.style.textAlign = 'center';
+            container.style.color = '#fff';
+            container.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            container.style.transition = 'opacity 0.5s ease';
+            container.style.opacity = '0';
+            document.body.appendChild(container);
+        }
+
+        // Choix de la couleur selon le type
+        switch(type) {
+            case 'success': container.style.backgroundColor = '#1E90FF'; break; // Bleu
+            case 'error': container.style.backgroundColor = '#dc3545'; break;
+            case 'warning': container.style.backgroundColor = '#ffc107'; container.style.color = '#000'; break;
+            default: container.style.backgroundColor = '#1E90FF';
+        }
+
+        container.innerHTML = icon ? `${icon} ${message}` : message;
+        container.style.opacity = '1';
+
+        // Disparaît après 3 secondes
+        setTimeout(() => { container.style.opacity = '0'; }, 3000);
+    }
+
     // === Afficher/Masquer le code d’accès ===
     const input = document.getElementById('code');
     const btn = document.getElementById('togglePassword');
@@ -736,14 +776,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === Configuration ===
     const loginForm = document.getElementById('iotvr');
-    const API_URL = 'https://moto-api-cika.onrender.com/api/auth/login'; // backend sur Render
+    const API_URL = 'https://moto-api-cika.onrender.com/api/auth/login';
 
     // === Soumission du formulaire ===
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const formData = new FormData(loginForm);
-        const deptId = parseInt(formData.get('departement_id')); // facultatif
+        const deptId = parseInt(formData.get('departement_id'));
         const data = {
             nom: formData.get('nom'),
             code: formData.get('code'),
@@ -761,12 +801,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (!response.ok) {
-                alert(result.message || 'Erreur lors de la connexion.');
+                showMessage(result.message || 'Erreur lors de la connexion.', 'error', '❌');
                 return;
             }
 
             // === Connexion réussie ===
-            alert('Connexion réussie ✅');
+            const userName = result.user.nom || data.nom;
+            showMessage(`Bienvenue ${userName} dans l’univers de la FNI ! On vous souhaite un excellent travail`, 'success', '🎉');
 
             // === Stockage des infos utilisateur dans localStorage ===
             if (result && result.user) {
@@ -776,37 +817,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('utilisateur_departement_nom', departements[result.user.departement_id] || 'N/A');
                 localStorage.setItem('utilisateur_profil', result.user.profil || data.profil || '');
                 localStorage.setItem('token', result.token || '');
+                if (result.moto_id) localStorage.setItem('moto_id', result.moto_id);
+            }
 
-                // Optionnel : stocker moto_id si renvoyé
-                if (result.moto_id) {
-                    localStorage.setItem('moto_id', result.moto_id);
+            // === Redirection après 3 secondes pour laisser le temps de lire le message ===
+            setTimeout(() => {
+                switch (result.user.profil) {
+                    case 'admin': window.location.href = 'admin_dashboard.html'; break;
+                    case 'agent': window.location.href = 'agent_dashboard.html'; break;
+                    case 'directeur departemental': window.location.href = 'directeur_dashboard.html'; break;
+                    case 'SD': window.location.href = 'sd_dashboard.html'; break;
+                    case 'super_directeur': window.location.href = 'super_directeur_dashboard.html'; break;
+                    default: window.location.href = 'index.html';
                 }
-            }
-
-            // === Redirection selon le profil ===
-            switch (result.user.profil) {
-                case 'admin':
-                   window.location.href = 'admin_dashboard.html';
-                   break;
-                case 'agent':
-                   window.location.href = 'agent_dashboard.html';
-                   break;
-                case 'directeur departemental':
-                   window.location.href = 'directeur_dashboard.html';
-                   break;
-                case 'SD':
-                   window.location.href = 'sd_dashboard.html';
-                   break;
-                case 'super_directeur':
-                   window.location.href = 'super_directeur_dashboard.html';
-                   break;
-                default:
-                   window.location.href = 'index.html';
-            }
+            }, 3000);
 
         } catch (error) {
             console.error('Erreur lors de la requête de connexion:', error);
-            alert('Une erreur s’est produite. Vérifiez votre connexion Internet.');
+            showMessage('Une erreur s’est produite. Vérifiez votre connexion Internet.', 'error', '⚠️');
         }
     });
 });

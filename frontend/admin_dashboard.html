@@ -636,162 +636,148 @@ window.addEventListener('storage', (event) => {
 }
 
 
-    
-// 🔹 Charger la liste des dossiers
-async function loadDossierList() {
-    const tbody = document.getElementById('dossiers-table-body');
+    // 🔹 Charger la liste des motos
+    async function loadMotoList() {
+    const tbody = document.getElementById('motos-table-body');
     if (!tbody) return console.error("tbody introuvable !");
 
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-        const response = await fetch("https://moto-api-cika.onrender.com/api/dossiers?page=1&limit=100", {
+        const response = await fetch("https://moto-api-cika.onrender.com/api/motos", {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
         const result = await response.json();
         console.log("Réponse API :", result);
 
-        let dossiersData = Array.isArray(result.dossiers) ? result.dossiers : [];
-        allDossiers = dossiersData;
-        filteredDossiers = [...allDossiers];
+        // normaliser les données
+        let motosData = [];
+        if (Array.isArray(result)) motosData = result;
+        else if (Array.isArray(result.data)) motosData = result.data;
+        else if (Array.isArray(result.motos)) motosData = result.motos;
+
+        allMotos = motosData;
+        filteredMotos = [...allMotos];
         currentPage = 1;
 
-        displayDossiers();
+        displayMotos();
         setupSearch();
         setupSorting();
 
-        if (allDossiers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">Aucun dossier enregistré</td></tr>';
+        if (allMotos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">Aucune moto enregistrée</td></tr>';
         }
 
     } catch (err) {
-        console.error("Erreur lors du chargement des dossiers :", err);
+        console.error("Erreur lors du chargement des motos :", err);
         tbody.innerHTML = '<tr><td colspan="6">Erreur lors du chargement</td></tr>';
     }
 }
 
-// 🔹 Affichage avec pagination
-function displayDossiers() {
-    const tbody = document.getElementById('dossiers-table-body');
+
+    // 🔹 Affichage avec pagination
+   function displayMotos() {
+    const tbody = document.getElementById('motos-table-body');
     if (!tbody) return;
 
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + rowsPerPage;
-    const dossiersToShow = filteredDossiers.slice(start, end);
+    const motosToShow = filteredMotos.slice(start, end);
 
-    if (dossiersToShow.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6">Aucun dossier trouvé.</td></tr>';
+    if (motosToShow.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Aucune moto trouvée.</td></tr>';
         const pagination = document.getElementById('pagination');
         if (pagination) pagination.innerHTML = '';
         return;
     }
 
-    tbody.innerHTML = dossiersToShow.map(d => `
+    tbody.innerHTML = motosToShow.map(moto => `
         <tr>
-            <td>${d.reference_dossier || ''}</td>
-            <td>${d.statut || ''}</td>
-            <td>${d.moto?.marque || ''} ${d.moto?.modele || ''}</td>
-            <td>${d.proprietaire?.nom || ''} ${d.proprietaire?.prenom || ''}</td>
-            <td>${d.mandataire?.nom || ''} ${d.mandataire?.prenom || ''}</td>
-            <td>${d.agent?.nom || ''}</td>
+            <td>${moto.numero_chassis || ''}</td>
+            <td>${moto.marque || ''}</td>
+            <td>${moto.modele || ''}</td>
+            <td>${moto.couleur || ''}</td>
+            <td>${moto.proprietaire?.nom || ''} ${moto.proprietaire?.prenom || ''}</td>
+            <td>${moto.departement?.nom || ''}</td>
         </tr>
     `).join('');
 
     setupPagination();
 }
 
-// 🔹 Pagination
-function setupPagination() {
-    const pagination = document.getElementById('pagination');
-    if (!pagination) return;
 
-    const pageCount = Math.ceil(filteredDossiers.length / rowsPerPage);
-    pagination.innerHTML = '';
+    // 🔹 Pagination
+    function setupPagination() {
+        const pagination = document.getElementById('pagination');
+        if (!pagination) return;
 
-    for (let i = 1; i <= pageCount; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i;
-        btn.disabled = (i === currentPage);
-        btn.addEventListener('click', () => {
-            currentPage = i;
-            displayDossiers();
-        });
-        pagination.appendChild(btn);
-    }
-}
+        const pageCount = Math.ceil(filteredMotos.length / rowsPerPage);
+        pagination.innerHTML = '';
 
-// 🔹 Recherche temps réel
-function setupSearch() {
-    const searchInput = document.getElementById('search-input');
-    if (!searchInput) return;
-
-    searchInput.addEventListener('input', function() {
-        const query = this.value.toLowerCase();
-        currentPage = 1;
-        filteredDossiers = allDossiers.filter(d =>
-            (d.reference_dossier || '').toLowerCase().includes(query) ||
-            (d.statut || '').toLowerCase().includes(query) ||
-            (d.moto?.marque || '').toLowerCase().includes(query) ||
-            (d.moto?.modele || '').toLowerCase().includes(query) ||
-            (`${d.proprietaire?.nom || ''} ${d.proprietaire?.prenom || ''}`).toLowerCase().includes(query) ||
-            (`${d.mandataire?.nom || ''} ${d.mandataire?.prenom || ''}`).toLowerCase().includes(query) ||
-            (d.agent?.nom || '').toLowerCase().includes(query)
-        );
-        displayDossiers();
-    });
-}
-
-// 🔹 Tri par colonne
-function setupSorting() {
-    const headers = document.querySelectorAll('.data-table th');
-    headers.forEach(th => {
-        th.addEventListener('click', function() {
-            const keyMap = {
-                "Référence": "reference_dossier",
-                "Statut": "statut",
-                "Moto": "moto",
-                "Propriétaire": "proprietaire",
-                "Mandataire": "mandataire",
-                "Agent": "agent"
-            };
-            const key = keyMap[th.textContent.trim()];
-            if (!key) return;
-
-            currentSort.asc = (currentSort.key === key) ? !currentSort.asc : true;
-            currentSort.key = key;
-
-            filteredDossiers.sort((a, b) => {
-                let valA = '';
-                let valB = '';
-
-                if (key === 'moto') {
-                    valA = `${a.moto?.marque || ''} ${a.moto?.modele || ''}`;
-                    valB = `${b.moto?.marque || ''} ${b.moto?.modele || ''}`;
-                } else if (key === 'proprietaire') {
-                    valA = `${a.proprietaire?.nom || ''} ${a.proprietaire?.prenom || ''}`;
-                    valB = `${b.proprietaire?.nom || ''} ${b.proprietaire?.prenom || ''}`;
-                } else if (key === 'mandataire') {
-                    valA = `${a.mandataire?.nom || ''} ${a.mandataire?.prenom || ''}`;
-                    valB = `${b.mandataire?.nom || ''} ${b.mandataire?.prenom || ''}`;
-                } else if (key === 'agent') {
-                    valA = a.agent?.nom || '';
-                    valB = b.agent?.nom || '';
-                } else {
-                    valA = a[key] || '';
-                    valB = b[key] || '';
-                }
-
-                if (valA < valB) return currentSort.asc ? -1 : 1;
-                if (valA > valB) return currentSort.asc ? 1 : -1;
-                return 0;
+        for (let i = 1; i <= pageCount; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.disabled = (i === currentPage);
+            btn.addEventListener('click', () => {
+                currentPage = i;
+                displayMotos();
             });
+            pagination.appendChild(btn);
+        }
+    }
 
-            displayDossiers();
+    // 🔹 Recherche temps réel
+    function setupSearch() {
+        const searchInput = document.getElementById('search-input');
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            currentPage = 1;
+            filteredMotos = allMotos.filter(moto =>
+                (moto.numero_chassis || '').toLowerCase().includes(query) ||
+                (moto.marque || '').toLowerCase().includes(query) ||
+                (moto.modele || '').toLowerCase().includes(query) ||
+                (`${moto.proprietaire_nom || ''} ${moto.proprietaire_prenom || ''}`).toLowerCase().includes(query)
+            );
+            displayMotos();
         });
-    });
-}
+    }
+
+    // 🔹 Tri par colonne
+    function setupSorting() {
+        const headers = document.querySelectorAll('.data-table th');
+        headers.forEach(th => {
+            th.addEventListener('click', function() {
+                const keyMap = {
+                    "N° Châssis": "numero_chassis",
+                    "Marque": "marque",
+                    "Modèle": "modele",
+                    "Couleur": "couleur",
+                    "Propriétaire": "proprietaire",
+                    "Département": "departement_nom"
+                };
+                const key = keyMap[th.textContent.trim()];
+                if (!key) return;
+
+                currentSort.asc = (currentSort.key === key) ? !currentSort.asc : true;
+                currentSort.key = key;
+
+                filteredMotos.sort((a, b) => {
+                    let valA = (key === 'proprietaire') ? `${a.proprietaire_nom} ${a.proprietaire_prenom}` : a[key] || '';
+                    let valB = (key === 'proprietaire') ? `${b.proprietaire_nom} ${b.proprietaire_prenom}` : b[key] || '';
+                    if (valA < valB) return currentSort.asc ? -1 : 1;
+                    if (valA > valB) return currentSort.asc ? 1 : -1;
+                    return 0;
+                });
+
+                displayMotos();
+            });
+        });
+    }
+
     // 🕘 Historique
     async function loadHistory() {
         const token = localStorage.getItem('token');
