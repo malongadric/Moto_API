@@ -4,7 +4,8 @@ import {
   getMotos, 
   assignImmatriculation, 
   validateCarteGrise, 
-  linkDeclarant 
+  linkDeclarant,
+  getMotoById
 } from '../controllers/motosController.js';
 import { verifyToken, checkRole } from '../middlewares/auth.js';
 
@@ -48,6 +49,14 @@ router.put(
   verifyToken,
   checkRole('agent_saisie', 'agent_total', 'agent', 'admin'),
   linkDeclarant
+);
+
+// Récupérer une moto par ID
+router.get(
+  '/:id',
+  verifyToken,
+  checkRole('agent_saisie', 'agent_total', 'agent', 'admin', 'directeur_departemental'),
+  getMotoById
 );
 
 export default router;

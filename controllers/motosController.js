@@ -101,6 +101,55 @@ export const getMotos = async (req, res) => {
   }
 };
 
+/* ==========================================================
+   🔍 OBTENIR UNE MOTO PAR ID
+========================================================== */
+export const getMotoById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifie que l'ID est valide
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ message: "ID invalide ou manquant." });
+    }
+
+    // Récupération depuis Supabase
+    const { data, error } = await supabase
+      .from("motos")
+      .select(`
+        id,
+        numero_chassis,
+        numero_immatriculation,
+        marque,
+        modele,
+        type,
+        couleur,
+        poids_vide,
+        puissance_moteur,
+        energie,
+        date_fabrication,
+        usage,
+        proprietaire:proprietaires (id, nom, prenom, cni, telephone),
+        mandataire:proprietaires (id, nom, prenom, cni, telephone),
+        departement:departements (nom),
+        structure:structures (nom)
+      `)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ message: "Moto introuvable." });
+
+    res.status(200).json({
+      message: "Moto récupérée avec succès",
+      moto: data
+    });
+  } catch (err) {
+    console.error("Erreur getMotoById:", err);
+    res.status(500).json({ message: "Erreur serveur lors de la récupération de la moto", erreur: err.message });
+  }
+};
+
 
 // 🔹 Ajouter une nouvelle moto
 export const addMoto = async (req, res) => {
