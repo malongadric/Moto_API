@@ -112,6 +112,10 @@
         </main>
     </div>
 <script>
+
+let dossier = null;
+let moto = null;
+
 document.addEventListener('DOMContentLoaded', async function() {
     const detailSummary = document.getElementById('detail-summary');
     const detailRefTitle = document.getElementById('detail-ref-title');
@@ -177,15 +181,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             if (resMand.ok) mandataire = await resMand.json();
         }
+let moto = null;
 
-        // 🔹 5️⃣ Récupération de la moto
-        let moto = null;
-        if (dossier.moto_id) {
-            const resMoto = await fetch(`https://moto-api-cika.onrender.com/api/motos/${dossier.moto_id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (resMoto.ok) moto = await resMoto.json();
-        }
+if (dossier.moto_id) {
+    const resMoto = await fetch(`https://moto-api-cika.onrender.com/api/motos/${dossier.moto_id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (resMoto.ok) {
+        const resJson = await resMoto.json();
+        // On s'assure que moto pointe sur les vrais champs
+        moto = resJson.moto || resJson.data || resJson;
+
+        // 🔹 Stocker moto_id dans localStorage pour usage futur
+        localStorage.setItem('moto_id', moto.id);
+    }
+}
+
 
         // 🔹 6️⃣ Affichage des informations
         detailRefTitle.textContent = dossier.reference_dossier;
@@ -205,11 +217,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <p><span class="label">Téléphone Mandataire:</span> <strong>${mandataire.telephone}</strong></p>
             ` : ''}
             <h4 style="margin-top: 20px;">B. Informations de la Moto</h4>
+            
             ${moto ? `
                 <p><span class="label">Marque / Modèle:</span> <strong>${moto.marque || '—'} ${moto.modele || ''}</strong></p>
                 <p><span class="label">N° Série (Châssis):</span> <strong>${moto.numero_chassis || '—'}</strong></p>
                 <p><span class="label">Couleur:</span> <strong>${moto.couleur || '—'}</strong></p>
             ` : 'Aucune moto trouvée.'}
+
+
             <h4 style="margin-top: 20px;">C. Traçabilité du Dossier</h4>
             <p><span class="label">Référence du Dossier:</span> <strong>${dossier.reference_dossier}</strong></p>
             <p><span class="label">Agent Traitant:</span> <strong>ID ${dossier.agent_id}</strong></p>
@@ -230,23 +245,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = 'liste_dossiers.html';
     });
 
-    document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
-        try {
-            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ statut: 'validé' })
-            });
-            if (!res.ok) throw new Error(`Erreur ${res.status}`);
-            alert(`✅ DOSSIER VALIDÉ : La référence ${dossier.reference_dossier} est VALIDE.`);
-            location.reload();
-        } catch (err) {
-            alert(`❌ Échec de validation : ${err.message}`);
-        }
-    });
+    document.getElementById('btn-valider-dossier').addEventListener('click', () => {
+        if (moto && moto.id) {
+        localStorage.setItem('moto_id', moto.id);
+    }
+    if (dossier) {
+        localStorage.setItem('reference_dossier', dossier.reference_dossier);
+
+    const reference = encodeURIComponent(dossier.reference_dossier);
+    window.location.href = `carte_grise_AVANT_FIN____.html?ref=${reference}`;
+
+    } else {
+        alert("⚠️ Dossier introuvable, impossible de continuer.");
+    }
+});
+
 
     document.getElementById('btn-rejeter-dossier').addEventListener('click', async () => {
         const motif = prompt(`⚠️ MOTIF DE REJET :`);

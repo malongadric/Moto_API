@@ -1,6 +1,6 @@
 // routes/immatriculations.js
 import express from 'express';
-import { attribuerNumero } from '../controllers/immatriculationcontroller.js';
+import { attribuerNumero,  } from '../controllers/immatriculationcontroller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { checkRole } from '../middlewares/role.js';
 

@@ -1,22 +1,28 @@
 // controllers/immatriculationController.js
 import supabase from '../config/db.js';
 
-/**
- * Attribue un numéro d'immatriculation à une moto
- * et met à jour le dossier correspondant
- */
 export const attribuerNumero = async (req, res) => {
   try {
-    const { motoId } = req.params;
+    // 🔹 Conversion en entier
+    const motoId = parseInt(req.params.motoId, 10);
+    if (isNaN(motoId)) {
+      console.error('ID de moto invalide:', req.params.motoId);
+      return res.status(400).json({ message: 'ID de moto invalide.' });
+    }
+
     const userId = req.user.id;
     const userRole = req.user.profil;
     const departementId = req.user.departement_id;
 
+    console.log('Utilisateur:', userId, 'Rôle:', userRole, 'Département:', departementId);
+
     if (userRole !== 'admin') {
+      console.warn('Utilisateur non autorisé à attribuer un numéro');
       return res.status(403).json({ message: 'Vous n’avez pas le droit d’attribuer un numéro.' });
     }
 
     // 1️⃣ Vérifie si la moto existe
+    console.log('Recherche moto avec ID:', motoId);
     const { data: moto, error: motoError } = await supabase
       .from('motos')
       .select('*, dossier_id')
@@ -24,23 +30,31 @@ export const attribuerNumero = async (req, res) => {
       .single();
 
     if (motoError || !moto) {
+      console.error('Erreur récupération moto:', motoError);
+      console.error('Résultat moto:', moto);
       return res.status(404).json({ message: 'Moto introuvable.' });
     }
+    console.log('Moto trouvée:', moto);
 
     // 2️⃣ Vérifie si la moto a déjà un numéro
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from('immatriculations')
       .select('id')
       .eq('moto_id', motoId)
       .maybeSingle();
 
+    if (existingError) {
+      console.error('Erreur récupération immatriculation existante:', existingError);
+    }
     if (existing) {
+      console.warn('Moto a déjà un numéro d’immatriculation:', existing.id);
       return res.status(400).json({ message: 'Cette moto a déjà un numéro d’immatriculation.' });
     }
 
     const typeVehicule = 'TAXI';
+    console.log('Type véhicule:', typeVehicule);
 
-    // Récupère la séquence pour ce département et type
+    // 3️⃣ Récupère la séquence pour ce département et type
     let { data: sequenceData, error: seqError } = await supabase
       .from('sequences_immatriculations')
       .select('*')
@@ -48,17 +62,27 @@ export const attribuerNumero = async (req, res) => {
       .eq('type_vehicule', typeVehicule)
       .single();
 
-    if (seqError && seqError.code === 'PGRST116') {
-      const { data: newSeq, error: newSeqError } = await supabase
-        .from('sequences_immatriculations')
-        .insert([{ departement_id: departementId, type_vehicule: typeVehicule, last_sequence: 0, last_serie: 'A' }])
-        .select()
-        .single();
-      if (newSeqError) throw newSeqError;
-      sequenceData = newSeq;
-    } else if (seqError) throw seqError;
+    if (seqError) {
+      console.warn('Erreur récupération séquence:', seqError);
+      if (seqError.code === 'PGRST116') {
+        console.log('Séquence inexistante, création d’une nouvelle...');
+        const { data: newSeq, error: newSeqError } = await supabase
+          .from('sequences_immatriculations')
+          .insert([{ departement_id: departementId, type_vehicule: typeVehicule, last_sequence: 0, last_serie: 'A' }])
+          .select()
+          .single();
+        if (newSeqError) {
+          console.error('Erreur création nouvelle séquence:', newSeqError);
+          throw newSeqError;
+        }
+        sequenceData = newSeq;
+      } else {
+        throw seqError;
+      }
+    }
+    console.log('Séquence actuelle:', sequenceData);
 
-    //  Génère la prochaine immatriculation
+    // 4️⃣ Génère la prochaine immatriculation
     let nextSequence = sequenceData.last_sequence + 1;
     let nextSerie = sequenceData.last_serie;
 
@@ -70,6 +94,7 @@ export const attribuerNumero = async (req, res) => {
 
     const seqFormatted = String(nextSequence).padStart(3, '0');
     const numeroImmatriculation = `${typeVehicule} ${seqFormatted} ${nextSerie}${departementId}`;
+    console.log('Numéro immatriculation généré:', numeroImmatriculation);
 
     // 5️⃣ Met à jour la séquence
     const { error: updateSeqError } = await supabase
@@ -78,7 +103,10 @@ export const attribuerNumero = async (req, res) => {
       .eq('departement_id', departementId)
       .eq('type_vehicule', typeVehicule);
 
-    if (updateSeqError) throw updateSeqError;
+    if (updateSeqError) {
+      console.error('Erreur mise à jour séquence:', updateSeqError);
+      throw updateSeqError;
+    }
 
     // 6️⃣ Insère dans la table immatriculations
     const { data: immatriculationData, error: insertError } = await supabase
@@ -91,7 +119,11 @@ export const attribuerNumero = async (req, res) => {
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      console.error('Erreur insertion immatriculation:', insertError);
+      throw insertError;
+    }
+    console.log('Immatriculation insérée:', immatriculationData);
 
     // 7️⃣ Met à jour le dossier lié à cette moto
     if (moto.dossier_id) {
@@ -101,6 +133,7 @@ export const attribuerNumero = async (req, res) => {
         .eq('id', moto.dossier_id);
 
       if (dossierError) console.error('Erreur mise à jour dossier:', dossierError);
+      else console.log('Dossier mis à jour avec immatriculation provisoire.');
     }
 
     // ✅ Résultat final
