@@ -503,71 +503,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    // 🔹 Formulaire Moto
-    if (motoForm) {
-        motoForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
+   if (motoForm) {
+    motoForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const token = (localStorage.getItem('token') || '').replace(/['"]+/g, '').trim();
+        if (!token) return alert("❌ Session expirée ou token manquant.");
 
-            const token = (localStorage.getItem('token') || '').replace(/['"]+/g, '').trim();
-            if (!token) { alert("❌ Session expirée ou token manquant."); return; }
+        const departementId = parseInt(localStorage.getItem('utilisateur_departement_id'));
+        const userId = parseInt(localStorage.getItem('user_id'));
+        if (!departementId || !userId) return alert("❌ Impossible de récupérer les infos de l'utilisateur.");
 
-            const departementId = parseInt(localStorage.getItem('utilisateur_departement_id'));
-            const userId = parseInt(localStorage.getItem('user_id'));
-            if (!departementId || !userId) { alert("❌ Impossible de récupérer les informations de l'utilisateur."); return; }
+        const data = Object.fromEntries(new FormData(motoForm).entries());
+        if (!data.numero_chassis?.trim()) return alert("❌ Le numéro de châssis est obligatoire.");
 
-            const data = Object.fromEntries(new FormData(motoForm).entries());
-            const payload = {
-                numero_chassis: data.numero_chassis,
-                serie_immatriculation: data.serie_immatriculation,
-                marque: data.marque,
-                modele: data.modele,
-                type: data.type,
-                date_fabrication: data.date_fabrication || null,
-                premiere_mise_circulation: data.premiere_mise_circulation || null,
-                reference_moteur: data.reference_moteur || null,
-                type_moteur: data.type_moteur || null,
-                energie: data.energie || null,
-                boite_vitesse: data.boite_vitesse || null,
-                cylindree: data.cylindree ? parseFloat(data.cylindree) : null,
-                puissance_moteur: data.puissance_moteur ? parseFloat(data.puissance_moteur) : null,
-                puissance_admin: data.puissance_admin ? parseFloat(data.puissance_admin) : null,
-                poids_vide: data.poids_vide ? parseFloat(data.poids_vide) : null,
-                charge_utile: data.charge_utile ? parseFloat(data.charge_utile) : null,
-                poids_charge_autorisee: data.poids_charge_autorisee ? parseFloat(data.poids_charge_autorisee) : null,
-                carrosserie: data.carrosserie || null,
-                couleur: data.couleur || null,
-                nombre_places: data.nombre_places ? parseInt(data.nombre_places) : null,
-                usage: data.usage || null,
-                etat: data.etat || null,
-                proprietaire_id: null,
-                mandataire_id: null,
-                departement_id: departementId,
-                cree_par: userId
-            };
+        let payload = {
+            ...data,
+            cylindree: data.cylindree ? parseFloat(data.cylindree) : null,
+            puissance_moteur: data.puissance_moteur ? parseFloat(data.puissance_moteur) : null,
+            puissance_admin: data.puissance_admin ? parseFloat(data.puissance_admin) : null,
+            poids_vide: data.poids_vide ? parseFloat(data.poids_vide) : null,
+            charge_utile: data.charge_utile ? parseFloat(data.charge_utile) : null,
+            poids_charge_autorisee: data.poids_charge_autorisee ? parseFloat(data.poids_charge_autorisee) : null,
+            nombre_places: data.nombre_places ? parseInt(data.nombre_places) : null,
+            departement_id: departementId,
+            cree_par: userId,
+            proprietaire_id: null,
+            mandataire_id: null
+        };
 
-            try {
-                const response = await fetch("https://moto-api-cika.onrender.com/api/motos", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.message || "Erreur lors de l’enregistrement");
+        Object.keys(payload).forEach(k => { if (payload[k] === "" || payload[k] === null) delete payload[k]; });
 
-                if (result.moto_id) {
-                    localStorage.setItem('moto_id', result.moto_id);
-                    console.log("✅ Moto ID enregistré :", result.moto_id);
-                    window.location.href = "page_de_choix.html";
-                } else {
-                    throw new Error("Impossible de récupérer l'ID de la moto");
-                }
+        try {
+            // Vérifier si la moto existe déjà
+            const checkRes = await fetch(`https://moto-api-cika.onrender.com/api/motos?numero_chassis=${data.numero_chassis}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const existing = await checkRes.json();
+            if (Array.isArray(existing) && existing.length > 0) return alert("⚠️ Cette moto est déjà enregistrée.");
 
-            } catch (error) {
-                console.error("Erreur moto :", error);
-                alert("❌ " + error.message);
-            }
-        });
-    }
+            // Enregistrement
+            const response = await fetch("https://moto-api-cika.onrender.com/api/motos", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Erreur serveur");
+
+            const motoId = result.moto_id || result.id;
+            if (!motoId) throw new Error("Impossible de récupérer l'ID de la moto");
+
+            localStorage.setItem('moto_id', motoId);
+            console.log("✅ Moto ID enregistré :", motoId);
+            window.location.href = "page_de_choix.html";
+
+        } catch (error) {
+            console.error("Erreur moto :", error);
+            alert("❌ " + error.message);
+        }
+    });
+}
+
+
 
     // 🔹 Charger la liste des motos avec noms des propriétaires et départements
 async function loadMotoList() {

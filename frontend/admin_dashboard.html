@@ -310,24 +310,25 @@
             
                 <div class="table-container">
   <table class="data-table">
-    <thead>
-      <tr>
-        <th data-key="reference_dossier">Référence dossier</th>
-        <th data-key="agent_nom">Agent</th>
-        <th data-key="proprietaire_nom">Propriétaire</th>
-        <th data-key="departement_nom">Département</th>
-        <th data-key="statut">Statut</th>
-      </tr>
-    </thead>
-    <tbody id="dossiers-table-body">
-      <!-- Les dossiers en attente seront chargés ici -->
-    </tbody>
-  </table>
+  <thead>
+    <tr>
+      <th data-key="reference_dossier">Référence dossier</th>
+      <th data-key="date_soumission">Date de soumission</th>
+      <th data-key="proprietaire_nom">Propriétaire</th>
+      <th data-key="statut">Statut</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="dossiers-table-body">
+    <!-- Les dossiers en attente seront chargés ici -->
+  </tbody>
+</table>
+
 </div>
 
 <div id="pagination" style="margin-top: 10px;"></div>
 
-            </section>
+</section>
         
             <section id="form-section" class="content-section">
                 <form id="moto-form">
@@ -406,26 +407,29 @@
             </section>
 
             <section id="history-section" class="content-section">
-                <input type="text" id="search-history" placeholder="Rechercher par action, châssis, immatriculation ou agent..." style="margin-bottom:10px; padding:5px; width:100%;">
-            
-                <table id="history-table" style="width:100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background-color:#f2f2f2;">
-                            <th style="border:1px solid #ccc; padding:8px;">ID Dossier</th>
-                            <th style="border:1px solid #ccc; padding:8px;">Réf Dossier</th>
-                            <th style="border:1px solid #ccc; padding:8px;">Agent</th>
-                            <th style="border:1px solid #ccc; padding:8px;">Acteur</th>
-                            <th style="border:1px solid #ccc; padding:8px;">Immatriculation</th>
-                            <th style="border:1px solid #ccc; padding:8px;">Date</th>
-                            <th style="border:1px solid #ccc; padding:8px;">Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
-            
-                <div id="history-pagination" style="margin-top:10px;"></div>
-            </section>
+    <!-- Champ de recherche -->
+    <input type="text" id="search-input" placeholder="Rechercher par référence, propriétaire, département ou statut..." 
+           style="margin-bottom:10px; padding:5px; width:100%;">
+
+    <!-- Tableau des dossiers -->
+    <table class="data-table" id="history-table" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#f2f2f2; cursor:pointer;">
+                <th style="border:1px solid #ccc; padding:8px;">Référence dossier</th>
+                <th style="border:1px solid #ccc; padding:8px;">Date de soumission</th>
+                <th style="border:1px solid #ccc; padding:8px;">Propriétaire</th>
+                <th style="border:1px solid #ccc; padding:8px;">Département</th>
+                <th style="border:1px solid #ccc; padding:8px;">Statut</th>
+                <th style="border:1px solid #ccc; padding:8px;">Action</th>
+            </tr>
+        </thead>
+        <tbody id="dossiers-table-body"></tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div id="pagination" style="margin-top:10px;"></div>
+</section>
+
         </main>
     </div>
 
@@ -444,17 +448,10 @@ document.addEventListener('DOMContentLoaded', function() {
         'history-section': 'Historique des activités'
     };
 
-    // Variables pour la pagination et le tri
-    // let allMotos = [];
-    // let filteredMotos = [];
-    // let currentPage = 1;
-    // const rowsPerPage = 10;
-    // let currentSort = { key: '', asc: true };
-
     let allDossiers = [];
     let filteredDossiers = [];
     let currentPage = 1;
-    let rowsPerPage = 10;
+    const rowsPerPage = 10;
     let currentSort = { key: '', asc: true };
 
     // 🔁 Changement d'affichage des sections
@@ -471,80 +468,61 @@ document.addEventListener('DOMContentLoaded', function() {
         pageTitle.textContent = sectionTitles[targetId];
         if (window.innerWidth <= 768) sidebar.classList.remove('open');
 
-        if (targetId === 'list-section') loadMotoList();
+        if (targetId === 'list-section') loadDossierList();
         if (targetId === 'history-section') loadHistory();
     }
-// 🧩 Fonction de mise à jour du footer utilisateur
-function updateSidebarFooter() {
-    const storedUser = JSON.parse(localStorage.getItem('user')) || {};
-    const agentName = storedUser.nom || 'Utilisateur inconnu';
-    const departementNom = storedUser.departement_nom || 'Département non défini';
 
-    const footerName = document.getElementById('user-name');
-    const footerDept = document.getElementById('user-department');
+    // 🧩 Footer utilisateur
+    function updateSidebarFooter() {
+        const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+        const agentName = storedUser.nom || 'Utilisateur inconnu';
+        const departementNom = storedUser.departement_nom || 'Département non défini';
+        const profil = storedUser.profil || 'Profil inconnu';
 
-    if (footerName) footerName.textContent = adminName;
-    if (footerDept) footerDept.textContent = `Admin - ${departementNom}`;
-}
+        const footerName = document.getElementById('user-name');
+        const footerDept = document.getElementById('user-department');
 
-// 🧩 Fonction de mise à jour du footer utilisateur
-function updateSidebarFooter() {
-    const storedUser = JSON.parse(localStorage.getItem('user')) || {};
-    const agentName = storedUser.nom || 'Utilisateur inconnu';
-    const departementNom = storedUser.departement_nom || 'Département non défini';
-    const profil = storedUser.profil || 'Profil inconnu';
+        if (footerName) footerName.textContent = agentName;
+        if (footerDept) footerDept.textContent = `${profil.charAt(0).toUpperCase() + profil.slice(1)} - ${departementNom}`;
+    }
 
-    const footerName = document.getElementById('user-name');
-    const footerDept = document.getElementById('user-department');
+    // 🕓 Traçabilité auto
+    function updateTraceability() {
+        const now = new Date();
+        const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
 
-    if (footerName) footerName.textContent = agentName;
-    if (footerDept) footerDept.textContent = `${profil.charAt(0).toUpperCase() + profil.slice(1)} - ${departementNom}`;
-}
+        const storedUser = JSON.parse(localStorage.getItem('user')) || {};
+        const agentName = storedUser.nom || 'Inconnu';
+        const departementNom = storedUser.departement_nom || 'N/A';
 
-// 🕓 Traçabilité auto
-function updateTraceability() {
-    const now = new Date();
-    const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
-    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        const traceAgent = document.getElementById('trace-agent');
+        const traceDept = document.getElementById('trace-departement');
+        const traceDate = document.getElementById('trace-date');
+        const traceHeure = document.getElementById('trace-heure');
 
-    const storedUser = JSON.parse(localStorage.getItem('user')) || {};
-    const agentName = storedUser.nom || 'Inconnu';
-    const departementNom = storedUser.departement_nom || 'N/A';
+        if (traceAgent) traceAgent.value = agentName;
+        if (traceDept) traceDept.value = departementNom;
+        if (traceDate) traceDate.value = now.toLocaleDateString('fr-FR', dateOptions);
+        if (traceHeure) traceHeure.value = now.toLocaleTimeString('fr-FR', timeOptions);
+    }
 
-    const traceAgent = document.getElementById('trace-agent');
-    const traceDept = document.getElementById('trace-departement');
-    const traceDate = document.getElementById('trace-date');
-    const traceHeure = document.getElementById('trace-heure');
-
-    if (traceAgent) traceAgent.value = agentName;
-    if (traceDept) traceDept.value = departementNom;
-    if (traceDate) traceDate.value = now.toLocaleDateString('fr-FR', dateOptions);
-    if (traceHeure) traceHeure.value = now.toLocaleTimeString('fr-FR', timeOptions);
-}
-
-// ✅ Appels initiaux
-updateSidebarFooter();
-updateTraceability();
-
-// ⏱️ Mise à jour continue
-setInterval(() => {
+    // ✅ Appels initiaux
     updateSidebarFooter();
     updateTraceability();
-}, 1000);
-
-// 🔄 Met à jour si changement dans le localStorage
-window.addEventListener('storage', (event) => {
-    if (event.key === 'user') {
+    setInterval(() => {
         updateSidebarFooter();
         updateTraceability();
-    }
-});
+    }, 1000);
 
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'user') {
+            updateSidebarFooter();
+            updateTraceability();
+        }
+    });
 
-    // MODIFICATION 4: Appel de loadMotoList() au chargement
-    loadMotoList(); 
-
-    // 🧭 Navigation
+    // 🔹 Navigation
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -553,232 +531,188 @@ window.addEventListener('storage', (event) => {
         });
     });
 
-    // 🚀 Soumission du formulaire Moto
-    if (motoForm) {
-    motoForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
 
-        const storedUser = JSON.parse(localStorage.getItem('user')) || {};
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-            alert("Session expirée. Veuillez vous reconnecter.");
-            window.location.href = "/frontend/index.html";
-            return;
-        }
-
-        const formData = new FormData(motoForm);
-        const data = Object.fromEntries(formData.entries());
-
-        const payload = {
-            numero_chassis: data.numero_chassis,
-            serie_immatriculation: data.serie_immatriculation,
-            marque: data.marque,
-            modele: data.modele,
-            type: data.type,
-            date_fabrication: data.date_fabrication,
-            premiere_mise_circulation: data.premiere_mise_circulation,
-            reference_moteur: data.reference_moteur,
-            type_moteur: data.type_moteur,
-            energie: data.energie,
-            boite_vitesse: data.boite_vitesse,
-            cylindree: data.cylindree,
-            puissance_moteur: data.puissance_moteur,
-            puissance_admin: data.puissance_admin,
-            poids_vide: data.poids_vide,
-            charge_utile: data.charge_utile,
-            poids_charge_autorisee: data.poids_charge_autorisee,
-            carrosserie: data.carrosserie,
-            couleur: data.couleur,
-            nombre_places: data.nombre_places,
-            usage: data.usage,
-            etat: data.etat,
-            proprietaire_nom: data.nom_proprietaire,
-            proprietaire_prenom: data.prenom_proprietaire,
-            proprietaire_cni: data.cni_proprietaire,
-            mandataire_nom: data.nom_mandataire || null,
-            mandataire_prenom: data.prenom_mandataire || null,
-            mandataire_cni: data.cni_mandataire || null,
-            departement_id: storedUser.departement_id,
-            departement_nom: storedUser.departement_nom,
-            saisie_par: storedUser.nom
-        };
-
-        try {
-            const response = await fetch("https://moto-api-cika.onrender.com/api/motos", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) throw new Error(result.message || "Erreur lors de l’enregistrement");
-
-            // ✅ Stockage du moto_id dans localStorage
-            if (result.moto_id) {
-                localStorage.setItem('moto_id', result.moto_id);
-            } else {
-                console.warn("⚠️ L'API n'a pas retourné de moto_id !");
-            }
-
-            alert("✅ Enregistrement réussi : " + result.message);
-            window.location.href = "page_de_choix.html";
-
-        } catch (error) {
-            console.error("Erreur :", error);
-            alert("❌ Erreur : " + error.message);
-        }
-    });
-}
-
-
-    // 🔹 Charger la liste des motos
-    async function loadMotoList() {
-    const tbody = document.getElementById('motos-table-body');
+// ==============================
+// 🔹 Charger la liste des dossiers
+// ==============================
+async function loadDossierList() {
+    const tbody = document.getElementById('dossiers-table-body');
     if (!tbody) return console.error("tbody introuvable !");
 
     const token = localStorage.getItem('token');
     if (!token) return;
 
     try {
-        const response = await fetch("https://moto-api-cika.onrender.com/api/motos", {
+        const response = await fetch("https://moto-api-cika.onrender.com/api/dossiers", {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
         const result = await response.json();
-        console.log("Réponse API :", result);
 
-        // normaliser les données
-        let motosData = [];
-        if (Array.isArray(result)) motosData = result;
-        else if (Array.isArray(result.data)) motosData = result.data;
-        else if (Array.isArray(result.motos)) motosData = result.motos;
-
-        allMotos = motosData;
-        filteredMotos = [...allMotos];
+        // Vérifie si la clé "dossiers" existe
+        allDossiers = result.dossiers || result || [];
+        filteredDossiers = [...allDossiers];
         currentPage = 1;
 
-        displayMotos();
-        setupSearch();
-        setupSorting();
+        displayDossiers();
+        setupDossierSearch();
+        setupDossierSorting();
 
-        if (allMotos.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">Aucune moto enregistrée</td></tr>';
+        if (allDossiers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">Aucun dossier trouvé.</td></tr>';
         }
 
     } catch (err) {
-        console.error("Erreur lors du chargement des motos :", err);
+        console.error("Erreur lors du chargement des dossiers :", err);
         tbody.innerHTML = '<tr><td colspan="6">Erreur lors du chargement</td></tr>';
     }
 }
 
-
-    // 🔹 Affichage avec pagination
-   function displayMotos() {
-    const tbody = document.getElementById('motos-table-body');
+// ==============================
+// 🔹 Affichage des dossiers
+// ==============================
+function displayDossiers() {
+    const tbody = document.getElementById('dossiers-table-body');
     if (!tbody) return;
 
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + rowsPerPage;
-    const motosToShow = filteredMotos.slice(start, end);
+    const dossiersToShow = filteredDossiers.slice(start, end);
 
-    if (motosToShow.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6">Aucune moto trouvée.</td></tr>';
+    if (dossiersToShow.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">Aucun dossier trouvé.</td></tr>';
         const pagination = document.getElementById('pagination');
         if (pagination) pagination.innerHTML = '';
         return;
     }
 
-    tbody.innerHTML = motosToShow.map(moto => `
-        <tr>
-            <td>${moto.numero_chassis || ''}</td>
-            <td>${moto.marque || ''}</td>
-            <td>${moto.modele || ''}</td>
-            <td>${moto.couleur || ''}</td>
-            <td>${moto.proprietaire?.nom || ''} ${moto.proprietaire?.prenom || ''}</td>
-            <td>${moto.departement?.nom || ''}</td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = dossiersToShow.map(d => {
+        const proprietaireFull = `${d.proprietaire_nom || ''} ${d.proprietaire_prenom || ''}`.trim() || '—';
 
-    setupPagination();
+        return `
+            <tr>
+                <td>${d.reference_dossier || ''}</td>
+                <td>${d.date_soumission ? new Date(d.date_soumission).toLocaleString('fr-FR') : ''}</td>
+                <td>${proprietaireFull}</td>
+                <td>${d.statut || ''}</td>
+                <td><button class="btn-detail" onclick="voirDetail(${d.dossier_id})">Voir détail</button></td>
+            </tr>
+        `;
+    }).join('');
+
+    setupDossierPagination();
 }
 
 
-    // 🔹 Pagination
-    function setupPagination() {
-        const pagination = document.getElementById('pagination');
-        if (!pagination) return;
+// ==============================
+// 🔹 Voir détail d’un dossier
+// ==============================
+function voirDetail(dossierId) {
+    if (!dossierId) return console.error("Aucun ID dossier fourni");
 
-        const pageCount = Math.ceil(filteredMotos.length / rowsPerPage);
-        pagination.innerHTML = '';
+    // Stocker l’ID dans le localStorage (pour que verification.html puisse l’utiliser)
+    localStorage.setItem('selected_dossier_id', dossierId);
 
-        for (let i = 1; i <= pageCount; i++) {
-            const btn = document.createElement('button');
-            btn.textContent = i;
-            btn.disabled = (i === currentPage);
-            btn.addEventListener('click', () => {
-                currentPage = i;
-                displayMotos();
-            });
-            pagination.appendChild(btn);
-        }
-    }
+    // Redirection vers la page de vérification
+    window.location.href = 'verification.html';
+}
 
-    // 🔹 Recherche temps réel
-    function setupSearch() {
-        const searchInput = document.getElementById('search-input');
-        if (!searchInput) return;
 
-        searchInput.addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            currentPage = 1;
-            filteredMotos = allMotos.filter(moto =>
-                (moto.numero_chassis || '').toLowerCase().includes(query) ||
-                (moto.marque || '').toLowerCase().includes(query) ||
-                (moto.modele || '').toLowerCase().includes(query) ||
-                (`${moto.proprietaire_nom || ''} ${moto.proprietaire_prenom || ''}`).toLowerCase().includes(query)
-            );
-            displayMotos();
+// ==============================
+// 🔹 Pagination
+// ==============================
+function setupDossierPagination() {
+    const pagination = document.getElementById('pagination');
+    if (!pagination) return;
+
+    const pageCount = Math.ceil(filteredDossiers.length / rowsPerPage);
+    pagination.innerHTML = '';
+
+    for (let i = 1; i <= pageCount; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.disabled = (i === currentPage);
+        btn.addEventListener('click', () => {
+            currentPage = i;
+            displayDossiers();
         });
+        pagination.appendChild(btn);
     }
+}
 
-    // 🔹 Tri par colonne
-    function setupSorting() {
-        const headers = document.querySelectorAll('.data-table th');
-        headers.forEach(th => {
-            th.addEventListener('click', function() {
-                const keyMap = {
-                    "N° Châssis": "numero_chassis",
-                    "Marque": "marque",
-                    "Modèle": "modele",
-                    "Couleur": "couleur",
-                    "Propriétaire": "proprietaire",
-                    "Département": "departement_nom"
-                };
-                const key = keyMap[th.textContent.trim()];
-                if (!key) return;
+// ==============================
+// 🔹 Recherche
+// ==============================
+function setupDossierSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (!searchInput) return;
 
-                currentSort.asc = (currentSort.key === key) ? !currentSort.asc : true;
-                currentSort.key = key;
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        currentPage = 1;
+        filteredDossiers = allDossiers.filter(d =>
+            (d.reference_dossier || '').toLowerCase().includes(query) ||
+            ((d.proprietaire_nom || '') + ' ' + (d.proprietaire_prenom || '')).toLowerCase().includes(query) ||
+            (d.departement_nom || '').toLowerCase().includes(query) ||
+            (d.statut || '').toLowerCase().includes(query)
+        );
+        displayDossiers();
+    });
+}
 
-                filteredMotos.sort((a, b) => {
-                    let valA = (key === 'proprietaire') ? `${a.proprietaire_nom} ${a.proprietaire_prenom}` : a[key] || '';
-                    let valB = (key === 'proprietaire') ? `${b.proprietaire_nom} ${b.proprietaire_prenom}` : b[key] || '';
-                    if (valA < valB) return currentSort.asc ? -1 : 1;
-                    if (valA > valB) return currentSort.asc ? 1 : -1;
-                    return 0;
-                });
+// ==============================
+// 🔹 Tri des colonnes
+// ==============================
+function setupDossierSorting() {
+    const headers = document.querySelectorAll('.data-table th');
+    headers.forEach(th => {
+        th.addEventListener('click', function() {
+            const keyMap = {
+                "Référence dossier": "reference_dossier",
+                "Date de soumission": "date_soumission",
+                "Propriétaire": "proprietaire_nom",
+                "Département": "departement_nom",
+                "Statut": "statut"
+            };
+            const key = keyMap[th.textContent.trim()];
+            if (!key) return;
 
-                displayMotos();
+            currentSort.asc = (currentSort.key === key) ? !currentSort.asc : true;
+            currentSort.key = key;
+
+            filteredDossiers.sort((a, b) => {
+                let valA = a[key] || '';
+                let valB = b[key] || '';
+
+                if (key === 'proprietaire_nom') {
+                    valA = `${a.proprietaire_nom || ''} ${a.proprietaire_prenom || ''}`.trim();
+                    valB = `${b.proprietaire_nom || ''} ${b.proprietaire_prenom || ''}`.trim();
+                }
+
+                if (valA < valB) return currentSort.asc ? -1 : 1;
+                if (valA > valB) return currentSort.asc ? 1 : -1;
+                return 0;
             });
-        });
-    }
 
-    // 🕘 Historique
+            displayDossiers();
+        });
+    });
+}
+
+// ==============================
+// 🔹 Détail du dossier
+// ==============================
+function voirDetail(dossierId) {
+    window.location.href = `verification.html?id=${dossierId}`;
+}
+
+
+
+// Lancer le chargement au démarrage
+document.addEventListener('DOMContentLoaded', loadDossierList);
+
+// 🔹 Historique
+
     async function loadHistory() {
         const token = localStorage.getItem('token');
         const historySection = document.getElementById('history-section');
@@ -791,7 +725,7 @@ window.addEventListener('storage', (event) => {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             const history = await response.json();
-            if (!Array.isArray(history) || history.length === 0) {
+            if (!Array.isArray(history.dossiers) || history.dossiers.length === 0) {
                 historySection.innerHTML = "<p>Aucun historique trouvé.</p>";
                 return;
             }
@@ -799,12 +733,12 @@ window.addEventListener('storage', (event) => {
             const ul = document.createElement('ul');
             ul.className = "history-list";
 
-            history.forEach(h => {
+            history.dossiers.forEach(h => {
                 const li = document.createElement('li');
                 li.innerHTML = `
                     <span class="history-icon">📝</span>
-                    ${h.action} - ${h.numero_chassis || ''} par ${h.agent}
-                    <span class="history-date">${new Date(h.date).toLocaleString('fr-FR')}</span>
+                    ${h.reference_dossier} - ${h.statut} - Acteur: ${h.acteur_id}
+                    <span class="history-date">${new Date(h.date_soumission).toLocaleString('fr-FR')}</span>
                 `;
                 ul.appendChild(li);
             });
@@ -818,15 +752,20 @@ window.addEventListener('storage', (event) => {
         }
     }
 
-    // 📱 Toggle Sidebar
+    // 🔹 Toggle Sidebar
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             sidebar.classList.toggle('open');
         });
     }
 
+    // 🔹 Fonction Voir détail
+    window.voirDetail = function(dossierId) {
+        alert("Voir détail du dossier ID: " + dossierId);
+        // Ici tu pourras ouvrir un modal ou une nouvelle page
+    }
+
 });
 </script>
-
 </body>
 </html>

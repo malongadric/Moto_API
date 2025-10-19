@@ -65,31 +65,115 @@ export const addDossier = async (req, res) => {
 };
 
 /* ==========================================================
-   📋 LISTER LES DOSSIERS
+   📋 LISTER LES DOSSIERS (avec relations)
    ========================================================== */
+
+
 export const getDossiers = async (req, res) => {
   try {
-    if (!req.user?.id) return res.status(401).json({ message: "Utilisateur non authentifié" });
+    // 🔹 Vérifier l'authentification
+    if (!req.user?.id) 
+      return res.status(401).json({ message: "Utilisateur non authentifié" });
 
-    const { reference_dossier = "", page = 1, limit = 10, sortBy = "date_soumission", order = "desc" } = req.query;
-    const from = (page - 1) * limit;
+    // 🔹 Paramètres de pagination et tri
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "date_soumission",
+      order = "desc"
+    } = req.query;
+
+    const from = (page - 1) * parseInt(limit);
     const to = from + parseInt(limit) - 1;
 
-    const { data, error } = await supabase
+    // 🔹 Requête avec jointures
+    let query = supabase
       .from("dossier")
-      .select("*")
-      .ilike("reference_dossier", `%${reference_dossier}%`)
+      .select(`
+        dossier_id,
+        reference_dossier,
+        date_soumission,
+        statut,
+        moto:motos(id, numero_chassis, numero_immatriculation, marque, modele),
+        proprietaire:proprietaires(nom, prenom),
+        mandataire:mandataires(nom, prenom),
+        departement:departements(nom)
+      `)
       .range(from, to)
       .order(sortBy, { ascending: order === "asc" });
 
+    // 🔒 Filtrer par département si pas admin/super_directeur
+    if (!['admin', 'super_directeur'].includes(req.user.role)) {
+      query = query.eq('departement_id', req.user.departement_id);
+    }
+
+    const { data, error, count } = await query;
     if (error) return res.status(400).json({ message: error.message });
 
-    res.json({ message: `Dossiers correspondant à "${reference_dossier}"`, dossiers: data || [] });
+    // 🔹 Transformer les données pour le frontend
+    const dossiers = data.map(d => {
+      // Propriétaire
+      const proprietaireNom = Array.isArray(d.proprietaire) && d.proprietaire.length
+        ? d.proprietaire[0].nom
+        : d.proprietaire?.nom || "Non assigné";
+      const proprietairePrenom = Array.isArray(d.proprietaire) && d.proprietaire.length
+        ? d.proprietaire[0].prenom
+        : d.proprietaire?.prenom || "";
+
+      // Mandataire
+      const mandataireNom = Array.isArray(d.mandataire) && d.mandataire.length
+        ? d.mandataire[0].nom
+        : d.mandataire?.nom || "";
+      const mandatairePrenom = Array.isArray(d.mandataire) && d.mandataire.length
+        ? d.mandataire[0].prenom
+        : d.mandataire?.prenom || "";
+
+      // Département
+      const departementNom = Array.isArray(d.departement) && d.departement.length
+        ? d.departement[0].nom
+        : d.departement?.nom || "—";
+
+      // Moto
+      const moto = d.moto?.[0] || d.moto || {};
+      const moto_id = moto.id || null;
+      const numero_chassis = moto.numero_chassis || "";
+      const numero_immatriculation = moto.numero_immatriculation || "";
+      const marque = moto.marque || "";
+      const modele = moto.modele || "";
+
+      return {
+        dossier_id: d.dossier_id,
+        reference_dossier: d.reference_dossier,
+        date_soumission: d.date_soumission,
+        statut: d.statut,
+        proprietaire_nom: proprietaireNom,
+        proprietaire_prenom: proprietairePrenom,
+        mandataire_nom: mandataireNom,
+        mandataire_prenom: mandatairePrenom,
+        departement_nom: departementNom,
+        moto_id,
+        numero_chassis,
+        numero_immatriculation,
+        marque,
+        modele
+      };
+    });
+
+    // 🔹 Retour JSON
+    res.json({
+      message: "Liste des dossiers récupérée avec succès",
+      total: count || dossiers.length,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      dossiers
+    });
+
   } catch (err) {
     console.error("❌ Erreur serveur getDossiers:", err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
+
 
 /* ==========================================================
    🔎 OBTENIR LES DÉTAILS D’UN DOSSIER

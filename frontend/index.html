@@ -807,7 +807,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // === Connexion réussie ===
             const userName = result.user.nom || data.nom;
-            showMessage(`Bienvenue ${userName} dans l’univers de la FNI ! On vous souhaite un excellent travail`, 'success', '🎉');
+            showMessage(`Bienvenue ${userName} dans l’univers de la FNI ! On vous souhaite un excellent travail`);
 
             // === Stockage des infos utilisateur dans localStorage ===
             if (result && result.user) {
@@ -830,7 +830,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'super_directeur': window.location.href = 'super_directeur_dashboard.html'; break;
                     default: window.location.href = 'index.html';
                 }
-            }, 3000);
+            }, 5000);
 
         } catch (error) {
             console.error('Erreur lors de la requête de connexion:', error);
