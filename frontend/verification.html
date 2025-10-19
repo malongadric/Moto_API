@@ -120,17 +120,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 🔹 Récupération de la référence depuis URL ou localStorage
     const urlParams = new URLSearchParams(window.location.search);
     let referenceDossierRaw = urlParams.get('ref') || localStorage.getItem('selected_reference_dossier');
-    
-    // 🔹 Nettoyer la référence (supprimer ":1" ou autre suffixe)
-    const referenceDossier = referenceDossierRaw ? referenceDossierRaw.split(':')[0] : null;
 
-    if (!referenceDossier) {
+    if (!referenceDossierRaw) {
         detailSummary.innerHTML = '<p>❌ Dossier non trouvé. Aucune référence fournie.</p>';
         detailRefTitle.textContent = "Erreur";
         return;
     }
 
-    localStorage.setItem('selected_reference_dossier', referenceDossier);
+    referenceDossierRaw = referenceDossierRaw.trim();
+    localStorage.setItem('selected_reference_dossier', referenceDossierRaw);
 
     // 🔹 Récupération du token
     const token = localStorage.getItem('token');
@@ -143,16 +141,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     let dossier = null;
 
     try {
-        // 🔹 1️⃣ Récupération du dossier via référence
-        const resDossier = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(referenceDossier)}`, {
+        // 🔹 1️⃣ Essai avec la référence complète
+        let resDossier = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(referenceDossierRaw)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!resDossier.ok) throw new Error('Erreur lors de la récupération du dossier');
+
+        // 🔹 2️⃣ Si 404 et suffixe présent, retenter sans suffixe
+        if (!resDossier.ok && referenceDossierRaw.includes(':')) {
+            const referenceSansSuffixe = referenceDossierRaw.split(':')[0];
+            resDossier = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(referenceSansSuffixe)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        }
+
+        if (!resDossier.ok) throw new Error('Aucun dossier trouvé pour cette référence');
+
         const dossierData = await resDossier.json();
         dossier = dossierData.dossier;
         if (!dossier) throw new Error('Aucun dossier trouvé pour cette référence');
 
-        // 🔹 2️⃣ Récupération du propriétaire
+        // 🔹 3️⃣ Récupération du propriétaire
         let proprietaire = null;
         if (dossier.proprietaire_id) {
             const resProp = await fetch(`https://moto-api-cika.onrender.com/api/proprietaires/${dossier.proprietaire_id}`, {
@@ -161,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (resProp.ok) proprietaire = await resProp.json();
         }
 
-        // 🔹 3️⃣ Récupération du mandataire
+        // 🔹 4️⃣ Récupération du mandataire
         let mandataire = null;
         if (dossier.mandataire_id) {
             const resMand = await fetch(`https://moto-api-cika.onrender.com/api/mandataires/${dossier.mandataire_id}`, {
@@ -170,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (resMand.ok) mandataire = await resMand.json();
         }
 
-        // 🔹 4️⃣ Récupération de la moto
+        // 🔹 5️⃣ Récupération de la moto
         let moto = null;
         if (dossier.moto_id) {
             const resMoto = await fetch(`https://moto-api-cika.onrender.com/api/motos/${dossier.moto_id}`, {
@@ -179,7 +187,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (resMoto.ok) moto = await resMoto.json();
         }
 
-        // 🔹 5️⃣ Affichage des informations
+        // 🔹 6️⃣ Affichage des informations
         detailRefTitle.textContent = dossier.reference_dossier;
         pageTitle.textContent = `Validation du Dossier: ${dossier.reference_dossier}`;
 
@@ -198,25 +206,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             ` : ''}
             <h4 style="margin-top: 20px;">B. Informations de la Moto</h4>
             ${moto ? `
-  <p><span class="label">Marque / Modèle:</span> 
-    <strong>${moto.marque || (moto.motos?.[0]?.marque ?? '—')} 
-             ${moto.modele || (moto.motos?.[0]?.modele ?? '')}</strong></p>
-             
-  <p><span class="label">N° Série (Châssis):</span> 
-    <strong>${moto.numero_chassis || (moto.motos?.[0]?.numero_chassis ?? '—')}</strong></p>
-    
-  <p><span class="label">Couleur:</span> 
-    <strong>${moto.couleur || (moto.motos?.[0]?.couleur ?? '—')}</strong></p>
-    
-  <p><span class="label">Source d'acquisition:</span> 
-    <strong>${moto.source_acquisition || '—'}</strong></p>
-    
-  <p><span class="label">Date d'acquisition:</span> 
-    <strong>${moto.date_acquisition 
-      ? new Date(moto.date_acquisition).toLocaleDateString('fr-FR') 
-      : '—'}</strong></p>
-` : 'Aucune moto trouvée.'}
-
+                <p><span class="label">Marque / Modèle:</span> <strong>${moto.marque || '—'} ${moto.modele || ''}</strong></p>
+                <p><span class="label">N° Série (Châssis):</span> <strong>${moto.numero_chassis || '—'}</strong></p>
+                <p><span class="label">Couleur:</span> <strong>${moto.couleur || '—'}</strong></p>
+            ` : 'Aucune moto trouvée.'}
             <h4 style="margin-top: 20px;">C. Traçabilité du Dossier</h4>
             <p><span class="label">Référence du Dossier:</span> <strong>${dossier.reference_dossier}</strong></p>
             <p><span class="label">Agent Traitant:</span> <strong>ID ${dossier.agent_id}</strong></p>
