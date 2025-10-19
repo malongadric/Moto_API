@@ -108,12 +108,11 @@ export const getMotoById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Vérifie que l'ID est valide
     if (!id || isNaN(id)) {
       return res.status(400).json({ message: "ID invalide ou manquant." });
     }
 
-    // Récupération depuis Supabase
+    // 🔹 Récupération des champs principaux uniquement
     const { data, error } = await supabase
       .from("motos")
       .select(`
@@ -129,10 +128,10 @@ export const getMotoById = async (req, res) => {
         energie,
         date_fabrication,
         usage,
-        proprietaire:proprietaires (id, nom, prenom, cni, telephone),
-        mandataire:proprietaires (id, nom, prenom, cni, telephone),
-        departement:departements (nom),
-        structure:structures (nom)
+        proprietaire_id,
+        mandataire_id,
+        departement_id,
+        structure_id
       `)
       .eq("id", id)
       .maybeSingle();
@@ -140,9 +139,20 @@ export const getMotoById = async (req, res) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ message: "Moto introuvable." });
 
+    // 🔹 Optionnel : récupérer le propriétaire si besoin
+    let proprietaire = null;
+    if (data.proprietaire_id) {
+      const { data: propData } = await supabase
+        .from("proprietaires")
+        .select("id, nom, prenom, cni, telephone")
+        .eq("id", data.proprietaire_id)
+        .maybeSingle();
+      proprietaire = propData || null;
+    }
+
     res.status(200).json({
       message: "Moto récupérée avec succès",
-      moto: data
+      moto: { ...data, proprietaire }
     });
   } catch (err) {
     console.error("Erreur getMotoById:", err);
