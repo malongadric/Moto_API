@@ -232,73 +232,59 @@ export const getDossierById = async (req, res) => {
 export const getDossierByReference = async (req, res) => {
   try {
     const { reference_dossier } = req.query;
-    const { profil, departement_id } = req.user || {};
-
     if (!reference_dossier) {
       return res.status(400).json({ message: "Référence dossier manquante" });
     }
 
-    // 🔹 Préparer la requête de base
-    let query = supabase
+    // 🔹 Récupération du dossier principal
+    const { data: dossier, error: dossierError } = await supabase
       .from("dossier")
       .select("*")
-      .eq("reference_dossier", reference_dossier);
+      .eq("reference_dossier", reference_dossier)
+      .single();
 
-    // 🔒 Filtre départemental uniquement pour directeur_departemental
-    if (profil === "directeur_departemental") {
-      query = query.eq("departement_id", departement_id);
+    if (dossierError || !dossier) return res.status(404).json({ message: "Dossier introuvable" });
+
+    // 🔹 Récupération des relations si elles existent
+    let proprietaire = null;
+    if (dossier.proprietaire_id) {
+      const { data, error } = await supabase
+        .from("proprietaires")
+        .select("*")
+        .eq("id", dossier.proprietaire_id)
+        .single();
+      if (!error) proprietaire = data;
     }
 
-    // 🔹 Exécution
-    const { data: dossiers, error } = await query; // on ne met plus .single()
-    if (error || !dossiers || dossiers.length === 0) {
-      return res.status(404).json({ message: "Dossier introuvable" });
+    let mandataire = null;
+    if (dossier.mandataire_id) {
+      const { data, error } = await supabase
+        .from("mandataires")
+        .select("*")
+        .eq("id", dossier.mandataire_id)
+        .single();
+      if (!error) mandataire = data;
     }
 
-    // 🔹 Récupérer les relations pour chaque dossier
-    const dossiersWithRelations = await Promise.all(dossiers.map(async (dossier) => {
-      let proprietaire = null;
-      if (dossier.proprietaire_id) {
-        const { data, error } = await supabase
-          .from("proprietaires")
-          .select("*")
-          .eq("id", dossier.proprietaire_id)
-          .single();
-        if (!error) proprietaire = data;
-      }
+    let moto = null;
+    if (dossier.moto_id) {
+      const { data, error } = await supabase
+        .from("motos")
+        .select("*")
+        .eq("id", dossier.moto_id)
+        .single();
+      if (!error) moto = data;
+    }
 
-      let mandataire = null;
-      if (dossier.mandataire_id) {
-        const { data, error } = await supabase
-          .from("mandataires")
-          .select("*")
-          .eq("id", dossier.mandataire_id)
-          .single();
-        if (!error) mandataire = data;
-      }
-
-      let moto = null;
-      if (dossier.moto_id) {
-        const { data, error } = await supabase
-          .from("motos")
-          .select("*")
-          .eq("id", dossier.moto_id)
-          .single();
-        if (!error) moto = data;
-      }
-
-      return {
+    // 🔹 Retour JSON complet
+    res.json({
+      message: "Dossier récupéré avec succès",
+      dossier: {
         ...dossier,
         proprietaire,
         mandataire,
         moto
-      };
-    }));
-
-    // 🔹 Retour JSON complet
-    res.json({
-      message: "Dossiers récupérés avec succès",
-      dossiers: dossiersWithRelations
+      }
     });
 
   } catch (err) {
@@ -306,8 +292,6 @@ export const getDossierByReference = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
-
-
 
 
 /* ==========================================================
