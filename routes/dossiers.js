@@ -4,19 +4,21 @@ import {
   addDossier,
   getDossiers,
   getDossierById,
+  getDossierByReference,
   updateDossier
 } from "../controllers/dossierscontroller.js";
-import {  verifyToken } from "../middlewares/auth.js"; // ton middleware d’auth
+import { verifyToken } from "../middlewares/auth.js";
 
 const router = express.Router();
 
 // ➕ Ajouter un dossier
-router.post("/",  verifyToken, addDossier);
+router.post("/", verifyToken, addDossier);
 
-// 📋 Lister tous les dossiers (avec filtres et jointures)
-router.get("/",  verifyToken, getDossiers);
+// 📋 Lister tous les dossiers
+router.get("/", verifyToken, getDossiers);
 
-
+// 🔎 Obtenir un dossier par référence
+router.get("/by-reference", verifyToken, getDossierByReference);
 
 // 🔎 Obtenir un dossier par ID
 router.get("/:id", verifyToken, getDossierById);

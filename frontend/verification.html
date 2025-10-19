@@ -1,11 +1,10 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validation Dossier - Référence Spécifique</title>
     <style>
-        /* --- Style Général & Variables --- */
         :root {
             --primary-color: #0d47a1; 
             --secondary-color: #00796b; 
@@ -15,7 +14,7 @@
             --border-color: #e0e0e0;
             --white-color: #ffffff;
             --shadow: 0 8px 30px rgba(0,0,0,0.4);
-            --border-radius: 8px; /* Légèrement réduit */
+            --border-radius: 8px;
         }
 
         body {
@@ -27,19 +26,16 @@
             align-items: center;
             min-height: 100vh;
             overflow-y: auto;
-            
-            /* --- ARRIÈRE-PLAN AVEC IMAGE PERSONNALISÉE --- */
             background-image: url('/* LIEN VERS VOTRE IMAGE DE FOND */'); 
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
         }
 
-        /* --- Zone de Contenu Principal (Le formulaire flottant) --- */
         .main-content {
             width: 90%;
-            max-width: 700px; /* RÉDUIT : 900px -> 700px */
-            margin: 30px auto; /* Marge réduite */
+            max-width: 700px;
+            margin: 30px auto;
             box-shadow: var(--shadow);
             border-radius: var(--border-radius);
             overflow: hidden;
@@ -50,79 +46,40 @@
         .main-header {
             background-color: var(--primary-color);
             color: var(--white-color);
-            padding: 15px 20px; /* RÉDUIT : 20px -> 15px */
+            padding: 15px 20px;
             text-align: center;
         }
         
-        .main-header h2 {
-            margin: 0;
-            font-size: 1.6rem; /* Légèrement réduit */
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+        .main-header h2 { margin: 0; font-size: 1.6rem; text-transform: uppercase; letter-spacing: 1px; }
 
-        .content-area {
-            padding: 20px; /* RÉDUIT : 30px -> 20px */
-        }
+        .content-area { padding: 20px; }
 
-        /* --- Style des composants (Similaire à l'original) --- */
         .form-section-title {
-            font-size: 1.2rem; /* Légèrement réduit */
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-top: 0; 
-            margin-bottom: 8px; /* Réduit */
-            padding-bottom: 8px; /* Réduit */
-            border-bottom: 2px solid var(--secondary-color);
+            font-size: 1.2rem; font-weight: 600;
+            color: var(--primary-color); margin-top: 0; margin-bottom: 8px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--secondary-color);
         }
 
         .confirmation-summary {
             background-color: var(--background-color);
-            padding: 20px; /* RÉDUIT : 25px -> 20px */
-            border-radius: var(--border-radius);
-            margin-bottom: 20px; /* Réduit */
-            border: 1px solid var(--border-color);
+            padding: 20px; border-radius: var(--border-radius);
+            margin-bottom: 20px; border: 1px solid var(--border-color);
         }
-        .confirmation-summary h4 {
-            color: var(--primary-color); margin-top: 20px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color); font-size: 1.1rem; /* Réduit */
-        }
+        .confirmation-summary h4 { color: var(--primary-color); margin-top: 20px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color); font-size: 1.1rem; }
         .confirmation-summary h4:first-child { margin-top: 0; }
-        .confirmation-summary p { display: flex; justify-content: space-between; margin: 6px 0; font-size: 0.95rem; /* Réduit */ }
+        .confirmation-summary p { display: flex; justify-content: space-between; margin: 6px 0; font-size: 0.95rem; }
         .confirmation-summary span.label { font-weight: 500; color: #555; margin-right: 15px; }
         .confirmation-summary strong.value { font-weight: 700; color: var(--text-color); text-align: right; }
 
-        .info-message {
-            padding: 12px; /* Réduit */
-            border-left: 4px solid var(--primary-color);
-            border-radius: var(--border-radius);
-            margin-bottom: 15px; /* Réduit */
-        }
+        .info-message { padding: 12px; border-left: 4px solid var(--primary-color); border-radius: var(--border-radius); margin-bottom: 15px; }
 
-        .form-actions {
-            display: flex;
-            justify-content: flex-end; 
-            margin-top: 20px; /* Réduit */
-            gap: 10px; /* Réduit */
-        }
-        
-        .btn { 
-            padding: 8px 20px; /* RÉDUIT la taille des boutons */
-            border: none; 
-            border-radius: 6px; 
-            font-size: 0.9rem; /* Réduit */
-            font-weight: bold; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
-            transition: all 0.3s; 
-        }
+        .form-actions { display: flex; justify-content: flex-end; margin-top: 20px; gap: 10px; }
+        .btn { padding: 8px 20px; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s; }
         .btn-secondary { background-color: var(--border-color); color: var(--text-color); }
         .btn-primary { background-color: var(--secondary-color); color: var(--white-color); }
         .btn-danger { background-color: var(--danger-color); color: var(--white-color); }
-
         .btn-secondary:hover, .btn-primary:hover, .btn-danger:hover { transform: translateY(-1px); }
 
-        /* Média Query pour mobile (Ajustements pour l'espace) */
         @media (max-width: 768px) {
             .main-content { margin: 15px auto; width: 95%; max-width: 100%; }
             .content-area { padding: 15px; }
@@ -141,11 +98,10 @@
                 <h3 class="form-section-title">Validation du Dossier: <span id="detail-ref-title"></span></h3>
 
                 <div class="info-message">
-                    <p style="margin: 0; font-size: 0.9rem;"><strong>Vérification :</strong> Veuillez inspecter l'ensemble des informations et des pièces justificatives avant de prendre une décision. Le statut actuel est **"En Attente de Validation Supérieure"**.</p>
+                    <p style="margin: 0; font-size: 0.9rem;"><strong>Vérification :</strong> Veuillez inspecter toutes les informations et pièces justificatives avant de valider. Statut actuel: **"En Attente de Validation Supérieure"**.</p>
                 </div>
                 
-                <div class="confirmation-summary" id="detail-summary">
-                    </div>
+                <div class="confirmation-summary" id="detail-summary"></div>
 
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="btn-retour-liste">Retour à la Liste</button>
@@ -161,12 +117,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     const detailRefTitle = document.getElementById('detail-ref-title');
     const pageTitle = document.getElementById('page-title');
 
-    // 🔹 Récupération de l'ID ou référence depuis l'URL
+    // 🔹 Récupération de la référence depuis URL ou localStorage
     const urlParams = new URLSearchParams(window.location.search);
-    const dossierId = urlParams.get('id');      // ex: id=16
-    const dossierRef = urlParams.get('ref');    // ex: ref=REF-2025-PN-29
+    const referenceDossier = urlParams.get('ref') || localStorage.getItem('selected_reference_dossier');
 
-    // 🔹 Récupération du token depuis le localStorage
+    if (!referenceDossier) {
+        detailSummary.innerHTML = '<p>❌ Dossier non trouvé. Aucune référence fournie.</p>';
+        detailRefTitle.textContent = "Erreur";
+        return;
+    }
+
+    localStorage.setItem('selected_reference_dossier', referenceDossier);
+
+    // 🔹 Récupération du token
     const token = localStorage.getItem('token');
     if (!token) {
         detailSummary.innerHTML = '<p>❌ Vous devez être connecté pour voir ce dossier.</p>';
@@ -174,75 +137,93 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
-    const fetchOptions = {
-        headers: {
-            'Authorization': `Bearer ${token}`  // juste le token pour GET
-        }
-    };
+    let dossier = null;
 
     try {
-        let url = 'https://moto-api-cika.onrender.com/api/dossiers';
-        if (dossierId) url += `/${dossierId}`;
-        else if (dossierRef) url += `?reference=${encodeURIComponent(dossierRef)}`;
+        // 🔹 1️⃣ Récupération du dossier via référence
+        const resDossier = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(referenceDossier)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!resDossier.ok) throw new Error('Erreur lors de la récupération du dossier');
+        const dossierData = await resDossier.json();
+        dossier = dossierData.dossier;
+        if (!dossier) throw new Error('Aucun dossier trouvé pour cette référence');
 
-        const response = await fetch(url, fetchOptions);
-
-        if (response.status === 401) throw new Error('Non autorisé : veuillez vous reconnecter');
-        if (response.status === 404) throw new Error('Dossier non trouvé');
-        if (response.status === 400) throw new Error('Impossible de récupérer les dossiers');
-
-        const result = await response.json();
-        let data = result;
-
-        // Si on récupère une liste, prend le premier dossier correspondant
-        if (Array.isArray(result)) {
-            if (result.length === 0) throw new Error('Dossier non trouvé');
-            data = result[0];
+        // 🔹 2️⃣ Récupération du propriétaire
+        let proprietaire = null;
+        if (dossier.proprietaire_id) {
+            const resProp = await fetch(`https://moto-api-cika.onrender.com/api/proprietaires/${dossier.proprietaire_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resProp.ok) proprietaire = await resProp.json();
         }
 
-        // 🔹 Affichage des infos
-        detailRefTitle.textContent = data.reference_dossier || dossierId || dossierRef;
-        pageTitle.textContent = `Validation du Dossier: ${data.reference_dossier || dossierId || dossierRef}`;
+        // 🔹 3️⃣ Récupération du mandataire
+        let mandataire = null;
+        if (dossier.mandataire_id) {
+            const resMand = await fetch(`https://moto-api-cika.onrender.com/api/mandataires/${dossier.mandataire_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resMand.ok) mandataire = await resMand.json();
+        }
+
+        // 🔹 4️⃣ Récupération de la moto
+        let moto = null;
+        if (dossier.moto_id) {
+            const resMoto = await fetch(`https://moto-api-cika.onrender.com/api/motos/${dossier.moto_id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (resMoto.ok) moto = await resMoto.json();
+        }
+
+        // 🔹 5️⃣ Affichage des informations
+        detailRefTitle.textContent = dossier.reference_dossier;
+        pageTitle.textContent = `Validation du Dossier: ${dossier.reference_dossier}`;
 
         let htmlContent = `
             <h4>A. Informations Propriétaire / Déclarant</h4>
-            <p><span class="label">Type de déclarant:</span> <strong>${data.acteur_type}</strong></p>
-            ${data.proprietaire ? `
-                <p><span class="label">Nom Propriétaire:</span> <strong>${data.proprietaire.nom} ${data.proprietaire.prenom}</strong></p>
-                <p><span class="label">N° Pièce Propriétaire:</span> <strong>${data.proprietaire.cni}</strong></p>
+            <p><span class="label">Type de déclarant:</span> <strong>${dossier.acteur_type}</strong></p>
+            ${proprietaire ? `
+                <p><span class="label">Nom Propriétaire:</span> <strong>${proprietaire.nom} ${proprietaire.prenom}</strong></p>
+                <p><span class="label">N° Pièce Propriétaire:</span> <strong>${proprietaire.cni}</strong></p>
             ` : ''}
-            ${data.mandataire ? `
+            ${mandataire ? `
                 <hr style="border-style: dashed; border-color: #ddd;">
-                <p><span class="label">Nom Mandataire:</span> <strong>${data.mandataire.nom} ${data.mandataire.prenom}</strong></p>
-                <p><span class="label">N° Pièce Mandataire:</span> <strong>${data.mandataire.cni}</strong></p>
-                <p><span class="label">Téléphone Mandataire:</span> <strong>${data.mandataire.telephone}</strong></p>
+                <p><span class="label">Nom Mandataire:</span> <strong>${mandataire.nom} ${mandataire.prenom}</strong></p>
+                <p><span class="label">N° Pièce Mandataire:</span> <strong>${mandataire.cni}</strong></p>
+                <p><span class="label">Téléphone Mandataire:</span> <strong>${mandataire.telephone}</strong></p>
             ` : ''}
             <h4 style="margin-top: 20px;">B. Informations de la Moto</h4>
-            ${data.moto ? `
-                <p><span class="label">Marque / Modèle:</span> <strong>${data.moto.marque} ${data.moto.modele}</strong></p>
-                <p><span class="label">N° Série (Châssis):</span> <strong>${data.moto.numero_chassis}</strong></p>
-                <p><span class="label">Couleur:</span> <strong>${data.moto.couleur}</strong></p>
-                <p><span class="label">Source d'Acquisition:</span> <strong>${data.moto.source_acquisition}</strong></p>
-                <p><span class="label">Date d'Acquisition:</span> <strong>${data.moto.date_acquisition}</strong></p>
+            ${moto ? `
+                <p><span class="label">Marque / Modèle:</span> <strong>${moto.marque} ${moto.modele}</strong></p>
+                <p><span class="label">N° Série (Châssis):</span> <strong>${moto.numero_chassis}</strong></p>
+                <p><span class="label">Couleur:</span> <strong>${moto.couleur}</strong></p>
+                <p><span class="label">Source d'acquisition:</span> <strong>${moto.source_acquisition || '—'}</strong></p>
+                <p><span class="label">Date d'acquisition:</span> <strong>${moto.date_acquisition ? new Date(moto.date_acquisition).toLocaleString('fr-FR') : '—'}</strong></p>
             ` : ''}
             <h4 style="margin-top: 20px;">C. Traçabilité du Dossier</h4>
-            <p><span class="label">Référence du Dossier:</span> <strong>${data.reference_dossier}</strong></p>
-            <p><span class="label">Agent Traitant:</span> <strong>${data.agent.nom} ${data.agent.prenom}</strong></p>
-            <p><span class="label">Date de Création:</span> <strong>${new Date(data.date_soumission).toLocaleString()}</strong></p>
+            <p><span class="label">Référence du Dossier:</span> <strong>${dossier.reference_dossier}</strong></p>
+            <p><span class="label">Agent Traitant:</span> <strong>ID ${dossier.agent_id}</strong></p>
+            <p><span class="label">Date de Création:</span> <strong>${new Date(dossier.date_soumission).toLocaleString('fr-FR')}</strong></p>
+            <p><span class="label">Statut actuel:</span> <strong>${dossier.statut}</strong></p>
         `;
-
         detailSummary.innerHTML = htmlContent;
 
-    } catch (error) {
-        detailSummary.innerHTML = `<p>❌ Impossible de récupérer le dossier : ${error.message}</p>`;
+    } catch (err) {
+        console.error(err);
+        detailSummary.innerHTML = `<p>❌ Impossible de récupérer le dossier : ${err.message}</p>`;
         detailRefTitle.textContent = "Erreur";
-        console.error(error);
+        return;
     }
 
-    // --- Boutons pour valider ou rejeter ---
+    // 🔹 Boutons
+    document.getElementById('btn-retour-liste').addEventListener('click', () => {
+        window.location.href = 'liste_dossiers.html';
+    });
+
     document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
         try {
-            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossierId}`, {
+            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -251,7 +232,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 body: JSON.stringify({ statut: 'validé' })
             });
             if (!res.ok) throw new Error(`Erreur ${res.status}`);
-            alert(`✅ DOSSIER VALIDÉ : La référence ${dossierId} est VALIDE.`);
+            alert(`✅ DOSSIER VALIDÉ : La référence ${dossier.reference_dossier} est VALIDE.`);
+            location.reload();
         } catch (err) {
             alert(`❌ Échec de validation : ${err.message}`);
         }
@@ -261,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const motif = prompt(`⚠️ MOTIF DE REJET :`);
         if (!motif) return;
         try {
-            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossierId}`, {
+            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -271,263 +253,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             if (!res.ok) throw new Error(`Erreur ${res.status}`);
             alert(`❌ DOSSIER REJETÉ : Motif : ${motif}`);
+            location.reload();
         } catch (err) {
             alert(`❌ Échec de rejet : ${err.message}`);
         }
-    });
-
-    document.getElementById('btn-retour-liste').addEventListener('click', () => {
-        window.location.href = 'liste_dossiers.html';
     });
 });
 </script>
 
 
-</body>
-</html> -->
-
-
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="page-title">Détail du dossier</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f6fa;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: #0d47a1;
-      color: white;
-      padding: 20px;
-      text-align: center;
-      font-size: 22px;
-      font-weight: 600;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 40px auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    h3 {
-      color: #0d47a1;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    h4 {
-      margin-top: 25px;
-      color: #0d47a1;
-      border-left: 4px solid #0d47a1;
-      padding-left: 8px;
-    }
-
-    .label {
-      font-weight: 600;
-      color: #333;
-      display: inline-block;
-      width: 200px;
-    }
-
-    p {
-      margin: 6px 0;
-      font-size: 15px;
-      color: #444;
-    }
-
-    hr {
-      border: none;
-      border-top: 1px dashed #ccc;
-      margin: 20px 0;
-    }
-
-    .btn-container {
-      text-align: center;
-      margin-top: 25px;
-    }
-
-    .btn {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      margin: 0 10px;
-      transition: background 0.2s;
-    }
-
-    #btn-valider-dossier {
-      background: #2e7d32;
-      color: white;
-    }
-    #btn-valider-dossier:hover {
-      background: #1b5e20;
-    }
-
-    #btn-rejeter-dossier {
-      background: #c62828;
-      color: white;
-    }
-    #btn-rejeter-dossier:hover {
-      background: #8e0000;
-    }
-
-    #btn-retour-liste {
-      background: #1565c0;
-      color: white;
-    }
-    #btn-retour-liste:hover {
-      background: #0d47a1;
-    }
-
-  </style>
-</head>
-<body>
-  <header>
-    <span id="page-title">Chargement du dossier...</span>
-  </header>
-
-  <div class="container">
-    <h3>📁 <span id="detail-ref-title">Chargement...</span></h3>
-    <div id="detail-summary">
-      <p>Chargement des informations du dossier...</p>
-    </div>
-
-    <div class="btn-container">
-      <button id="btn-valider-dossier" class="btn">✅ Valider</button>
-      <button id="btn-rejeter-dossier" class="btn">❌ Rejeter</button>
-      <button id="btn-retour-liste" class="btn">⬅️ Retour à la liste</button>
-    </div>
-  </div>
-
-  <!-- Ton script existant -->
-  <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      const detailSummary = document.getElementById('detail-summary');
-      const detailRefTitle = document.getElementById('detail-ref-title');
-      const pageTitle = document.getElementById('page-title');
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const dossierId = urlParams.get('id');
-      const dossierRef = urlParams.get('ref');
-
-      const token = localStorage.getItem('token');
-      if (!token) {
-        detailSummary.innerHTML = '<p>❌ Vous devez être connecté pour voir ce dossier.</p>';
-        detailRefTitle.textContent = "Erreur";
-        return;
-      }
-
-      const fetchOptions = {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      };
-
-      try {
-        let url = 'https://moto-api-cika.onrender.com/api/dossiers';
-        if (dossierId) url += `/${dossierId}`;
-        else if (dossierRef) url += `?reference=${encodeURIComponent(dossierRef)}`;
-
-        const response = await fetch(url, fetchOptions);
-        if (response.status === 401) throw new Error('Non autorisé : veuillez vous reconnecter');
-        if (response.status === 404) throw new Error('Dossier non trouvé');
-        if (response.status === 400) throw new Error('Impossible de récupérer le dossier');
-
-        const result = await response.json();
-        let data = result;
-        if (Array.isArray(result)) {
-          if (result.length === 0) throw new Error('Dossier non trouvé');
-          data = result[0];
-        }
-
-        detailRefTitle.textContent = data.reference_dossier || dossierId || dossierRef;
-        pageTitle.textContent = `Voir détail du dossier : ${data.reference_dossier || dossierId || dossierRef}`;
-
-        let htmlContent = `
-          <h4>A. Informations Propriétaire / Déclarant</h4>
-          <p><span class="label">Type de déclarant:</span> <strong>${data.acteur_type}</strong></p>
-          ${data.proprietaire ? `
-            <p><span class="label">Nom Propriétaire:</span> <strong>${data.proprietaire.nom} ${data.proprietaire.prenom}</strong></p>
-            <p><span class="label">N° Pièce Propriétaire:</span> <strong>${data.proprietaire.cni}</strong></p>
-          ` : ''}
-          ${data.mandataire ? `
-            <hr>
-            <p><span class="label">Nom Mandataire:</span> <strong>${data.mandataire.nom} ${data.mandataire.prenom}</strong></p>
-            <p><span class="label">N° Pièce Mandataire:</span> <strong>${data.mandataire.cni}</strong></p>
-            <p><span class="label">Téléphone Mandataire:</span> <strong>${data.mandataire.telephone}</strong></p>
-          ` : ''}
-          <h4 style="margin-top: 20px;">B. Informations de la Moto</h4>
-          ${data.moto ? `
-            <p><span class="label">Marque / Modèle:</span> <strong>${data.moto.marque} ${data.moto.modele}</strong></p>
-            <p><span class="label">N° Série (Châssis):</span> <strong>${data.moto.numero_chassis}</strong></p>
-            <p><span class="label">Couleur:</span> <strong>${data.moto.couleur}</strong></p>
-            <p><span class="label">Source d'Acquisition:</span> <strong>${data.moto.source_acquisition}</strong></p>
-            <p><span class="label">Date d'Acquisition:</span> <strong>${data.moto.date_acquisition}</strong></p>
-          ` : ''}
-          <h4 style="margin-top: 20px;">C. Traçabilité du Dossier</h4>
-          <p><span class="label">Référence du Dossier:</span> <strong>${data.reference_dossier}</strong></p>
-          <p><span class="label">Agent Traitant:</span> <strong>${data.agent?.nom || ''} ${data.agent?.prenom || ''}</strong></p>
-          <p><span class="label">Date de Création:</span> <strong>${new Date(data.date_soumission).toLocaleString('fr-FR')}</strong></p>
-        `;
-
-        detailSummary.innerHTML = htmlContent;
-      } catch (error) {
-        detailSummary.innerHTML = `<p>❌ Impossible de récupérer le dossier : ${error.message}</p>`;
-        detailRefTitle.textContent = "Erreur";
-        console.error(error);
-      }
-
-      document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
-        try {
-          const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossierId}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ statut: 'validé' })
-          });
-          if (!res.ok) throw new Error(`Erreur ${res.status}`);
-          alert(`✅ DOSSIER VALIDÉ : La référence ${dossierId} est VALIDE.`);
-        } catch (err) {
-          alert(`❌ Échec de validation : ${err.message}`);
-        }
-      });
-
-      document.getElementById('btn-rejeter-dossier').addEventListener('click', async () => {
-        const motif = prompt(`⚠️ MOTIF DE REJET :`);
-        if (!motif) return;
-        try {
-          const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossierId}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ statut: 'rejeté', motif })
-          });
-          if (!res.ok) throw new Error(`Erreur ${res.status}`);
-          alert(`❌ DOSSIER REJETÉ : Motif : ${motif}`);
-        } catch (err) {
-          alert(`❌ Échec de rejet : ${err.message}`);
-        }
-      });
-
-      document.getElementById('btn-retour-liste').addEventListener('click', () => {
-        window.location.href = 'liste_dossiers.html';
-      });
-    });
-  </script>
 </body>
 </html>

@@ -588,6 +588,7 @@ function displayDossiers() {
 
     tbody.innerHTML = dossiersToShow.map(d => {
         const proprietaireFull = `${d.proprietaire_nom || ''} ${d.proprietaire_prenom || ''}`.trim() || '—';
+        const safeRef = encodeURIComponent(d.reference_dossier); // sécurise la référence pour le HTML
 
         return `
             <tr>
@@ -595,7 +596,11 @@ function displayDossiers() {
                 <td>${d.date_soumission ? new Date(d.date_soumission).toLocaleString('fr-FR') : ''}</td>
                 <td>${proprietaireFull}</td>
                 <td>${d.statut || ''}</td>
-                <td><button class="btn-detail" onclick="voirDetail(${d.dossier_id})">Voir détail</button></td>
+                <td>
+                    <button type="button" class="btn-detail" onclick="voirDetail('${safeRef}')">
+                        Voir détail
+                    </button>
+                </td>
             </tr>
         `;
     }).join('');
@@ -603,19 +608,30 @@ function displayDossiers() {
     setupDossierPagination();
 }
 
+// function voirDetail(referenceDossier) {
+//     if (!referenceDossier) return console.error("Aucune référence dossier fournie");
 
-// ==============================
-// 🔹 Voir détail d’un dossier
-// ==============================
-function voirDetail(dossierId) {
-    if (!dossierId) return console.error("Aucun ID dossier fourni");
+//     // Stockage dans localStorage si nécessaire
+//     localStorage.setItem('selected_reference_dossier', referenceDossier);
 
-    // Stocker l’ID dans le localStorage (pour que verification.html puisse l’utiliser)
-    localStorage.setItem('selected_dossier_id', dossierId);
+//     // Redirection vers verification.html avec la référence
+//     window.location.href = `verif_dossiers.html?ref=${referenceDossier}`;
+// }
 
-    // Redirection vers la page de vérification
-    window.location.href = 'verification.html';
-}
+// 🔹 Fonction Voir détail
+    window.voirDetail = function(referenceDossier) {
+        alert("Voir détail du dossier: " + referenceDossier);
+        // Ici tu pourras ouvrir un modal ou une nouvelle page
+        if (!referenceDossier) return console.error("Aucune référence dossier fournie");
+
+    // Stockage dans localStorage si nécessaire
+    localStorage.setItem('selected_reference_dossier', referenceDossier);
+
+    // Redirection vers verification.html avec la référence
+    window.location.href = `verification.html?ref=${referenceDossier}`;
+
+    }
+
 
 
 // ==============================
@@ -699,12 +715,7 @@ function setupDossierSorting() {
     });
 }
 
-// ==============================
-// 🔹 Détail du dossier
-// ==============================
-function voirDetail(dossierId) {
-    window.location.href = `verification.html?id=${dossierId}`;
-}
+
 
 
 
@@ -759,12 +770,7 @@ document.addEventListener('DOMContentLoaded', loadDossierList);
         });
     }
 
-    // 🔹 Fonction Voir détail
-    window.voirDetail = function(dossierId) {
-        alert("Voir détail du dossier ID: " + dossierId);
-        // Ici tu pourras ouvrir un modal ou une nouvelle page
-    }
-
+    
 });
 </script>
 </body>

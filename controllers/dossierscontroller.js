@@ -102,6 +102,11 @@ export const getDossiers = async (req, res) => {
       .range(from, to)
       .order(sortBy, { ascending: order === "asc" });
 
+      // 🔹 Filtre par référence si fourni
+if (req.query.reference_dossier) {
+  query = query.eq("reference_dossier", req.query.reference_dossier);
+}
+
     // 🔒 Filtrer par département si pas admin/super_directeur
     if (!['admin', 'super_directeur'].includes(req.user.role)) {
       query = query.eq('departement_id', req.user.departement_id);
@@ -183,12 +188,28 @@ export const getDossierById = async (req, res) => {
     const { id } = req.params;
     const { profil, departement_id } = req.user || {};
 
+    // 🔒 Restriction pour certains profils
     if (profil === "agent" || profil === "agent_saisie") {
       return res.status(403).json({ message: "Accès refusé : vous ne pouvez pas consulter ce dossier" });
     }
 
-    let query = supabase.from("dossier").select("*").eq("dossier_id", id);
+    // 🔹 Requête avec jointures
+    let query = supabase
+      .from("dossier")
+      .select(`
+        dossier_id,
+        reference_dossier,
+        date_soumission,
+        statut,
+        attribue_par,
+        agent_id,
+        proprietaire:proprietaires!proprietaire_id(id, nom, prenom, cni, telephone, email),
+        mandataire:proprietaires!mandataire_id(id, nom, prenom, cni, telephone, email),
+        moto:motos(id, numero_chassis, numero_immatriculation, marque, modele, couleur, date_fabrication, usage)
+      `)
+      .eq("dossier_id", id);
 
+    // 🔒 Filtre départemental pour directeur_departemental
     if (profil === "directeur_departemental") {
       query = query.eq("departement_id", departement_id);
     }
@@ -196,12 +217,54 @@ export const getDossierById = async (req, res) => {
     const { data, error } = await query.single();
     if (error || !data) return res.status(404).json({ message: "Dossier introuvable" });
 
-    res.json({ message: "Dossier récupéré avec succès", dossier: data });
+    // 🔹 Retour JSON complet
+    res.json({
+      message: "Dossier récupéré avec succès",
+      dossier: data
+    });
   } catch (err) {
     console.error("❌ Erreur serveur getDossierById:", err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });
   }
 };
+
+
+/* ==========================================================
+   🔎 OBTENIR UN DOSSIER PAR RÉFÉRENCE
+   ========================================================== */
+// 🔹 Obtenir un dossier par référence
+export const getDossierByReference = async (req, res) => {
+  try {
+    const { reference_dossier } = req.query;
+    if (!reference_dossier) {
+      return res.status(400).json({ message: "Référence dossier manquante" });
+    }
+
+    const { data, error } = await supabase
+      .from("dossier")
+      .select(`
+        dossier_id,
+        reference_dossier,
+        date_soumission,
+        statut,
+        attribue_par,
+        agent_id,
+        proprietaire:proprietaires!proprietaire_id(id, nom, prenom, cni, telephone, email),
+        mandataire:proprietaires!mandataire_id(id, nom, prenom, cni, telephone, email),
+        moto:motos(id, numero_chassis, numero_immatriculation, marque, modele, couleur, date_fabrication, usage)
+      `)
+      .eq("reference_dossier", reference_dossier)
+      .single();
+
+    if (error || !data) return res.status(404).json({ message: "Dossier introuvable" });
+
+    res.json({ message: "Dossier récupéré avec succès", dossier: data });
+  } catch (err) {
+    console.error("❌ Erreur serveur getDossierByReference:", err);
+    res.status(500).json({ message: "Erreur serveur", erreur: err.message });
+  }
+};
+
 
 /* ==========================================================
    ✏️ METTRE À JOUR UN DOSSIER
