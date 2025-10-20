@@ -55,7 +55,7 @@ app.use('/api/proprietaires', proprietaires);
 app.use('/api/structures', structureRoutes);
 app.use('/api/statistiques', statistiques);
 app.use('/api/mandataire', mandataire);
-app.use('/api/immatriculations', immatriculation);
+app.use('/api/immatriculation', immatriculation);
 app.use('/api/departements', departements);
 app.use('/api/dossiers', dossiers);
 app.use('/api/v1', paiement);
