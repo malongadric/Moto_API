@@ -95,3 +95,6 @@ export const infoCaisse = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur', erreur: err.message });
   }
 };
+
+
+
