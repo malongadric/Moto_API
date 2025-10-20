@@ -1,3 +1,4 @@
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import supabase from './config/db.js';
@@ -23,34 +24,34 @@ const app = express();
 
 // --- CORS configuration sécurisée (Inclut la tolérance pour les IPs locales) ---
 const allowedOrigins = [
-  'http://127.0.0.1:5500',
-  'http://localhost:5500',
-  'https://fni-generator-imm.netlify.app',
-  process.env.FRONTEND_URL
+  'http://127.0.0.1:5500',
+  'http://localhost:5500',
+  'https://fni-generator-imm.netlify.app',
+  process.env.FRONTEND_URL
 ];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    
-    // 1. Autoriser les requêtes sans origine (Postman, scripts côté serveur, ou fichier local)
-    if (!origin) return callback(null, true); 
+  origin: (origin, callback) => {
+    
+    // 1. Autoriser les requêtes sans origine (Postman, scripts côté serveur, ou fichier local)
+    if (!origin) return callback(null, true); 
 
-    // 2. Vérifier si l'origine est dans la liste explicitement autorisée
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    
-    // 3. Autoriser toute requête provenant de localhost ou 127.0.0.1, quel que soit le port (pour le dev)
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-         console.log(`CORS: Autorisation accordée pour l'origine locale : ${origin}`);
-         return callback(null, true);
-    }
+    // 2. Vérifier si l'origine est dans la liste explicitement autorisée
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    // 3. Autoriser toute requête provenant de localhost ou 127.0.0.1, quel que soit le port (pour le dev)
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+         console.log(`CORS: Autorisation accordée pour l'origine locale : ${origin}`);
+         return callback(null, true);
+    }
 
-    // 4. Bloquer toutes les autres origines
-    console.error(`CORS: Origine non autorisée : ${origin}`);
-    callback(new Error('Not allowed by CORS: ' + origin));
-  },
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  credentials: true
+    // 4. Bloquer toutes les autres origines
+    console.error(`CORS: Origine non autorisée : ${origin}`);
+    callback(new Error('Not allowed by CORS: ' + origin));
+  },
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials: true
 }));
 // --- Preflight OPTIONS pour toutes les routes ---
 app.options('*', cors());
@@ -66,7 +67,7 @@ app.use('/api/structures', structureRoutes);
 app.use('/api/statistiques', statistiques);
 app.use('/api/mandataire', mandataire);
 
-// 🟢 MONTAGE CORRECT : Au pluriel, pour correspondre à la requête.
+// 🟢 MODIFICATION CLÉ : Passage du singulier au PLURIEL pour correspondre à la requête client (404 fix)
 app.use('/api/immatriculations', immatriculation);
 
 app.use('/api/departements', departements);
@@ -76,20 +77,20 @@ app.use('/api/dossier_admin', dossierAdminRoutes);
 
 // --- Test connexion Supabase ---
 app.get('/api/test', async (req, res) => {
-  try {
-    const { data, error } = await supabase.from('motos').select('*').limit(5);
-    if (error) throw error;
-    res.json({ message: 'Connexion Supabase OK ✅', exemples: data });
-  } catch (err) {
-    res.status(500).json({ message: 'Erreur Supabase ❌', erreur: err.message });
-  }
+  try {
+    const { data, error } = await supabase.from('motos').select('*').limit(5);
+    if (error) throw error;
+    res.json({ message: 'Connexion Supabase OK ✅', exemples: data });
+  } catch (err) {
+    res.status(500).json({ message: 'Erreur Supabase ❌', erreur: err.message });
+  }
 });
 
 // --- Test simple Supabase ---
 app.get('/api/test-supabase', async (req, res) => {
-  const { data, error } = await supabase.from('departements').select('*').limit(2);
-  if (error) return res.json({ message: 'Erreur', erreur: error.message });
-  res.json({ message: 'OK', data });
+  const { data, error } = await supabase.from('departements').select('*').limit(2);
+  if (error) return res.json({ message: 'Erreur', erreur: error.message });
+  res.json({ message: 'OK', data });
 });
 
 // --- Démarrage serveur ---
