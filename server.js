@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -11,7 +10,7 @@ import proprietaires from './routes/proprietaires.js';
 import structureRoutes from './routes/structureRoutes.js';
 import statistiques from './routes/statistiques.js';
 import mandataire from './routes/mandataire.js';
-import immatriculation from './routes/immatriculation.js';
+import immatriculation from './routes/immatriculation.js'; // Le nom du fichier est au singulier
 import departements from './routes/departement.js';
 import dossiers from './routes/dossiers.js';
 import paiement from './routes/paiement.js';
@@ -23,7 +22,7 @@ dotenv.config();
 // Initialisation Express
 const app = express();
 
-// --- CORS configuration sécurisée ---
+// --- CORS configuration sécurisée (Inclut la tolérance pour les IPs locales) ---
 const allowedOrigins = [
   'http://127.0.0.1:5500',
   'http://localhost:5500',
@@ -40,8 +39,7 @@ app.use(cors({
     // 2. Vérifier si l'origine est dans la liste explicitement autorisée
     if (allowedOrigins.includes(origin)) return callback(null, true);
     
-    // 3. 🟢 CORRECTION : Autoriser toute requête provenant de localhost ou 127.0.0.1, quel que soit le port
-    // Ceci gère les variations comme 'http://localhost' ou 'http://127.0.0.1:8080', etc.
+    // 3. Autoriser toute requête provenant de localhost ou 127.0.0.1, quel que soit le port (pour le dev)
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
          console.log(`CORS: Autorisation accordée pour l'origine locale : ${origin}`);
          return callback(null, true);
@@ -68,7 +66,10 @@ app.use('/api/proprietaires', proprietaires);
 app.use('/api/structures', structureRoutes);
 app.use('/api/statistiques', statistiques);
 app.use('/api/mandataire', mandataire);
-app.use('/api/immatriculation', immatriculation);
+
+// 🟢 MODIFICATION CLÉ : Passage du singulier au PLURIEL pour correspondre à la requête client (404 fix)
+app.use('/api/immatriculations', immatriculation);
+
 app.use('/api/departements', departements);
 app.use('/api/dossiers', dossiers);
 app.use('/api/v1', paiement);
