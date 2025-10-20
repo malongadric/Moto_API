@@ -1,6 +1,6 @@
-// routes/immatriculation.js
 import express from 'express';
-import { attribuerNumero  } from '../controllers/immatriculationcontroller.js';
+// 🟢 CORRECTION : Retrait de la virgule/espace après attribuerNumero
+import { attribuerNumero } from '../controllers/immatriculationcontroller.js';
 import { verifyToken } from '../middlewares/auth.js';
 import { checkRole } from '../middlewares/role.js';
 
@@ -8,13 +8,13 @@ const router = express.Router();
 
 /**
  * 🔹 Attribuer un numéro d’immatriculation à une moto
- * Accessible seulement aux admins
+ * Accessible seulement aux admins et agents
  * POST /immatriculations/attribuer/:motoId
  */
 router.post(
   '/attribuer/:motoId',
   verifyToken,
-  checkRole(['admin', 'agent']), // <-- ici, tableau
+  checkRole(['admin', 'agent']),
   attribuerNumero
 );
 
@@ -23,9 +23,9 @@ router.post(
  * GET /immatriculations?search=&departement_id=
  */
 // router.get(
-//   '/',
-//   verifyToken,
-//   getImmatriculations
+//   '/',
+//   verifyToken,
+//   getImmatriculations
 // );
 
 export default router;
