@@ -1,7 +1,7 @@
 // /routes/dossierAdminRoutes.js (CORRIGÉ - Option B)
 import express from 'express';
 // ...
-import verifyToken from '../middlewares/auth.js'; 
+import { verifyToken } from '../middlewares/auth.js'; 
 
 const router = express.Router();
 
