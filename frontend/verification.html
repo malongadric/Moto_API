@@ -111,46 +111,46 @@
             </section>
         </main>
     </div>
+
 <script>
 
-let dossier = null;
+let dossier = null; 
 let moto = null;
+let token = null; 
 
 document.addEventListener('DOMContentLoaded', async function() {
     const detailSummary = document.getElementById('detail-summary');
     const detailRefTitle = document.getElementById('detail-ref-title');
     const pageTitle = document.getElementById('page-title');
 
-    // 🔹 Récupération de la référence depuis URL ou localStorage
+    // 🔹 Récupération de la référence et du token
     const urlParams = new URLSearchParams(window.location.search);
     let referenceDossierRaw = urlParams.get('ref') || localStorage.getItem('selected_reference_dossier');
+    token = localStorage.getItem('token'); 
 
     if (!referenceDossierRaw) {
         detailSummary.innerHTML = '<p>❌ Dossier non trouvé. Aucune référence fournie.</p>';
         detailRefTitle.textContent = "Erreur";
         return;
     }
-
-    referenceDossierRaw = referenceDossierRaw.trim();
-    localStorage.setItem('selected_reference_dossier', referenceDossierRaw);
-
-    // 🔹 Récupération du token
-    const token = localStorage.getItem('token');
     if (!token) {
         detailSummary.innerHTML = '<p>❌ Vous devez être connecté pour voir ce dossier.</p>';
         detailRefTitle.textContent = "Erreur";
         return;
     }
 
-    let dossier = null;
+    referenceDossierRaw = referenceDossierRaw.trim();
+    localStorage.setItem('selected_reference_dossier', referenceDossierRaw);
+    
+    // --- Début de la récupération optimisée ---
 
     try {
-        // 🔹 1️⃣ Essai avec la référence complète
+        // 🔹 1️⃣ Appel unique (l'API retourne toutes les jointures)
         let resDossier = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(referenceDossierRaw)}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        // 🔹 2️⃣ Si 404 et suffixe présent, retenter sans suffixe
+        // 🔹 2️⃣ Si 404, retenter sans suffixe
         if (!resDossier.ok && referenceDossierRaw.includes(':')) {
             const referenceSansSuffixe = referenceDossierRaw.split(':')[0];
             resDossier = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(referenceSansSuffixe)}`, {
@@ -158,48 +158,41 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
         }
 
-        if (!resDossier.ok) throw new Error('Aucun dossier trouvé pour cette référence');
+        if (!resDossier.ok) {
+            const errorBody = await resDossier.json();
+            throw new Error(errorBody.message || `Erreur ${resDossier.status}: Aucun dossier trouvé pour cette référence`);
+        }
 
         const dossierData = await resDossier.json();
-        dossier = dossierData.dossier;
-        if (!dossier) throw new Error('Aucun dossier trouvé pour cette référence');
+        
+        // 🏆 Récupération des données du dossier complet
+        dossier = dossierData.dossier; 
 
-        // 🔹 3️⃣ Récupération du propriétaire
-        let proprietaire = null;
-        if (dossier.proprietaire_id) {
-            const resProp = await fetch(`https://moto-api-cika.onrender.com/api/proprietaires/${dossier.proprietaire_id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (resProp.ok) proprietaire = await resProp.json();
+        if (!dossier) throw new Error('Aucun dossier trouvé après décodage JSON.');
+
+        
+        // ------------------------------------------------------------------
+        // 🏅 MISE À JOUR CRITIQUE : Extraction et Affichage des Données Jointes
+        // ------------------------------------------------------------------
+        
+        // Vérifie si la relation est un tableau ou un objet et l'extrait
+        const proprietaire = dossier.proprietaire?.[0] || dossier.proprietaire; 
+        const mandataire = dossier.mandataire?.[0] || dossier.mandataire;
+        moto = dossier.moto?.[0] || dossier.moto; // moto est la variable globale
+        const agentData = dossier.agent?.[0] || dossier.agent; // Agent data
+
+        // Calcul du nom de l'agent pour l'affichage (répond à votre demande)
+        const agentNom = agentData ? 
+            `${agentData.prenom || ''} ${agentData.nom || ''}`.trim() : 
+            `ID: ${dossier.agent_id || '—'}`;
+        
+        // 🔹 Stocker moto_id et dossier_id pour usage futur
+        if (moto && moto.id) {
+            localStorage.setItem('moto_id', moto.id);
+            localStorage.setItem('dossier_id', dossier.dossier_id);
         }
-
-        // 🔹 4️⃣ Récupération du mandataire
-        let mandataire = null;
-        if (dossier.mandataire_id) {
-            const resMand = await fetch(`https://moto-api-cika.onrender.com/api/mandataires/${dossier.mandataire_id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (resMand.ok) mandataire = await resMand.json();
-        }
-let moto = null;
-
-if (dossier.moto_id) {
-    const resMoto = await fetch(`https://moto-api-cika.onrender.com/api/motos/${dossier.moto_id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (resMoto.ok) {
-        const resJson = await resMoto.json();
-        // On s'assure que moto pointe sur les vrais champs
-        moto = resJson.moto || resJson.data || resJson;
-
-        // 🔹 Stocker moto_id dans localStorage pour usage futur
-        localStorage.setItem('moto_id', moto.id);
-    }
-}
-
-
-        // 🔹 6️⃣ Affichage des informations
+    
+        // 🔹 3️⃣ Affichage des informations
         detailRefTitle.textContent = dossier.reference_dossier;
         pageTitle.textContent = `Validation du Dossier: ${dossier.reference_dossier}`;
 
@@ -208,62 +201,91 @@ if (dossier.moto_id) {
             <p><span class="label">Type de déclarant:</span> <strong>${dossier.acteur_type}</strong></p>
             ${proprietaire ? `
                 <p><span class="label">Nom Propriétaire:</span> <strong>${proprietaire.nom} ${proprietaire.prenom}</strong></p>
-                <p><span class="label">N° Pièce Propriétaire:</span> <strong>${proprietaire.cni}</strong></p>
+                <p><span class="label">N° Pièce Propriétaire:</span> <strong>${proprietaire.cni || '—'}</strong></p>
+                <p><span class="label">Téléphone Propriétaire:</span> <strong>${proprietaire.telephone || '—'}</strong></p>
             ` : ''}
             ${mandataire ? `
                 <hr style="border-style: dashed; border-color: #ddd;">
                 <p><span class="label">Nom Mandataire:</span> <strong>${mandataire.nom} ${mandataire.prenom}</strong></p>
-                <p><span class="label">N° Pièce Mandataire:</span> <strong>${mandataire.cni}</strong></p>
-                <p><span class="label">Téléphone Mandataire:</span> <strong>${mandataire.telephone}</strong></p>
+                <p><span class="label">N° Pièce Mandataire:</span> <strong>${mandataire.cni || '—'}</strong></p>
+                <p><span class="label">Téléphone Mandataire:</span> <strong>${mandataire.telephone || '—'}</strong></p>
             ` : ''}
             <h4 style="margin-top: 20px;">B. Informations de la Moto</h4>
             
             ${moto ? `
                 <p><span class="label">Marque / Modèle:</span> <strong>${moto.marque || '—'} ${moto.modele || ''}</strong></p>
                 <p><span class="label">N° Série (Châssis):</span> <strong>${moto.numero_chassis || '—'}</strong></p>
+                <p><span class="label">Immatriculation:</span> <strong>${moto.numero_immatriculation || 'En attente'}</strong></p>
                 <p><span class="label">Couleur:</span> <strong>${moto.couleur || '—'}</strong></p>
             ` : 'Aucune moto trouvée.'}
 
 
             <h4 style="margin-top: 20px;">C. Traçabilité du Dossier</h4>
             <p><span class="label">Référence du Dossier:</span> <strong>${dossier.reference_dossier}</strong></p>
-            <p><span class="label">Agent Traitant:</span> <strong>ID ${dossier.agent_id}</strong></p>
-            <p><span class="label">Date de Création:</span> <strong>${new Date(dossier.date_soumission).toLocaleString('fr-FR')}</strong></p>
+            
+            <p><span class="label">Agent Traitant:</span> <strong>${agentNom}</strong></p> <p><span class="label">Date de Création:</span> <strong>${new Date(dossier.date_soumission).toLocaleString('fr-FR')}</strong></p>
             <p><span class="label">Statut actuel:</span> <strong>${dossier.statut}</strong></p>
         `;
         detailSummary.innerHTML = htmlContent;
 
     } catch (err) {
-        console.error(err);
+        console.error("Erreur critique de chargement:", err);
         detailSummary.innerHTML = `<p>❌ Impossible de récupérer le dossier : ${err.message}</p>`;
         detailRefTitle.textContent = "Erreur";
         return;
     }
 
-    // 🔹 Boutons
+    // --- Gestion des Événements des Boutons (Non modifiée, mais incluse pour être complet) ---
+    
     document.getElementById('btn-retour-liste').addEventListener('click', () => {
         window.location.href = 'liste_dossiers.html';
     });
-
-    document.getElementById('btn-valider-dossier').addEventListener('click', () => {
-        if (moto && moto.id) {
-        localStorage.setItem('moto_id', moto.id);
-    }
-    if (dossier) {
-        localStorage.setItem('reference_dossier', dossier.reference_dossier);
-
-    const reference = encodeURIComponent(dossier.reference_dossier);
-    window.location.href = `carte_grise_AVANT_FIN____.html?ref=${reference}`;
-
-    } else {
-        alert("⚠️ Dossier introuvable, impossible de continuer.");
-    }
-});
-
+    
+    document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
+        if (!dossier || !dossier.dossier_id) {
+            alert("⚠️ Dossier introuvable, impossible de continuer la validation.");
+            return;
+        }
+        
+        const confirmation = confirm("Êtes-vous sûr de vouloir VALIDER ce dossier ? Cette action est généralement irréversible.");
+        if (!confirmation) return;
+    
+        try {
+            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ valide: true }) 
+            });
+    
+            const resBody = await res.json();
+            
+            if (!res.ok) throw new Error(resBody.message || `Erreur ${res.status}`);
+            
+            alert(`✅ Dossier ${dossier.reference_dossier} VALIDÉ avec succès.`);
+            
+            window.location.href = `carte_grise_AVANT_FIN____.html?ref=${encodeURIComponent(dossier.reference_dossier)}`;
+    
+        } catch (err) {
+            console.error("Erreur de validation:", err);
+            alert(`❌ Échec de validation : ${err.message}`);
+        }
+    });
 
     document.getElementById('btn-rejeter-dossier').addEventListener('click', async () => {
-        const motif = prompt(`⚠️ MOTIF DE REJET :`);
-        if (!motif) return;
+        if (!dossier || !dossier.dossier_id) {
+            alert("⚠️ Dossier introuvable, impossible de rejeter.");
+            return;
+        }
+
+        const motif = prompt(`⚠️ MOTIF DE REJET OBLIGATOIRE :`);
+        if (!motif) {
+            alert("Le motif de rejet est obligatoire.");
+            return;
+        }
+        
         try {
             const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
                 method: 'PATCH',
@@ -271,18 +293,23 @@ if (dossier.moto_id) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ statut: 'rejeté', motif })
+                body: JSON.stringify({ statut: 'rejeté', motif_rejet: motif }) 
             });
-            if (!res.ok) throw new Error(`Erreur ${res.status}`);
+
+            const resBody = await res.json();
+            
+            if (!res.ok) throw new Error(resBody.message || `Erreur ${res.status}`);
+            
             alert(`❌ DOSSIER REJETÉ : Motif : ${motif}`);
-            location.reload();
+            
+            window.location.href = 'liste_dossiers.html';
         } catch (err) {
+            console.error("Erreur de rejet:", err);
             alert(`❌ Échec de rejet : ${err.message}`);
         }
     });
 });
 </script>
-
 
 </body>
 </html>

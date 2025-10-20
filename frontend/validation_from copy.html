@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Validation du Dossier Réussie</title>
+<style>
+:root {
+    --primary-color: #0d47a1;
+    --secondary-color: #00796b;
+    --text-color: #333;
+    --white-color: #fff;
+    --shadow: 0 8px 25px rgba(0,0,0,0.3);
+    --border-radius: 8px;
+}
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    background-image: url("image_fond_validé.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+.confirmation-container {
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+    padding: 50px 30px;
+    border: 2px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    box-shadow: var(--shadow);
+}
+.success-icon { color: var(--secondary-color); margin-bottom: 25px; }
+.success-icon svg { width: 80px; height: 80px; }
+.confirmation-container h1 { font-size: 2rem; color: var(--secondary-color); margin-bottom: 15px; }
+.confirmation-container p { font-size: 1.1rem; color: var(--text-color); margin-bottom: 30px; }
+.reference-info { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 5px; }
+.reference-number { color: #c62828; }
+.departement-number { color: #1565c0; }
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s;
+    background-color: var(--primary-color);
+    color: var(--white-color);
+    text-decoration: none;
+    display: inline-block;
+}
+.btn:hover { background-color: #0a3579; }
+</style>
+</head>
+<body>
+
+<div class="confirmation-container">
+    <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    </div>
+    
+    <h1>Dossier Validé avec Succès !</h1>
+    
+    <p>Le dossier d'immatriculation a été enregistré et validé. Vous pouvez suivre le traitement ci-dessous.</p>
+    
+    <div class="reference-info">
+        Référence du Dossier : <span class="reference-number" id="ref-number">REF-XXXX</span><br>
+        Département : <span class="departement-number" id="dep-number">--</span>
+    </div>
+    
+    <a href="agent_dashboard.html" class="btn" id="btn-dashboard">Retourner au Tableau de Bord</a>
+</div>
+
+<script>
+(async () => {
+    try {
+        const proprietaireId = localStorage.getItem('proprietaire_id');
+        const mandataireId = localStorage.getItem('mandataire_id');
+        const motoId = localStorage.getItem('moto_id');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const token = localStorage.getItem('token');
+        const departementId = localStorage.getItem('utilisateur_departement_id');
+
+        if ((!proprietaireId && !mandataireId) || !motoId || !token || !departementId) {
+            throw new Error("Informations manquantes ou token absent. Veuillez refaire l'enregistrement.");
+        }
+
+        const dossierData = {
+            proprietaire_id: proprietaireId ? Number(proprietaireId) : null,
+            mandataire_id: mandataireId ? Number(mandataireId) : null,
+            moto_id: Number(motoId),
+            agent_id: user.id || user.user_id || null,
+            departement_id: Number(departementId)
+        };
+
+        // 🔹 POST vers le backend
+        const resp = await fetch('https://moto-api-cika.onrender.com/api/dossiers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(dossierData)
+        });
+
+        if (!resp.ok) {
+            const errJson = await resp.json().catch(() => null);
+            throw new Error(errJson ? JSON.stringify(errJson) : await resp.text());
+        }
+
+        const result = await resp.json();
+        console.log("✅ Dossier créé :", result);
+
+        if (result.dossier) {
+            document.getElementById('ref-number').textContent = result.dossier.reference_dossier || "N/A";
+            document.getElementById('dep-number').textContent = result.dossier.departement_id || "N/A";
+
+            // Nettoyage
+            ['proprietaire_id', 'mandataire_id', 'moto_id'].forEach(k => localStorage.removeItem(k));
+
+            // Redirection après 3 secondes
+            setTimeout(() => window.location.href = 'admin_dashboard.html', 3000);
+        } else {
+            throw new Error("Dossier non créé côté backend.");
+        }
+    } catch (err) {
+        console.error("❌ Erreur lors de la création du dossier :", err);
+        alert("Erreur : " + err.message);
+    }
+})();
+</script>
+
+</body>
+</html>

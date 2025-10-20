@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Agent Adaptatif - Immatriculation</title>
+    <style>
+        /* --- Style Général & Variables --- */
+        :root {
+            --primary-color: #0d47a1; /* Bleu foncé institutionnel */
+            --secondary-color: #00796b; /* Vert pour les actions */
+            --accent-color: #fbc02d; /* Jaune pour l'attention */
+            --background-color: #f5f7fa; /* Gris très clair */
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --white-color: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --border-radius: 8px;
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Barre de Navigation Latérale (Sidebar) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--primary-color);
+            color: var(--white-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease-in-out;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 20px 0;
+            margin: 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            color: var(--white-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.3s, padding-left 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .sidebar-nav a svg {
+            margin-right: 15px;
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-nav a.active {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-left: 4px solid var(--accent-color);
+            font-weight: bold;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar-footer #user-name { font-weight: bold; display: block; }
+        .sidebar-footer #user-department { font-size: 0.9em; opacity: 0.8; display: block; }
+
+        /* --- Zone de Contenu Principal --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            background-color: var(--white-color);
+            padding: 15px 30px;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            margin-right: 20px;
+        }
+        .menu-toggle svg { width: 28px; height: 28px; }
+
+        .main-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            display: none;
+            background-color: var(--white-color);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        .content-section.active { display: block; }
+
+        /* --- Styles des Formulaires --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .form-section-title {
+            grid-column: 1 / -1;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 30px; 
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--secondary-color);
+        }
+        
+        .form-section-title:first-child { margin-top: 0; }
+
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 8px; font-weight: 600; font-size: 0.9rem; }
+        .form-group input, .form-group select {
+            padding: 12px; border: 1px solid var(--border-color);
+            border-radius: var(--border-radius); font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none; border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.2);
+        }
+
+        /* --- Boutons d'action --- */
+        .form-actions {
+            grid-column: 1 / -1; 
+            display: flex;
+            justify-content: flex-end; 
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 30px; border: none;
+            border-radius: var(--border-radius); font-size: 1rem; font-weight: bold;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        
+        /* Bouton Retour */
+        .btn-secondary {
+            background-color: var(--border-color); 
+            color: var(--text-color);
+        }
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+            transform: translateY(-2px);
+        }
+
+        /* Bouton Suivant/Primaire */
+        .btn-primary {
+            background-color: var(--secondary-color); color: var(--white-color);
+            box-shadow: 0 2px 4px rgba(0, 121, 107, 0.3);
+        }
+        .btn-primary:hover {
+            background-color: #004d40; transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 121, 107, 0.4);
+        }
+
+        /* --- RESPONSIVE DESIGN --- */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .main-header { padding: 15px; }
+            .content-area { padding: 15px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header"><h1>Immatriculation</h1></div>
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#" id="nav-form" class="nav-link active">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        Saisie Mandataire
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-list" class="nav-link">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        Consulter / Modifier
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="nav-history" class="nav-link">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Historique
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-footer">
+            <span id="user-name">Jean Dupont</span>
+            <span id="user-department">Agent - Département du Kouilou</span>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <header class="main-header">
+            <button class="menu-toggle" id="menu-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <h2 id="page-title">Saisie Mandataire</h2>
+        </header>
+
+        <main class="content-area">
+
+            <section id="form-section" class="content-section active">
+                <form id="mandataire-form">
+                    <div class="form-grid">
+                        
+                        <h3 class="form-section-title">A. Informations du Mandataire</h3>
+                        
+                        <div class="form-group"><label for="mandat_nom">Nom</label><input type="text" id="mandat_nom" placeholder="Nom du Mandataire" required></div>
+                        <div class="form-group"><label for="mandat_prenom">Prénom</label><input type="text" id="mandat_prenom" placeholder="Prénom du Mandataire"></div>
+                        <div class="form-group"><label for="mandat_date_naissance">Date de Naissance</label><input type="date" id="mandat_date_naissance"></div>
+                        <div class="form-group"><label for="mandat_cni">CNI</label><input type="text" id="mandat_cni" placeholder="Numéro de la carte nationale d'identité du Mandataire" required></div>
+                        <div class="form-group"><label for="mandat_telephone">Téléphone</label><input type="tel" id="mandat_telephone" placeholder="9 chiffres maximum" maxlength="9"></div>
+                        <div class="form-group"><label for="mandat_profession">Profession</label><input type="text" id="mandat_profession" placeholder="Profession"></div>
+                        <div class="form-group"><label for="mandat_email">Messagerie Électronique</label><input type="email" id="mandat_email" placeholder="adresse@email.com"></div>
+                        <div class="form-group"><label for="mandat_nationalite">Nationalité</label><input type="text" id="mandat_nationalite" value="CONGOLAISE"></div>
+                        <div class="form-group"><label for="mandat_ville">Ville</label><input type="text" id="mandat_ville" placeholder="Ville de résidence"></div>
+                        <div class="form-group"><label for="mandat_adresse">Adresse</label><input type="text" id="mandat_adresse" placeholder="Adresse complète"></div>
+                        
+                        
+                        <h3 class="form-section-title">B. Informations du Propriétaire (À qui le Mandataire est lié)</h3>
+
+                        <div class="form-group">
+                            <label for="lien_proprietaire">ID/Référence du Propriétaire</label>
+                            <input type="text" id="lien_proprietaire" placeholder="CNI ou ID du Propriétaire à lier" required>
+                        </div>
+                        
+                        <div class="form-group"><label for="nom">Nom</label><input type="text" id="nom" placeholder="Nom du propriétaire" required></div>
+                        <div class="form-group"><label for="prenom">Prénom</label><input type="text" id="prenom" placeholder="Prénom du propriétaire"></div>
+                        <div class="form-group"><label for="date_naissance">Date de Naissance</label><input type="date" id="date_naissance"></div>
+                        <div class="form-group"><label for="cni">CNI</label><input type="text" id="cni" placeholder="Numéro de la carte nationale d'identité"></div>
+                        <div class="form-group"><label for="telephone">Téléphone</label><input type="tel" id="telephone" placeholder="9 chiffres maximum" maxlength="9"></div>
+                        <div class="form-group"><label for="profession">Profession</label><input type="text" id="profession" placeholder="Profession"></div>
+                        <div class="form-group"><label for="email">Messagerie Électronique</label><input type="email" id="email" placeholder="adresse@email.com"></div>
+                        <div class="form-group"><label for="nationalite">Nationalité</label><input type="text" id="nationalite" value="CONGOLAISE"></div>
+                        <div class="form-group"><label for="ville">Ville</label><input type="text" id="ville" placeholder="Ville de résidence"></div>
+                        <div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" placeholder="Adresse complète"></div>
+                        
+                    </div>
+                    <div class="form-actions">
+    <button 
+        type="button" 
+        class="btn btn-secondary" 
+        onclick="window.history.back();"
+    >
+        Retour
+    </button>
+    <button type="submit" class="btn btn-primary">
+        Enregistrer et Continuer
+    </button>
+</div>
+
+                </form>
+            </section>
+
+
+            <section id="list-section" class="content-section">
+                 <h3 class="form-section-title">Consulter / Modifier les dossiers</h3>
+                </section>
+            
+             <section id="history-section" class="content-section">
+                 <h3 class="form-section-title">Historique des activités</h3>
+                </section>
+        </main>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+    const pageTitle = document.getElementById('page-title');
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const mandataireForm = document.getElementById('mandataire-form');
+
+    const sectionTitles = {
+        'form-section': 'Saisie Mandataire',
+        'list-section': 'Consulter / Modifier les dossiers',
+        'history-section': 'Historique des activités'
+    };
+
+    function switchView(targetId) {
+        navLinks.forEach(link => link.classList.remove('active'));
+        contentSections.forEach(section => section.classList.remove('active'));
+
+        const navId = targetId.replace('-section', '');
+        const activeLink = document.querySelector(`#nav-${navId}`);
+        const activeSection = document.getElementById(targetId);
+
+        if (activeLink) activeLink.classList.add('active');
+        if (activeSection) activeSection.classList.add('active');
+
+        pageTitle.textContent = sectionTitles[targetId] || '';
+        if (window.innerWidth <= 768) sidebar.classList.remove('open');
+    }
+
+      // 🔹 Mise à jour footer utilisateur
+function updateSidebarFooter() {
+    const agentName = localStorage.getItem('utilisateur_nom') || 'Utilisateur inconnu';
+    const departementNom = localStorage.getItem('utilisateur_departement_nom') || 'Département non défini';
+    const footerName = document.getElementById('user-name');
+    const footerDept = document.getElementById('user-department');
+    if (footerName) footerName.textContent = agentName;
+    if (footerDept) footerDept.textContent = `Agent - ${departementNom}`;
+}
+
+// 🔹 Traçabilité auto
+function updateTraceability() {
+    const now = new Date();
+    const dateOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    
+    const traceAgent = document.getElementById('trace-agent');
+    const traceDept = document.getElementById('trace-departement');
+    const traceDate = document.getElementById('trace-date');
+    const traceHeure = document.getElementById('trace-heure');
+
+    if (traceAgent) traceAgent.value = localStorage.getItem('utilisateur_nom') || 'Inconnu';
+    if (traceDept) traceDept.value = localStorage.getItem('utilisateur_departement_nom') || 'N/A';
+    if (traceDate) traceDate.value = now.toLocaleDateString('fr-FR', dateOptions);
+    if (traceHeure) traceHeure.value = now.toLocaleTimeString('fr-FR', timeOptions);
+}
+
+// 🔹 Initialisation
+updateSidebarFooter();
+updateTraceability();
+setInterval(() => { updateSidebarFooter(); updateTraceability(); }, 1000);
+
+// 🔹 Mise à jour si localStorage change
+window.addEventListener('storage', (event) => {
+    if (['utilisateur_nom', 'utilisateur_departement_nom'].includes(event.key)) {
+        updateSidebarFooter();
+        updateTraceability();
+    }
+});
+// 🔄 Si un autre onglet change les infos (ex: après login)
+window.addEventListener('storage', (event) => {
+    if (event.key === 'user') {
+        updateSidebarFooter();
+        updateTraceability();
+    }
+});
+
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchView(this.id.replace('nav-', '') + '-section');
+        });
+    });
+
+    // Soumission du formulaire : enregistre propriétaire puis mandataire
+    mandataireForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const token = localStorage.getItem('token');
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token) {
+            alert('Session expirée ou token manquant. Veuillez vous reconnecter.');
+            window.location.href = '/frontend/index.html';
+            return;
+        }
+
+        // --- 1) Préparer les données Propriétaire ---
+        const proprietaireData = {
+            nom: document.getElementById('nom').value.trim(),
+            prenom: document.getElementById('prenom').value.trim(),
+            date_naissance: document.getElementById('date_naissance').value || null,
+            cni: document.getElementById('cni').value.trim(),
+            telephone: document.getElementById('telephone').value.trim(),
+            profession: document.getElementById('profession').value.trim() || null,
+            email: document.getElementById('email').value.trim() || null,
+            nationalite: document.getElementById('nationalite').value.trim() || null,
+            ville: document.getElementById('ville').value.trim() || null,
+            adresse: document.getElementById('adresse').value.trim() || null,
+            moto_id: localStorage.getItem('moto_id') ? Number(localStorage.getItem('moto_id')) : null,
+            departement_id: storedUser.departement_id || null,
+            cree_par: storedUser.id || storedUser.user_id || null
+        };
+
+        // --- 2) Préparer les données Mandataire ---
+        const mandataireData = {
+            nom: document.getElementById('mandat_nom').value.trim(),
+            prenom: document.getElementById('mandat_prenom').value.trim(),
+            date_naissance: document.getElementById('mandat_date_naissance').value || null,
+            cni: document.getElementById('mandat_cni').value.trim(),
+            telephone: document.getElementById('mandat_telephone').value.trim(),
+            profession: document.getElementById('mandat_profession').value.trim() || null,
+            email: document.getElementById('mandat_email').value.trim() || null,
+            nationalite: document.getElementById('mandat_nationalite').value.trim() || null,
+            ville: document.getElementById('mandat_ville').value.trim() || null,
+            adresse: document.getElementById('mandat_adresse').value.trim() || null,
+            lien_proprietaire: document.getElementById('lien_proprietaire').value.trim() || null,
+            moto_id: localStorage.getItem('moto_id') ? Number(localStorage.getItem('moto_id')) : null,
+            departement_id: storedUser.departement_id || null,
+            cree_par: storedUser.id || storedUser.user_id || null
+        };
+
+        if (!mandataireData.moto_id) {
+            alert("❌ Impossible d'enregistrer le mandataire : moto_id manquant.");
+            return;
+        }
+
+        try {
+            // ------- 3) Enregistrer le Propriétaire -------
+            const respProp = await fetch('https://moto-api-cika.onrender.com/api/proprietaires', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(proprietaireData)
+            });
+
+            if (!respProp.ok) {
+                let errText;
+                try { errText = await respProp.json(); }
+                catch { errText = await respProp.text(); }
+                throw new Error(`Erreur Propriétaire: ${JSON.stringify(errText)}`);
+            }
+
+            const proprietaireCreated = await respProp.json();
+            const proprietaire_id = proprietaireCreated.proprietaire?.id || proprietaireCreated.id || proprietaireCreated._id;
+            if (!proprietaire_id) {
+                console.warn('Réponse propriétaire (sans id):', proprietaireCreated);
+                throw new Error('Impossible de récupérer proprietaire_id depuis la réponse.');
+            }
+
+            localStorage.setItem('proprietaire_id', String(proprietaire_id));
+            console.log('Propriétaire créé id =', proprietaire_id);
+
+            // ------- 4) Enregistrer le Mandataire -------
+            mandataireData.proprietaire_id = proprietaire_id;
+
+           // ... le reste du code reste identique
+
+const respMand = await fetch('https://moto-api-cika.onrender.com/api/mandataire', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(mandataireData)
+});
+
+if (!respMand.ok) {
+    let errText;
+    try { errText = await respMand.json(); }
+    catch { errText = await respMand.text(); }
+    throw new Error(`Erreur Mandataire: ${JSON.stringify(errText)}`);
+}
+
+const mandataireCreated = await respMand.json();
+const mandataire_id = mandataireCreated.id ?? mandataireCreated._id ?? mandataireCreated.mandataire_id;
+if (mandataire_id) localStorage.setItem('mandataire_id', String(mandataire_id));
+
+console.log('Mandataire créé :', mandataireCreated);
+alert('✅ Enregistrement réussi : propriétaire et mandataire créés et liés.');
+mandataireForm.reset();
+
+// --- REDIRECTION APRÈS SUCCÈS ---
+window.location.href = 'validation_from copy.html'; 
+
+
+        } catch (err) {
+            console.error('Erreur lors de la séquence propriétaire->mandataire :', err);
+            alert('❌ Une erreur est survenue : ' + (err.message || err));
+        }
+    });
+
+    if (menuToggle) menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+    switchView('form-section');
+});
+</script>
+
+
+</body>
+</html>

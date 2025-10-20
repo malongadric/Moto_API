@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 🔹 4️⃣ Génération automatique de l'immatriculation
         const resImmat = await fetch(
-            `https://moto-api-cika.onrender.com/api/immatriculation/attribuer/${moto.id}`,
+            `https://moto-api-cika.onrender.com/api/immatriculations/attribuer/${moto.id}`,
             { 
                 method: 'POST',
                 headers: { 

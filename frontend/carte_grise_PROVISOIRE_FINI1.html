@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>CERTIFICAT PROVISOIRE DE MISE EN CIRCULATION D'UNE MOTO TAXI</title>
+    <style>
+        /* ========================================================= */
+        /* 1. RÈGLE D'IMPRESSION A4 ET MARGES */
+        /* ========================================================= */
+        @page {
+            size: A4 portrait; /* Format 210mm x 297mm */
+            margin: 0; /* Supprime les marges par défaut pour un meilleur contrôle */
+        }
+        
+        /* ========================================================= */
+        /* 2. INTÉGRATION DE LA POLICE */
+        /* ========================================================= */
+        @font-face {
+            font-family: 'YardmasterD';
+            /* NOTE: Assurez-vous que le fichier 'Yardmaster D.ttf' est dans le même répertoire */
+            src: url('Yardmaster D.ttf') format('truetype'); 
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* Styles généraux */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0; 
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            
+            /* IMAGE DE FOND POUR LA PAGE WEB ENTIÈRE (Optionnel) */
+            background-image: url('image_fond_validé.png'); 
+            background-size: cover; 
+            background-repeat: no-repeat; 
+            background-position: center center; 
+            background-attachment: fixed; 
+        }
+
+        /* Styles du conteneur DOCUMENT */
+        .document {
+            background-color: #ffffff; /* Fond blanc opaque pour la lecture */
+            padding: 30px 40px;
+            border: 1px solid #000;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 210mm; 
+            max-width: 900px;
+            box-sizing: border-box;
+            position: relative; 
+            z-index: 2; 
+        }
+        
+        /* ========================================================= */
+        /* 🛑 FILIGRANE (Watermark) 🛑 */
+        .document::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* ⬅️ VOTRE IMAGE DE FILIGRANE MISE À JOUR */
+            background-image: url('armoiries_congo.png'); 
+            background-size: 80%; /* En gros */
+            background-repeat: no-repeat;
+            background-position: center center;
+            opacity: 0.1; /* Transparent/flouté */
+            z-index: 1; /* Derrière le texte */
+        }
+
+        /* Assure que le contenu du document reste au-dessus du filigrane */
+        .header-top, header, .info-row, .numero-principal, .section-signature {
+            position: relative;
+            z-index: 3; 
+        }
+        /* ========================================================= */
+
+        /* Le reste des styles n'a pas été modifié */
+        .print-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            margin-top: 20px; 
+        }
+        
+        /* Bloc du Ministère (Gauche) */
+        .bloc-gauche {
+            font-size: 0.7em;
+            line-height: 1.3;
+            text-align: left;
+            font-weight: bold;
+            color: #333;
+            width: 55%; 
+        }
+        .bloc-gauche p {
+            margin: 0;
+        }
+
+        /* Bloc Armoiries/République (Droite) */
+        .bloc-droite {
+            text-align: right;
+            width: 40%;
+            font-size: 0.8em;
+            line-height: 1.4;
+            font-weight: bold;
+        }
+        .bloc-droite .armoiries {
+            width: 100px; 
+            height: auto;
+            margin-top: 10px;
+        }
+        .bloc-droite p {
+            margin: 0;
+        }
+        .bloc-droite .devise {
+            margin-bottom: 5px;
+        }
+
+        /* Conteneur pour le titre principal */
+        header {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 30px; 
+            border-top: 2px solid #000; 
+            padding-top: 15px;
+            padding-bottom: 5px;
+        }
+
+        header h1 {
+            font-family: 'YardmasterD', 'Times New Roman', serif;
+            font-size: 28px; 
+            font-weight: bold;
+            color: #333;
+            line-height: 1.2;
+            letter-spacing: 1.5px;
+            border-bottom: 2px solid #000; 
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        /* Styles pour les lignes d'information */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+        .label-inline {
+            font-weight: normal;
+            white-space: nowrap;
+        }
+
+        /* Classe pour tous les champs dynamiques */
+        .data-field {
+            font-weight: bold;
+            flex-grow: 1;
+            padding-left: 5px;
+            display: inline-block;
+            color: #555; /* Couleur de placeholder */
+        }
+
+        .underline {
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+        }
+
+        .right-aligned {
+            text-align: right;
+            margin-left: 20px;
+        }
+
+        .center-aligned {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        /* Style pour la section du numéro principal */
+        .numero-principal {
+            font-family: 'Arial Black', sans-serif;
+            font-size: 2.2em;
+            font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            padding: 15px 0;
+            letter-spacing: 2px;
+        }
+        
+        /* Force l'immatriculation en vert */
+        #serie_immatriculation {
+            color: green !important; 
+        }
+
+        .bordered-top-bottom {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 8px 0;
+            margin-bottom: -1px;
+        }
+
+        .bordered-top-bottom:last-of-type {
+            border-bottom: 1px solid #000;
+            margin-bottom: 10px;
+        }
+
+        /* Règle existante pour le Châssis en rouge */
+        .red-text {
+            color: red;
+            font-weight: bold;
+        }
+
+        .flex-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .flex-item {
+            display: flex;
+            align-items: baseline;
+            white-space: nowrap;
+            flex: 1;
+        }
+
+        .flex-item.right-aligned {
+            justify-content: flex-end;
+        }
+
+        /* STYLES POUR LA SIGNATURE ET CACHET */
+        .section-signature {
+            margin-top: 80px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 0.9em;
+            width: 100%;
+        }
+
+        .signature-bloc {
+            width: 45%; 
+            text-align: center;
+        }
+        
+        .signature-line {
+            padding-top: 50px; 
+            border-bottom: 1px dashed #000; 
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+        
+        .signature-title {
+            font-weight: bold;
+        }
+
+        /* MEDIA QUERY POUR L'IMPRESSION (SINGLE PAGE A4) */
+        @media print {
+            body {
+                background-color: #fff;
+                margin: 0;
+                padding: 0;
+                display: block;
+            }
+            .document {
+                box-shadow: none;
+                border: none;
+                width: 100%; 
+                max-width: 100%;
+                margin: 0;
+                padding: 10mm 15mm; 
+            }
+            .print-button {
+                display: none; 
+            }
+            /* Règle pour l'impression du Filigrane */
+            .document::before {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                opacity: 0.1 !important; /* Maintien de la transparence à l'impression */
+            }
+            /* Fin du Filigrane */
+            .header-top {
+                margin-bottom: 10px;
+                margin-top: 0; 
+            }
+            .bloc-gauche {
+                font-size: 0.65em;
+                width: 60%;
+            }
+            .bloc-droite {
+                font-size: 0.7em;
+                width: 35%;
+            }
+            .bloc-droite .armoiries {
+                width: 70px; 
+            }
+            header {
+                margin-top: 10px;
+            }
+            header h1 {
+                font-size: 26px;
+                border-bottom: 1px solid #000;
+                padding-bottom: 5px;
+            }
+            .section-signature {
+                margin-top: 50px;
+            }
+            .signature-line {
+                padding-top: 30px; 
+            }
+            .numero-principal {
+                font-size: 2em;
+                padding: 10px 0;
+            }
+            .info-row, .bordered-top-bottom {
+                font-size: 0.85em;
+                margin-bottom: 0;
+                padding: 5px 0;
+            }
+            .bordered-top-bottom {
+                border-top: 0.5px solid #000;
+                border-bottom: 0.5px solid #000;
+            }
+            .bordered-top-bottom:first-of-type {
+                border-top: 2px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document">
+    
+    <button class="print-button" onclick="window.print()">
+        Imprimer
+    </button>
+    
+    <div class="header-top">
+        <div class="bloc-gauche">
+            <p>MINISTERE DES TRANSPORTS,DE L'AVIATION CIVILE ET</p>
+            <p>DE LA MARINE MARCHANDE</p>
+            <p>DIRECTION GÉNÉRALE DES TRANSPORTS TERRESTRES</p>
+            <p>DIRECTION DEPARTEMENTALE DES TRANSPORTS</p>
+            <p>TERRESTRES DE BRAZZAVILLE</p>
+            <p>BUREAU DES TRANSPORTS URBAINS ET ROUTIERS</p>
+        </div>
+
+        <div class="bloc-droite">
+            <p>RÉPUBLIQUE DU CONGO</p>
+            <p class="devise">Unité - Travail - Progrès</p>
+            <img src="armoiries_congo.png" alt="Armoiries de la République du Congo" class="armoiries">
+        </div>
+    </div>
+
+    <header>
+        <h1>CERTIFICAT PROVISOIRE DE MISE EN <br> CIRCULATION D'UNE MOTO TAXI</h1>
+    </header>
+
+    <div class="info-row">
+        <span class="label-inline">Mr,Mme,Mlle :</span> <span id="nom" class="data-field underline">NOM DU PROPRIÉTAIRE</span> <span id="prenom" class="data-field underline">PRÉNOM(S) DU PROPRIÉTAIRE</span>
+        <span class="label-inline right-aligned">Téléphone :</span> <span id="telephone" class="data-field underline">TÉLÉPHONE</span>
+    </div>
+    <div class="info-row">
+        <span class="label-inline">Profession :</span> <span id="profession" class="data-field underline">PROFESSION</span>
+        <span class="label-inline right-aligned">Adresse :</span> <span id="adresse" class="data-field underline">ADRESSE DU PROPRIÉTAIRE</span>
+    </div>
+
+    <div class="numero-principal">
+        <span id="serie_immatriculation">SERIE D'IMMATRICULATION PROVISOIRE</span>
+    </div>
+
+    <div class="info-row bordered-top-bottom">
+        <span class="label-inline">Genre :</span> <span id="genre_vehicule" class="data-field">léger</span>
+        <span class="label-inline center-aligned">Modèle :</span> <span id="modele" class="data-field">MODÈLE</span>
+        <span class="label-inline right-aligned">Carrosserie :</span> <span id="carrosserie" class="data-field">CARROSSERIE</span>
+    </div>
+
+    <div class="info-row bordered-top-bottom">
+        <span class="label-inline">Marque :</span> <span id="marque" class="data-field">MARQUE</span>
+        <span class="label-inline right-aligned">Type :</span> <span id="type" class="data-field">TYPE</span>
+    </div>
+
+    <div class="info-row bordered-top-bottom">
+        <span class="label-inline">Année de première mise en circulation :</span> <span id="premiere_mise_circulation" class="data-field">AAAA</span>
+    </div>
+
+    <div class="info-row bordered-top-bottom">
+        <span class="label-inline">Chassis :</span> <span id="numero_chassis" class="data-field red-text">NUMÉRO DU CHASSIS</span>
+        <span class="label-inline right-aligned">Couleur :</span> <span id="couleur" class="data-field">COULEUR</span>
+    </div>
+
+    <div class="info-row bordered-top-bottom">
+        <span class="label-inline">Source d'énergie :</span> <span id="energie" class="data-field">ÉNERGIE</span>
+    </div>
+
+    <div class="info-row bordered-top-bottom flex-container">
+        <div class="flex-item">
+            <span class="label-inline">Puissance administrative :</span> <span id="puissance_admin" class="data-field">00 CV</span>
+        </div>
+        <div class="flex-item">
+            <span class="label-inline center-aligned">Cylindrée :</span> <span id="cylindree" class="data-field">000 cm3</span>
+        </div>
+        <div class="flex-item right-aligned">
+            <span class="label-inline">Places assises :</span> <span id="nombre_places" class="data-field">0/0</span>
+        </div>
+    </div>
+
+    <div class="info-row bordered-top-bottom flex-container">
+        <div class="flex-item">
+            <span class="label-inline">Poids autorisé en charge :</span> <span id="poids_charge_autorisee" class="data-field">0 kg</span>
+        </div>
+        <div class="flex-item">
+            <span class="label-inline center-aligned">Poids vide :</span> <span id="poids_vide" class="data-field">0 kg</span>
+        </div>
+        <div class="flex-item right-aligned">
+            <span class="label-inline">Charge utile :</span> <span id="charge_utile" class="data-field">0 kg</span>
+        </div>
+    </div>
+
+    <div class="info-row bordered-top-bottom flex-container">
+        <div class="flex-item">
+            <span class="label-inline">Référence Moteur :</span> <span id="reference_moteur" class="data-field">RÉF. MOTEUR</span>
+        </div>
+        <div class="flex-item right-aligned">
+            <span class="label-inline">Immatriculation Provisoire :</span> <span id="immat_provisoire_info" class="data-field">None</span>
+        </div>
+    </div>
+    
+    <div class="section-signature">
+        <div class="signature-bloc" style="text-align: left;">
+            Délivré à <span id="departement_id" class="data-field" style="flex-grow: 0; padding: 0;">LIEU DE DÉLIVRANCE</span>, le: 
+            <span class="signature-line" style="width: 20px; text-align: center;" id="date_jour">__</span> / 
+            <span class="signature-line" style="width: 20px; text-align: center;" id="date_mois">__</span> / 
+            <span class="signature-line" style="width: 20px; text-align: center;" id="date_annee">__</span>
+        </div>
+        
+        <div class="signature-bloc" style="text-align: right;">
+            <div class="signature-title">Le Directeur Départemental</div>
+            <div class="signature-line"></div>
+        </div>
+    </div>
+    
+</div>
+
+<script>
+    // =========================================================
+    // PARAMÈTRES DE CONNEXION SUPABASE
+    // =========================================================
+    // 🛑 REMPLACEZ CES VALEURS PAR LES VÔTRES ! 🛑
+    const SUPABASE_URL = 'VOTRE_URL_SUPABASE_ICI'; 
+    const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_ICI'; 
+    
+    // ID du dossier unique à charger. Modifiez ceci pour tester différents enregistrements.
+    const ID_DOSSIER_A_CHARGER = 1; 
+
+    // =========================================================
+    // FONCTION POUR METTRE À JOUR LE CONTENU HTML
+    // =========================================================
+    /**
+     * Met à jour le contenu textuel d'un élément HTML par son ID.
+     * @param {string} id - L'ID de l'élément HTML.
+     * @param {string} value - La valeur à insérer.
+     */
+    function updateField(id, value) {
+        const element = document.getElementById(id);
+        
+        if (element && value !== undefined && value !== null) {
+            let textValue = String(value);
+
+            // Applique les majuscules aux champs d'identification clés
+            if (['nom', 'numero_chassis', 'serie_immatriculation'].includes(id)) {
+                textValue = textValue.toUpperCase();
+            }
+
+            // Gère le formatage des valeurs numériques pour les unités
+            if (id === 'puissance_admin' && !textValue.includes('CV')) {
+                 textValue = `${textValue} CV`;
+            } else if (id === 'cylindree' && !textValue.includes('cm3')) {
+                 textValue = `${textValue} cm3`;
+            } else if (['poids_charge_autorisee', 'poids_vide', 'charge_utile'].includes(id) && !textValue.includes('kg')) {
+                 textValue = `${textValue} kg`;
+            } else if (id === 'premiere_mise_circulation') {
+                // Extrait seulement l'année (4 chiffres) si la valeur est une date complète
+                textValue = textValue.substring(0, 4);
+            }
+
+            // Remplissage
+            element.textContent = textValue;
+            
+            // 🛑 GESTION DE LA COULEUR 🛑
+            if (id === 'numero_chassis') {
+                element.style.color = 'red';
+            } else if (id !== 'serie_immatriculation') { // N'écrase pas le vert de l'immatriculation
+                element.style.color = '#000';
+            }
+        }
+    }
+
+    // =========================================================
+    // FONCTION DE CHARGEMENT DE DONNÉES (Table unique 'dossier')
+    // =========================================================
+    async function fetchDossier(id) {
+        // La route cible la table 'dossier' par son ID
+        const url = `${SUPABASE_URL}/rest/v1/dossier?id=eq.${id}&select=*`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+        });
+
+        if (!response.ok) {
+            console.error(`Erreur Supabase lors du fetch du dossier (Statut: ${response.status})`);
+            return null;
+        }
+
+        const data = await response.json();
+        // Retourne le premier enregistrement trouvé (le dossier unique)
+        return data.length > 0 ? data[0] : null;
+    }
+
+
+    // =========================================================
+    // LOGIQUE PRINCIPALE D'AFFICHAGE
+    // =========================================================
+    async function loadDocumentData() {
+        if (SUPABASE_URL.includes('VOTRE_URL_SUPABASE_ICI')) {
+            console.error("ERREUR DE CONFIGURATION: Veuillez configurer SUPABASE_URL et SUPABASE_ANON_KEY dans le script.");
+            displayTestData();
+            return; 
+        }
+
+        const dossier = await fetchDossier(ID_DOSSIER_A_CHARGER);
+
+        if (!dossier) {
+            console.error("Dossier incomplet ou non trouvé pour l'ID:", ID_DOSSIER_A_CHARGER);
+            return;
+        }
+
+        // --- 1. CHAMPS PROPRIÉTAIRE ---
+        updateField('nom', dossier.nom);
+        updateField('prenom', dossier.prenom);
+        updateField('telephone', dossier.telephone);
+        updateField('profession', dossier.profession);
+        updateField('adresse', `${dossier.adresse || ''}, ${dossier.ville || ''}`);
+        
+        // --- 2. CHAMPS VÉHICULE ---
+        updateField('serie_immatriculation', dossier.serie_immatriculation); 
+        updateField('modele', dossier.modele);
+        updateField('carrosserie', dossier.carrosserie);
+        updateField('marque', dossier.marque);
+        updateField('type', dossier.type);
+        updateField('premiere_mise_circulation', dossier.premiere_mise_circulation);
+        updateField('numero_chassis', dossier.numero_chassis);
+        updateField('couleur', dossier.couleur);
+        updateField('energie', dossier.energie);
+        
+        // --- 3. CHAMPS TECHNIQUES ---
+        updateField('puissance_admin', dossier.puissance_admin);
+        updateField('cylindree', dossier.cylindree);
+        updateField('nombre_places', dossier.nombre_places); 
+        updateField('poids_charge_autorisee', dossier.poids_charge_autorisee);
+        updateField('poids_vide', dossier.poids_vide);
+        updateField('charge_utile', dossier.charge_utile);
+        updateField('reference_moteur', dossier.reference_moteur);
+
+        // --- 4. PIED DE PAGE (Date et Lieu) ---
+        const dateDelivrance = new Date(); 
+        updateField('departement_id', dossier.departement_id || dossier.ville || 'Brazzaville'); 
+        updateField('date_jour', dateDelivrance.getDate().toString().padStart(2, '0'));
+        updateField('date_mois', (dateDelivrance.getMonth() + 1).toString().padStart(2, '0'));
+        updateField('date_annee', dateDelivrance.getFullYear().toString().substring(2, 4)); 
+    }
+    
+    // Fonction d'affichage de données de test (Fallback)
+    function displayTestData() {
+        console.warn("Utilisation des données de test. Le document n'est pas connecté à Supabase.");
+        updateField('nom', 'OKANDZA');
+        updateField('prenom', 'Caleme Remy');
+        updateField('telephone', '065550101');
+        updateField('profession', 'COMMERCANT');
+        updateField('adresse', 'Ignie, Brazzaville');
+        updateField('serie_immatriculation', 'TAXI 001 A 4');
+        updateField('modele', 'SANILI');
+        updateField('carrosserie', 'MOTOCYCLES');
+        updateField('marque', 'KTM');
+        updateField('type', 'MOTOCYCLES');
+        updateField('premiere_mise_circulation', '2025');
+        updateField('numero_chassis', 'LP5PCJLFOR0806439');
+        updateField('couleur', 'Noire');
+        updateField('energie', 'essence');
+        updateField('puissance_admin', '01');
+        updateField('cylindree', '125');
+        updateField('nombre_places', '1/2');
+        updateField('poids_charge_autorisee', '300');
+        updateField('poids_vide', '150');
+        updateField('charge_utile', '150');
+        updateField('reference_moteur', 'MOT2025SN');
+        
+        const today = new Date();
+        updateField('departement_id', 'BRAZZAVILLE');
+        updateField('date_jour', today.getDate().toString().padStart(2, '0'));
+        updateField('date_mois', (today.getMonth() + 1).toString().padStart(2, '0'));
+        updateField('date_annee', today.getFullYear().toString().substring(2, 4));
+    }
+
+    // Démarrage du chargement des données au chargement de la page
+    window.onload = loadDocumentData;
+</script>
+
+</body>
+</html>
