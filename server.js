@@ -33,15 +33,28 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Postman ou serveur
+    
+    // 1. Autoriser les requêtes sans origine (Postman, scripts côté serveur, ou fichier local)
+    if (!origin) return callback(null, true); 
+
+    // 2. Vérifier si l'origine est dans la liste explicitement autorisée
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    // 3. 🟢 CORRECTION : Autoriser toute requête provenant de localhost ou 127.0.0.1, quel que soit le port
+    // Ceci gère les variations comme 'http://localhost' ou 'http://127.0.0.1:8080', etc.
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+         console.log(`CORS: Autorisation accordée pour l'origine locale : ${origin}`);
+         return callback(null, true);
+    }
+
+    // 4. Bloquer toutes les autres origines
+    console.error(`CORS: Origine non autorisée : ${origin}`);
     callback(new Error('Not allowed by CORS: ' + origin));
   },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
   credentials: true
 }));
-
 // --- Preflight OPTIONS pour toutes les routes ---
 app.options('*', cors());
 
