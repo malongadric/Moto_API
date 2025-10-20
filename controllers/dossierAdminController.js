@@ -61,7 +61,7 @@ export const getDossierAdminById = async (req, res) => {
     }
 };
 
-// 🔹 Ajouter un nouveau dossier admin (CORRECTION MAJEURE)
+// 🔹 Ajouter un nouveau dossier admin (CORRECTION DE ROBUSTESSE APPLIQUÉE)
 export const addDossierAdmin = async (req, res) => {
     try {
         // 1. Récupération des données du frontend
@@ -72,10 +72,17 @@ export const addDossierAdmin = async (req, res) => {
         }
 
         // 2. Récupération des infos de l'utilisateur connecté 
-        // 🚨 Assurez-vous que votre middleware JWT attache req.user avec 'id' et 'role'.
+        // 🚨 CORRECTION: Vérification explicite de req.user pour éviter l'erreur 500 si le middleware JWT est absent.
+        if (!req.user || !req.user.id || !req.user.role) {
+            console.error("DEBUG ERROR: req.user manquant. L'accès direct à req.user.id est non sécurisé.");
+            return res.status(401).json({ 
+                message: "Non autorisé: L'utilisateur n'a pas pu être identifié. Assurez-vous d'avoir fourni un token valide."
+            });
+        }
+        
         const acteur_id = req.user.id; 
         const acteur_type = req.user.role; 
-
+        
         // 3. Recherche du dossier principal pour obtenir les IDs manquants (moto_id et immatriculation_prov)
         const { data: dossierPrincipal, error: dossierError } = await supabase
             .from('dossier')
@@ -84,8 +91,12 @@ export const addDossierAdmin = async (req, res) => {
             .single();
 
         if (dossierError || !dossierPrincipal) {
+            // Gérer le cas où le dossier n'existe pas ou est introuvable
+            if (dossierError && dossierError.code === 'PGRST116') { 
+                 return res.status(404).json({ message: "Le dossier principal avec cette référence n'existe pas." });
+            }
             console.error("SUPABASE ERROR (findDossier):", dossierError);
-            return res.status(404).json({ message: "Dossier principal non trouvé ou erreur de base de données." });
+            return res.status(500).json({ message: "Erreur lors de la recherche du dossier principal." });
         }
 
         const { moto_id, immatriculation_prov } = dossierPrincipal;
@@ -99,7 +110,6 @@ export const addDossierAdmin = async (req, res) => {
                     acteur_id, 
                     acteur_type, 
                     immatriculation_prov, 
-                    // immatriculation_def sera NULL (si non fourni)
                     statut 
                 }
             ])
@@ -108,7 +118,6 @@ export const addDossierAdmin = async (req, res) => {
         if (insertError) {
             console.error("SUPABASE ERROR (addDossierAdmin - Insert):", insertError);
             
-            // Gestion d'erreur de doublon si le certificat pour cette moto existe déjà
             if (insertError.code === '23505') { 
                 return res.status(409).json({
                     message: "Un certificat provisoire existe déjà pour cette moto.",
