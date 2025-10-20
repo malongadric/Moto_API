@@ -241,38 +241,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = 'liste_dossiers.html';
     });
     
-    document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
-        if (!dossier || !dossier.dossier_id) {
-            alert("⚠️ Dossier introuvable, impossible de continuer la validation.");
-            return;
-        }
+ // 🔹 VALIDER
+document.getElementById('btn-valider-dossier').addEventListener('click', async () => {
+    if (!dossier || !dossier.dossier_id) {
+        alert("⚠️ Dossier introuvable, impossible de continuer la validation.");
+        return;
+    }
+    
+    const confirmation = confirm("Êtes-vous sûr de vouloir VALIDER ce dossier ? Cette action est généralement irréversible.");
+    if (!confirmation) return;
+
+    try {
+        // Envoi de la requête de mise à jour (maintenant, nous envoyons le statut existant 'validé')
+        const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            // ✅ CORRIGÉ : Utilise la colonne 'statut' existante
+            body: JSON.stringify({ statut: 'validé' }) 
+        });
+
+        const resBody = await res.json();
         
-        const confirmation = confirm("Êtes-vous sûr de vouloir VALIDER ce dossier ? Cette action est généralement irréversible.");
-        if (!confirmation) return;
-    
-        try {
-            const res = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/${dossier.dossier_id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ valide: true }) 
-            });
-    
-            const resBody = await res.json();
-            
-            if (!res.ok) throw new Error(resBody.message || `Erreur ${res.status}`);
-            
-            alert(`✅ Dossier ${dossier.reference_dossier} VALIDÉ avec succès.`);
-            
-            window.location.href = `carte_grise_AVANT_FIN____.html?ref=${encodeURIComponent(dossier.reference_dossier)}`;
-    
-        } catch (err) {
-            console.error("Erreur de validation:", err);
-            alert(`❌ Échec de validation : ${err.message}`);
-        }
-    });
+        if (!res.ok) throw new Error(resBody.message || `Erreur ${res.status}`);
+        
+        alert(`✅ Dossier ${dossier.reference_dossier} VALIDÉ avec succès.`);
+        
+        // Redirection vers la prochaine étape (création carte grise)
+        window.location.href = `carte_grise_AVANT_FIN____.html?ref=${encodeURIComponent(dossier.reference_dossier)}`;
+
+    } catch (err) {
+        console.error("Erreur de validation:", err);
+        alert(`❌ Échec de validation : ${err.message}`);
+    }
+});
 
     document.getElementById('btn-rejeter-dossier').addEventListener('click', async () => {
         if (!dossier || !dossier.dossier_id) {

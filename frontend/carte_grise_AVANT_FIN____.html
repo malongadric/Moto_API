@@ -8,8 +8,8 @@
         /* 1. RÈGLE D'IMPRESSION A4 ET MARGES */
         /* ========================================================= */
         @page {
-            size: A4 portrait; /* Format 210mm x 297mm */
-            margin: 0; /* Supprime les marges par défaut pour un meilleur contrôle */
+            size: A4 portrait;
+            margin: 0;
         }
         
         /* ========================================================= */
@@ -29,23 +29,20 @@
             background-color: #f0f0f0;
             margin: 0;
             padding: 0; 
-            
-            /* 🛑 FOND D'IMAGE ET CENTRAGE VERTICAL 🛑 */
             background-image: url("image_fond_validé.png"); /* ⬅️ REMPLACEZ PAR VOTRE CHEMIN D'IMAGE */
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            
             display: flex;
-            justify-content: center; /* Centre horizontalement */
-            align-items: center; /* Centre verticalement */
+            flex-direction: column; /* Permet d'aligner le document et les boutons */
+            justify-content: center;
+            align-items: center; 
             min-height: 100vh;
             padding: 20px; 
             box-sizing: border-box; 
-            position: relative; /* Pour positionner le bouton Envoyer */
         }
 
-        /* .document EST LE CONTENEUR PRINCIPAL */
+        /* Conteneur pour le document */
         .document {
             background-color: #ffffff;
             padding: 30px 40px; 
@@ -58,31 +55,38 @@
         }
 
         /* ========================================================= */
-        /* 3. STYLES DU BOUTON */
+        /* 3. STYLES DES BOUTONS D'ACTION */
         /* ========================================================= */
-        .print-button {
-            /* Le bouton doit être positionné par rapport au body ou au document, 
-               je le garde absolu par rapport au body parent si le body est positionné relatif */
-            position: absolute;
-            top: 10px;
-            right: 10px;
+        .action-buttons {
+            position: fixed; /* Reste visible même en scrollant */
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 10px; /* Espace entre les boutons */
+        }
+        
+        .action-buttons button {
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
-            background-color: #28a745; 
-            color: white;
             border: none;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            z-index: 100;
+            transition: background-color 0.2s;
         }
-        
-        /* Suppression des blocs administratifs */
-        .header-top, .bloc-gauche, .bloc-droite {
-            display: none !important; 
+
+        #btn-envoyer {
+            background-color: #dc3545; /* Rouge pour l'action principale (Envoyer au backend) */
+            color: white;
         }
-        
-        /* Styles pour le titre principal (maintenant stylisé) */
+
+        #btn-imprimer {
+            background-color: #007bff; /* Bleu pour l'action secondaire (Imprimer) */
+            color: white;
+        }
+
+        /* Le reste de votre CSS (header, info-row, data-field, etc.) est conservé */
         header {
             text-align: center;
             margin-top: 20px;
@@ -92,7 +96,6 @@
             padding-bottom: 5px;
             display: block;
         }
-
         header h1 {
             font-family: 'YardmasterD', 'Times New Roman', serif;
             font-size: 36px; 
@@ -104,13 +107,6 @@
             padding-bottom: 10px;
             margin-top: 0;
         }
-
-        /* Ligne de démarcation retirée */
-        .demarcation-line {
-            display: none;
-        }
-
-        /* Styles pour les lignes d'information */
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -118,37 +114,29 @@
             margin-bottom: 10px;
             font-size: 0.9em;
         }
-
         .label-inline {
             font-weight: normal;
             white-space: nowrap;
         }
-
-        /* Classe pour tous les champs dynamiques */
         .data-field {
             font-weight: bold;
             flex-grow: 1;
             padding-left: 5px;
             display: inline-block;
-            color: #555; /* Couleur de placeholder */
+            color: #555;
         }
-
         .underline {
             border-bottom: 1px solid #000;
             padding-bottom: 2px;
         }
-
         .right-aligned {
             text-align: right;
             margin-left: 20px;
         }
-
         .center-aligned {
             text-align: center;
             flex-grow: 1;
         }
-
-        /* Style pour la section du numéro principal */
         .numero-principal {
             font-family: 'Arial Black', sans-serif;
             font-size: 2.2em;
@@ -160,48 +148,37 @@
             padding: 15px 0;
             letter-spacing: 2px;
         }
-        
-        /* Règle pour forcer l'immatriculation en vert */
         #serie_immatriculation {
             color: green !important; 
         }
-
         .bordered-top-bottom {
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
             padding: 8px 0;
             margin-bottom: -1px;
         }
-
         .bordered-top-bottom:last-of-type {
             border-bottom: 1px solid #000;
             margin-bottom: 10px;
         }
-
-        /* Règle existante pour le Châssis en rouge */
         .red-text {
             color: red;
             font-weight: bold;
         }
-
         .flex-container {
             display: flex;
             justify-content: space-between;
             width: 100%;
         }
-
         .flex-item {
             display: flex;
             align-items: baseline;
             white-space: nowrap;
             flex: 1;
         }
-
         .flex-item.right-aligned {
             justify-content: flex-end;
         }
-
-        /* STYLES POUR LA SIGNATURE ET CACHET */
         .section-signature {
             margin-top: 80px; 
             display: flex;
@@ -210,28 +187,25 @@
             font-size: 0.9em;
             width: 100%;
         }
-
         .signature-bloc {
             width: 45%; 
             text-align: center;
         }
-        
         .signature-line {
             padding-top: 50px; 
             border-bottom: 1px dashed #000; 
             margin-bottom: 5px;
             display: inline-block;
         }
-        
         .signature-title {
             font-weight: bold;
         }
-
-        /* MEDIA QUERY POUR L'IMPRESSION (Garde les styles d'impression pour le PDF) */
+        
+        /* MEDIA QUERY POUR L'IMPRESSION */
         @media print {
             body {
                 background-color: #fff;
-                background-image: none; /* Cache l'image de fond */
+                background-image: none;
                 margin: 0;
                 padding: 0;
                 display: block;
@@ -244,7 +218,8 @@
                 margin: 0;
                 padding: 10mm 15mm; 
             }
-            .print-button { /* Cache le bouton */
+            /* 🔴 CACHE LE CONTENEUR DES BOUTONS SUR PAPIER */
+            .action-buttons { 
                 display: none !important; 
             }
             .header-top, .bloc-gauche, .bloc-droite {
@@ -268,9 +243,10 @@
 </head>
 <body>
 
-    <button class="print-button" onclick="alert('Document envoyé pour validation.')">
-        Envoyer
-    </button>
+    <div class="action-buttons">
+        <button id="btn-envoyer">💾 Enregistrer et Envoyer</button>
+        <button id="btn-imprimer">🖨️ Imprimer</button>
+    </div>
     
     <div class="document" id="document-container">
         
@@ -279,7 +255,7 @@
         <header>
             <h1>CERTIFICAT PROVISOIRE DE MISE EN <br> CIRCULATION D'UNE MOTO TAXI</h1>
         </header>
-
+        
         <div class="info-row">
             <span class="label-inline">Mr,Mme,Mlle :</span> <span id="nom" class="data-field underline">NOM DU PROPRIÉTAIRE</span> <span id="prenom" class="data-field underline">PRÉNOM(S) DU PROPRIÉTAIRE</span>
             <span class="label-inline right-aligned">Téléphone :</span> <span id="telephone" class="data-field underline">TÉLÉPHONE</span>
@@ -350,17 +326,34 @@
             </div>
         </div>
         
+        <div class="section-signature">
+            <div class="signature-bloc">
+                <p>Le P.V. du contrôle technique</p>
+                <div class="signature-line"></div>
+                <p class="signature-title">Cachet du centre</p>
+            </div>
+            <div class="signature-bloc">
+                <p>Le Chef de Service</p>
+                <div class="signature-line"></div>
+                <p class="signature-title">Signature</p>
+            </div>
+        </div>
+        
     </div> 
     
-    
-   <script>
+    <script>
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     const ref = new URLSearchParams(window.location.search).get('ref');
-    const moto_id = localStorage.getItem('moto_id'); // récupéré depuis la page précédente
+    
+    // --- Déclaration des variables de portée globale pour le script ---
+    let dossier = null;
+    let immat = null;
+    // ------------------------------------------------------------------
 
     if (!ref || !token) {
-        return alert("⚠️ Référence ou token manquant. Connectez-vous.");
+        alert("⚠️ Référence ou token manquant. Connectez-vous.");
+        return; 
     }
 
     try {
@@ -369,22 +362,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             `https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
         );
-        if (!resDossier.ok) throw new Error(`Dossier introuvable (status: ${resDossier.status})`);
         const dossierData = await resDossier.json();
-        const dossier = dossierData.dossier;
-        if (!dossier) throw new Error("Dossier introuvable");
+        if (!resDossier.ok || !dossierData.dossier) {
+            const errorMsg = dossierData.message || `Dossier introuvable (status: ${resDossier.status})`;
+            throw new Error(errorMsg);
+        }
+        dossier = dossierData.dossier; // Stockage de l'objet dossier
 
-        // 🔹 2️⃣ Récupération de la moto via localStorage ou dossier
-        let moto = null;
-        const idMoto = moto_id || dossier.moto_id;
-        if (!idMoto) throw new Error("ID de la moto manquant");
+        // 🔹 2️⃣ Récupération de la moto
+        const idMoto = dossier.moto_id;
+        if (!idMoto) throw new Error("ID de la moto manquant dans le dossier");
 
         const resMoto = await fetch(
             `https://moto-api-cika.onrender.com/api/motos/${idMoto}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const motoData = await resMoto.json();
-        moto = motoData.data || motoData.moto;
+        const moto = motoData.data || motoData.moto;
         if (!moto) throw new Error("Moto introuvable");
 
         // 🔹 3️⃣ Récupération du propriétaire
@@ -407,7 +401,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         );
-        const immat = await resImmat.json();
+        immat = await resImmat.json();
+        if (!resImmat.ok || !immat.numeroImmatriculation) throw new Error("Échec de l'attribution de l'immatriculation provisoire.");
 
         // 🔹 5️⃣ Injection des données dans le design
         document.getElementById('nom').textContent = proprietaire.nom || '';
@@ -431,21 +426,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('poids_vide').textContent = `${moto.poids_vide || 0} kg`;
         document.getElementById('charge_utile').textContent = `${moto.charge_utile || 0} kg`;
         document.getElementById('reference_moteur').textContent = moto.reference_moteur || '—';
-        document.getElementById('immat_provisoire_info').textContent = dossier.immatriculation_prov || '—';
+        document.getElementById('immat_provisoire_info').textContent = dossier.immatriculation_prov || immat.numeroImmatriculation || '—';
+        // Petit fix, vous n'aviez pas le genre dans votre logique initiale, je l'initialise
+        document.getElementById('genre_vehicule').textContent = moto.genre || 'MOTO-TAXI'; 
 
     } catch (err) {
-        alert("❌ Erreur lors de la récupération des données : " + err.message);
+        alert("❌ Erreur critique lors du chargement des données : " + err.message);
         console.error(err);
         return;
     }
 
+    // --------------------------------------------------------------
     // 🔹 6️⃣ Bouton Envoyer / sauvegarde dans dossier_admin
+    // --------------------------------------------------------------
     const btnEnvoyer = document.getElementById('btn-envoyer');
     if (btnEnvoyer) {
         btnEnvoyer.addEventListener('click', async () => {
-            const token = localStorage.getItem('token');
-            const ref = new URLSearchParams(window.location.search).get('ref');
-            if (!ref || !token) return alert("⚠️ Référence ou token manquant.");
+            if (!dossier || !token) return alert("⚠️ Données du dossier ou token manquants.");
 
             try {
                 const res = await fetch('https://moto-api-cika.onrender.com/api/dossier_admin', {
@@ -454,14 +451,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                         'Content-Type': 'application/json', 
                         'Authorization': `Bearer ${token}` 
                     },
+                    // ENVOIE la référence du dossier et le nouveau statut 'envoyé'
                     body: JSON.stringify({ reference_dossier: ref, statut: 'envoyé' })
                 });
-                if (!res.ok) throw new Error("Impossible d'enregistrer dans dossier_admin");
-                alert('✅ Carte grise enregistrée avec succès');
+
+                const resBody = await res.json();
+                
+                if (!res.ok) throw new Error(resBody.message || "Impossible d'enregistrer la carte grise dans dossier_admin.");
+
+                alert('✅ Certificat provisoire enregistré et envoyé avec succès.');
+                window.location.href = 'liste_dossiers.html'; // Redirection
+                
             } catch (err) {
                 alert('❌ Erreur lors de la sauvegarde : ' + err.message);
                 console.error(err);
             }
+        });
+    }
+    
+    // --------------------------------------------------------------
+    // 🆕 7️⃣ Bouton Imprimer
+    // --------------------------------------------------------------
+    const btnImprimer = document.getElementById('btn-imprimer');
+    if (btnImprimer) {
+        btnImprimer.addEventListener('click', () => {
+            // Déclenche l'impression
+            window.print();
         });
     }
 });
