@@ -15,3 +15,4 @@ router.put('/:id', updateDossierAdmin);
 router.delete('/:id', deleteDossierAdmin);
 
 export default router;
+
