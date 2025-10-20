@@ -68,7 +68,7 @@ app.use('/api/statistiques', statistiques);
 app.use('/api/mandataire', mandataire);
 
 // 🟢 MODIFICATION CLÉ : Passage du singulier au PLURIEL pour correspondre à la requête client (404 fix)
-app.use('/api/immatriculations', immatriculation);
+app.use('/api/immatriculation', immatriculation);
 
 app.use('/api/departements', departements);
 app.use('/api/dossiers', dossiers);
