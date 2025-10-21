@@ -493,22 +493,18 @@ if (btnEnvoyer) {
         const token = localStorage.getItem('token');
         const ref = new URLSearchParams(window.location.search).get('ref');
 
-        // Récupération du numéro de carte grise affiché
-        const numeroImmatriculationEl = document.getElementById('serie_immatriculation'); // <- ID correct
+        // 🔹 Récupération du numéro de carte grise affiché
+        const numeroImmatriculationEl = document.getElementById('serie_immatriculation');
         const immatriculationProv = numeroImmatriculationEl?.textContent?.trim();
 
-        // Vérifications
-        if (!ref || !token) {
-            return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
-        }
+        // 🔹 Vérifications de base
+        if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
         if (!immatriculationProv || immatriculationProv === "SERIE D'IMMATRICULATION PROVISOIRE") {
             return alert("⚠️ Numéro de carte grise introuvable.");
         }
-        if (!isTokenValid(token)) {
-            return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
-        }
+        if (!isTokenValid(token)) return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
 
-        // Désactiver le bouton pendant l'envoi
+        // 🔹 Désactivation du bouton pendant l'envoi
         btnEnvoyer.disabled = true;
         btnEnvoyer.textContent = 'Enregistrement en cours...';
 
@@ -526,12 +522,18 @@ if (btnEnvoyer) {
                 })
             });
 
+            const resData = await res.json().catch(() => ({}));
+
             if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(`Erreur API: Statut ${res.status} - ${errData.message || 'Pas de détail'}`);
+                throw new Error(`Erreur API: Statut ${res.status} - ${resData.message || 'Pas de détail'}`);
             }
 
-            alert('✅ Certificat enregistré avec succès et envoyé pour validation.');
+            // 🔹 Succès avec message dynamique
+            const message = resData.statut === 'envoyé'
+                ? '✅ Certificat enregistré et envoyé pour validation.'
+                : '✅ Certificat mis à jour avec succès.';
+            
+            alert(message);
             btnEnvoyer.textContent = '✅ ENREGISTRÉ';
 
         } catch (err) {
@@ -542,6 +544,7 @@ if (btnEnvoyer) {
         }
     });
 }
+
 
 // --------------------------------------------------------------
 // 🔹 Bouton IMPRIMER

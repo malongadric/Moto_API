@@ -69,14 +69,10 @@ export const getDossierAdminById = async (req, res) => {
 
 
 
-// 🔹 Ajouter ou mettre à jour un dossier admin (UPSERT)
+// 🔹 Ajouter ou mettre à jour un dossier admin (UPSERT sur dossier_id)
 export const addDossierAdmin = async (req, res) => {
   try {
-    const { 
-      reference_dossier, 
-      statut = 'en_attente_validation_officielle',
-      immatriculation_prov 
-    } = req.body;
+    const { reference_dossier, statut = 'en_attente_validation_officielle', immatriculation_prov } = req.body;
 
     if (!reference_dossier || !immatriculation_prov) {
       return res.status(400).json({ message: "Référence ou immatriculation provisoire manquante." });
@@ -89,10 +85,10 @@ export const addDossierAdmin = async (req, res) => {
     const acteur_id = req.user.id;
     const acteur_type = req.user.profil;
 
-    // 🔹 Étape 1 : Récupération du moto_id depuis le dossier principal
+    // 🔹 Étape 1 : Récupérer le dossier principal pour obtenir dossier_id et moto_id
     const { data: dossierPrincipal, error: dossierError } = await supabase
       .from('dossier')
-      .select('moto_id') 
+      .select('dossier_id, moto_id')
       .eq('reference_dossier', reference_dossier)
       .single();
 
@@ -104,9 +100,9 @@ export const addDossierAdmin = async (req, res) => {
       return res.status(500).json({ message: "Erreur serveur lors de la recherche du dossier principal." });
     }
 
-    const { moto_id } = dossierPrincipal; 
+    const { dossier_id, moto_id } = dossierPrincipal;
 
-    // 🔹 Étape 2 : Vérification FK moto
+    // 🔹 Étape 2 : Vérifier que la moto existe
     const { data: motoData, error: motoError } = await supabase
       .from('motos')
       .select('id')
@@ -118,7 +114,7 @@ export const addDossierAdmin = async (req, res) => {
       return res.status(404).json({ message: `Erreur FK : Moto ID ${moto_id} introuvable.` });
     }
 
-    // 🔹 Étape 3 : Vérification FK acteur
+    // 🔹 Étape 3 : Vérifier que l'acteur existe
     const { data: userData, error: userError } = await supabase
       .from('utilisateurs')
       .select('id')
@@ -130,27 +126,27 @@ export const addDossierAdmin = async (req, res) => {
       return res.status(401).json({ message: `Erreur FK : Acteur ID ${acteur_id} introuvable ou invalide.` });
     }
 
-    // 🔹 Étape 4 : UPSERT (Insertion ou mise à jour)
+    // 🔹 Étape 4 : UPSERT dans dossier_admin (clé unique dossier_id)
     const { data, error: upsertError } = await supabase
       .from('dossier_admin')
       .upsert(
         {
-          reference_dossier, 
+          dossier_id,
           moto_id,
           acteur_id,
           acteur_type,
-          immatriculation_prov, 
+          immatriculation_prov,
           statut
         },
-        { onConflict: 'reference_dossier' } // clé unique pour éviter la violation de contrainte
+        { onConflict: 'dossier_id' } // clé unique pour éviter les doublons
       )
       .select();
 
     if (upsertError) {
       console.error("SUPABASE ERROR (addDossierAdmin - Upsert):", upsertError);
-      return res.status(500).json({ 
-        message: "Erreur lors de l'ajout/mise à jour du dossier admin", 
-        error: upsertError.message 
+      return res.status(500).json({
+        message: "Erreur lors de l'ajout/mise à jour du dossier admin",
+        error: upsertError.message
       });
     }
 
