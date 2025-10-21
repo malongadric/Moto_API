@@ -56,7 +56,7 @@ export const getDossierAdminById = async (req, res) => {
     }
 };
 
-// 🔹 Ajouter ou mettre à jour un dossier admin (UPSERT)
+/// 🔹 Ajouter ou mettre à jour un dossier admin (UPSERT sur reference_dossier)
 export const addDossierAdmin = async (req, res) => {
     try {
         const { reference_dossier, statut = 'en_attente_validation_officielle', immatriculation_prov } = req.body;
@@ -110,20 +110,20 @@ export const addDossierAdmin = async (req, res) => {
             return res.status(401).json({ message: `Acteur ID ${acteur_id} introuvable ou invalide.` });
         }
 
-        // 🔹 Étape 4 : UPSERT dans dossier_admin (clé unique dossier_id)
+        // 🔹 Étape 4 : UPSERT dans dossier_admin (clé unique reference_dossier)
         const { data, error: upsertError } = await supabase
             .from('dossier_admin')
             .upsert(
                 {
+                    reference_dossier, // clé unique pour UPSERT
                     dossier_id,
-                    reference_dossier, // ajout pour conserver la référence
                     moto_id,
                     acteur_id,
                     acteur_type,
                     immatriculation_prov,
                     statut
                 },
-                { onConflict: 'dossier_id' }
+                { onConflict: 'reference_dossier' } // utiliser reference_dossier comme unique
             )
             .select();
 
@@ -139,6 +139,7 @@ export const addDossierAdmin = async (req, res) => {
         res.status(500).json({ message: "Erreur serveur inattendue", error: err.message });
     }
 };
+
 
 // 🔹 Mettre à jour un dossier admin (par ID)
 export const updateDossierAdmin = async (req, res) => {

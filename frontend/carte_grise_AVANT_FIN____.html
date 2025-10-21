@@ -490,44 +490,67 @@ const btnEnvoyer = document.getElementById('btn-envoyer');
 
 if (btnEnvoyer) {
     btnEnvoyer.addEventListener('click', async () => {
-        // 🔹 Récupération du token et référence
         const token = localStorage.getItem('token');
         const ref = new URLSearchParams(window.location.search).get('ref');
         const numeroImmatriculationEl = document.getElementById('serie_immatriculation');
         const immatriculationProv = numeroImmatriculationEl?.textContent?.trim();
 
-        // 🔹 Vérifications
-        if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
-        if (!immatriculationProv || immatriculationProv === "SERIE D'IMMATRICULATION PROVISOIRE") {
-            return alert("⚠️ Numéro de carte grise introuvable.");
+        // 🔹 Vérifications de base
+        if (!ref || !token) {
+            alert("⚠️ Référence ou token manquant pour la sauvegarde.");
+            return;
         }
-        if (!isTokenValid(token)) return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
 
-        // 🔹 Désactivation du bouton
+        if (!immatriculationProv || immatriculationProv === "SERIE D'IMMATRICULATION PROVISOIRE") {
+            alert("⚠️ Numéro de carte grise introuvable.");
+            return;
+        }
+
+        if (!isTokenValid(token)) {
+            alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
+            return;
+        }
+
+        // 🔹 Désactiver le bouton pendant l'envoi
         btnEnvoyer.disabled = true;
         btnEnvoyer.textContent = 'Enregistrement en cours...';
 
         try {
+            // 🔹 Vérifier que la référence existe dans la table dossier
+            const resCheck = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(ref)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!resCheck.ok) throw new Error(`Dossier introuvable (status: ${resCheck.status})`);
+
+            const dossierData = await resCheck.json();
+            if (!dossierData?.dossier) throw new Error("Le dossier principal est introuvable");
+
+            // 🔹 Log pour debug
+            console.log("DEBUG: Dossier trouvé pour UPSERT", dossierData.dossier);
+
+            // 🔹 Appel API pour ajouter ou mettre à jour le dossier admin
             const res = await fetch('https://moto-api-cika.onrender.com/api/dossier_admin', {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json', 
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ 
-                    reference_dossier: ref, 
-                    statut: 'envoyé',
-                    immatriculation_prov: immatriculationProv
+                    reference_dossier: ref,
+                    immatriculation_prov: immatriculationProv,
+                    statut: 'envoyé'
                 })
             });
 
             const resData = await res.json().catch(() => ({}));
 
             if (!res.ok) {
+                console.error("DEBUG: Erreur API dossier_admin", resData);
                 throw new Error(`Erreur API: Statut ${res.status} - ${resData.message || 'Pas de détail'}`);
             }
 
-            // 🔹 Message dynamique selon l'état
+            // 🔹 Succès
             const message = resData?.statut === 'envoyé'
                 ? '✅ Certificat enregistré et envoyé pour validation.'
                 : '✅ Certificat mis à jour avec succès.';
@@ -536,12 +559,26 @@ if (btnEnvoyer) {
             btnEnvoyer.textContent = '✅ ENREGISTRÉ';
 
         } catch (err) {
+            // 🔹 Gestion d'erreur
+            console.error("❌ ERREUR ENVOYER DossierAdmin:", err);
             alert('❌ Erreur lors de la sauvegarde : ' + err.message);
-            console.error(err);
             btnEnvoyer.textContent = '❌ Erreur! Réessayer';
             btnEnvoyer.disabled = false;
         }
     });
+}
+
+// 🔹 Vérification du token
+function isTokenValid(token) {
+    if (!token) return false;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) return false;
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 
