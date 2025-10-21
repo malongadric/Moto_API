@@ -14,7 +14,8 @@ export const attribuerNumero = async (req, res) => {
         const userRole = req.user.profil;
         const departementId = req.user.departement_id;
 
-        if (userRole !== 'admin') {
+        // 🔒 Autoriser admin et directeur départemental
+        if (!['admin', 'directeur_departemental'].includes(userRole)) {
             return res.status(403).json({ message: 'Vous n’avez pas le droit d’attribuer un numéro.' });
         }
 
@@ -44,7 +45,7 @@ export const attribuerNumero = async (req, res) => {
                     departement_id: departementId,
                     agent_id: userId
                 }])
-                .select('*')
+                .select()
                 .maybeSingle();
 
             if (createError) {
@@ -54,6 +55,11 @@ export const attribuerNumero = async (req, res) => {
 
             dossierData = newDossier;
             console.log('Dossier créé automatiquement avec ID:', dossierData.id);
+        }
+
+        // 🔒 Vérification département pour directeur départemental
+        if (userRole === 'directeur_departemental' && dossierData.departement_id !== departementId) {
+            return res.status(403).json({ message: "Vous ne pouvez attribuer un numéro que pour votre département." });
         }
 
         const dossierIdToUpdate = dossierData.id;
