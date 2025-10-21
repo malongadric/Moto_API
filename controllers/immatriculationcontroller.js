@@ -3,15 +3,13 @@ import supabase from '../config/db.js';
 
 export const attribuerNumero = async (req, res) => {
     try {
-        // 🔹 Conversion et vérification de l'ID de moto
         const motoId = parseInt(req.params.motoId, 10);
-        console.log('Attribuer immatriculation pour motoId:', motoId, 'de type', typeof motoId);
+        console.log('Attribuer immatriculation pour motoId:', motoId);
 
         if (isNaN(motoId)) {
             return res.status(400).json({ message: 'ID de moto invalide.' });
         }
 
-        // 🔹 Récupération des infos utilisateur
         const userId = req.user.id;
         const userRole = req.user.profil;
         const departementId = req.user.departement_id;
@@ -20,26 +18,47 @@ export const attribuerNumero = async (req, res) => {
             return res.status(403).json({ message: 'Vous n’avez pas le droit d’attribuer un numéro.' });
         }
 
-        // 1️⃣ Récupération du dossier lié à la moto
-        const { data: dossierData, error: dossierError } = await supabase
-            .from('dossier')      // utiliser le nom exact de la table Supabase
-            .select('id')
+        // 🔹 1️⃣ Récupération du dossier lié à la moto
+        let { data: dossierData, error: dossierError } = await supabase
+            .from('dossier')
+            .select('*')
             .eq('moto_id', motoId)
-            .maybeSingle();       // évite l'erreur 404 automatique
+            .maybeSingle();
 
         if (dossierError) {
             console.error('Erreur récupération dossier:', dossierError.message);
             return res.status(500).json({ message: 'Erreur interne lors de la récupération du dossier.' });
         }
+
+        // 🔹 Si aucun dossier existant, création automatique
         if (!dossierData) {
-            console.error('Dossier non trouvé pour la moto:', motoId);
-            return res.status(404).json({ message: 'Dossier associé à cette moto introuvable.' });
+            console.log(`Aucun dossier trouvé pour motoId=${motoId}, création automatique...`);
+            const reference = `REF-${departementId}-${new Date().getFullYear()}-${motoId}`;
+            const { data: newDossier, error: createError } = await supabase
+                .from('dossier')
+                .insert([{
+                    moto_id: motoId,
+                    statut: 'en_attente',
+                    date_soumission: new Date(),
+                    reference_dossier: reference,
+                    departement_id: departementId,
+                    agent_id: userId
+                }])
+                .select('*')
+                .maybeSingle();
+
+            if (createError) {
+                console.error('Erreur création dossier automatique:', createError.message);
+                return res.status(500).json({ message: 'Impossible de créer automatiquement le dossier.' });
+            }
+
+            dossierData = newDossier;
+            console.log('Dossier créé automatiquement avec ID:', dossierData.id);
         }
 
         const dossierIdToUpdate = dossierData.id;
-        console.log(`Dossier ID trouvé pour mise à jour: ${dossierIdToUpdate}`);
 
-        // 2️⃣ Vérifie si la moto a déjà un numéro
+        // 🔹 2️⃣ Vérifie si la moto a déjà un numéro
         const { data: existing } = await supabase
             .from('immatriculations')
             .select('id')
@@ -52,7 +71,7 @@ export const attribuerNumero = async (req, res) => {
 
         const typeVehicule = 'TAXI';
 
-        // 3️⃣ Récupère la séquence et génère la prochaine immatriculation
+        // 🔹 3️⃣ Génération immatriculation
         let { data: sequenceData, error: seqError } = await supabase
             .from('sequences_immatriculations')
             .select('*')
@@ -63,7 +82,6 @@ export const attribuerNumero = async (req, res) => {
         if (seqError) throw seqError;
 
         if (!sequenceData) {
-            // Création d'une séquence si inexistante
             const { data: newSeq, error: newSeqError } = await supabase
                 .from('sequences_immatriculations')
                 .insert([{ departement_id: departementId, type_vehicule: typeVehicule, last_sequence: 0, last_serie: 'A' }])
@@ -84,7 +102,7 @@ export const attribuerNumero = async (req, res) => {
         const seqFormatted = String(nextSequence).padStart(3, '0');
         const numeroImmatriculation = `${typeVehicule} ${seqFormatted} ${nextSerie}${departementId}`;
 
-        // 4️⃣ Mise à jour de la séquence
+        // 🔹 4️⃣ Mise à jour de la séquence
         const { error: updateSeqError } = await supabase
             .from('sequences_immatriculations')
             .update({ last_sequence: nextSequence, last_serie: nextSerie })
@@ -93,7 +111,7 @@ export const attribuerNumero = async (req, res) => {
 
         if (updateSeqError) throw updateSeqError;
 
-        // 5️⃣ Insère dans la table immatriculations
+        // 🔹 5️⃣ Insère dans la table immatriculations
         const { data: immatriculationData, error: insertError } = await supabase
             .from('immatriculations')
             .insert([{
@@ -106,15 +124,14 @@ export const attribuerNumero = async (req, res) => {
 
         if (insertError) throw insertError;
 
-        // 6️⃣ Met à jour le dossier avec l'immatriculation provisoire
+        // 🔹 6️⃣ Met à jour le dossier avec l'immatriculation provisoire
         const { error: updateDossierError } = await supabase
-            .from('dossier')      // même table que pour la récupération
+            .from('dossier')
             .update({ immatriculation_provisoire: numeroImmatriculation })
             .eq('id', dossierIdToUpdate);
 
         if (updateDossierError) console.error('Erreur mise à jour dossier:', updateDossierError);
 
-        // 7️⃣ Retour API
         res.status(201).json({
             message: 'Numéro attribué avec succès',
             numeroImmatriculation,
