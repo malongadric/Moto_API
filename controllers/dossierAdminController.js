@@ -67,13 +67,14 @@ export const getDossierAdminById = async (req, res) => {
     }
 };
 
-// 🔹 Ajouter un nouveau dossier admin
-// 🔹 Ajouter un nouveau dossier admin (CORRIGÉ)
+// controllers/dossierAdminController.js
+
+// 🔹 Ajouter un nouveau dossier admin (CORRIGÉ FINAL)
 export const addDossierAdmin = async (req, res) => {
     try {
-        // 🛑 Changement 1 : Récupérer 'immatriculation_prov' du corps de la requête (frontend)
+        // 🛑 Changement 1 : Récupération des données du corps de la requête
         const { 
-            reference_dossier, 
+            reference_dossier, // <-- Récupérée ici
             statut = 'en_attente_validation_officielle',
             immatriculation_prov 
         } = req.body;
@@ -82,11 +83,9 @@ export const addDossierAdmin = async (req, res) => {
             return res.status(400).json({ message: "Référence du dossier manquante." });
         }
         
-        // 🛑 Ajout : S'assurer que le numéro d'immatriculation provisoire est présent
         if (!immatriculation_prov) {
-             return res.status(400).json({ message: "Le numéro d'immatriculation provisoire (CG) est manquant." });
+            return res.status(400).json({ message: "Le numéro d'immatriculation provisoire (CG) est manquant." });
         }
-
 
         if (!req.user || !req.user.id || !req.user.profil) {
             return res.status(401).json({ 
@@ -97,36 +96,33 @@ export const addDossierAdmin = async (req, res) => {
         const acteur_id = req.user.id;
         const acteur_type = req.user.profil;
 
-        // 🛑 Changement 2 : L'objectif principal est de récupérer le 'moto_id'
-        // Nous retirons la recherche de 'immatriculation_prov' car elle est dans le body
-        // et cela simplifie la requête.
+        // Récupération du moto_id
         const { data: dossierPrincipal, error: dossierError } = await supabase
             .from('dossier')
-            .select('moto_id') // <-- Ne demande que le moto_id
+            .select('moto_id') 
             .eq('reference_dossier', reference_dossier)
             .single();
 
         if (dossierError || !dossierPrincipal) {
-            // 🛑 Changement 3 : Meilleure gestion des erreurs si le dossier n'est pas trouvé
             if (dossierError && dossierError.code === 'PGRST116') {
                 return res.status(404).json({ message: "Le dossier principal n'existe pas." });
             }
             console.error("SUPABASE ERROR (findDossier):", dossierError);
-            // 🛑 Maintenant l'erreur 500 ne se produit que pour des erreurs serveur réelles
             return res.status(500).json({ message: "Erreur serveur lors de la recherche du dossier principal." });
         }
 
-        const { moto_id } = dossierPrincipal; // <-- Récupération du moto_id
+        const { moto_id } = dossierPrincipal; 
 
         // 🔹 Ajouter dans dossier_admin
         const { data, error: insertError } = await supabase
             .from('dossier_admin')
             .insert([
                 {
+                    // 🔑 Ajout de la référence du dossier dans l'insertion
+                    reference_dossier, 
                     moto_id,
                     acteur_id,
                     acteur_type,
-                    // 🛑 Changement 4 : Utiliser la valeur du frontend (la plus à jour)
                     immatriculation_prov, 
                     statut
                 }
@@ -137,8 +133,10 @@ export const addDossierAdmin = async (req, res) => {
         if (insertError) {
             console.error("SUPABASE ERROR (addDossierAdmin - Insert):", insertError);
             if (insertError.code === '23505') {
+                // 💡 Si cette erreur persiste, vous devez implémenter un UPSET (Upsert/Update on Conflict)
                 return res.status(409).json({ message: "Certificat provisoire déjà existant." });
             }
+            // 💡 Si l'erreur 500 est toujours là, vérifier les FK (moto_id, acteur_id)
             return res.status(500).json({ message: "Erreur lors de l'ajout du dossier admin", error: insertError.message });
         }
 
