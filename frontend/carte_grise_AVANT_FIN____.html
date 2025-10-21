@@ -464,50 +464,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --------------------------------------------------------------
-    // 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin
-    // --------------------------------------------------------------
-    const btnEnvoyer = document.getElementById('btn-envoyer');
-    if (btnEnvoyer) {
-        btnEnvoyer.addEventListener('click', async () => {
-            const token = localStorage.getItem('token');
-            const ref = new URLSearchParams(window.location.search).get('ref');
+// 🔹 Fonction utilitaire pour vérifier le token
+// --------------------------------------------------------------
+function isTokenValid(token) {
+    if (!token) return false;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) {
+            console.warn("Token expiré :", payload.exp);
+            return false;
+        }
+        console.log("Payload JWT :", payload);
+        return true;
+    } catch (err) {
+        console.error("Erreur lors de la lecture du token :", err);
+        return false;
+    }
+}
 
-            if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
+// --------------------------------------------------------------
+// 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin
+// --------------------------------------------------------------
+const btnEnvoyer = document.getElementById('btn-envoyer');
+if (btnEnvoyer) {
+    btnEnvoyer.addEventListener('click', async () => {
+        const token = localStorage.getItem('token');
+        const ref = new URLSearchParams(window.location.search).get('ref');
 
-            btnEnvoyer.disabled = true;
-            btnEnvoyer.textContent = 'Enregistrement en cours...';
+        if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
+        if (!isTokenValid(token)) return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
 
-            try {
-                const res = await fetch('https://moto-api-cika.onrender.com/api/dossier_admin', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${token}` 
-                    },
-                    body: JSON.stringify({ reference_dossier: ref, statut: 'envoyé' })
-                });
+        btnEnvoyer.disabled = true;
+        btnEnvoyer.textContent = 'Enregistrement en cours...';
 
-                if (!res.ok) throw new Error(`Erreur API: Statut ${res.status}`);
+        try {
+            const res = await fetch('https://moto-api-cika.onrender.com/api/dossier_admin', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ reference_dossier: ref, statut: 'envoyé' })
+            });
 
-                alert('✅ Certificat enregistré avec succès et envoyé pour validation.');
-                btnEnvoyer.textContent = '✅ ENREGISTRÉ';
-
-            } catch (err) {
-                alert('❌ Erreur lors de la sauvegarde : ' + err.message);
-                console.error(err);
-                btnEnvoyer.textContent = '❌ Erreur! Réessayer';
-                btnEnvoyer.disabled = false;
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(`Erreur API: Statut ${res.status} - ${errData.message || 'Pas de détail'}`);
             }
-        });
-    }
 
-    // --------------------------------------------------------------
-    // 🔹 Bouton IMPRIMER
-    // --------------------------------------------------------------
-    const btnImprimer = document.getElementById('btn-imprimer');
-    if (btnImprimer) {
-        btnImprimer.addEventListener('click', () => window.print());
-    }
+            alert('✅ Certificat enregistré avec succès et envoyé pour validation.');
+            btnEnvoyer.textContent = '✅ ENREGISTRÉ';
+
+        } catch (err) {
+            alert('❌ Erreur lors de la sauvegarde : ' + err.message);
+            console.error(err);
+            btnEnvoyer.textContent = '❌ Erreur! Réessayer';
+            btnEnvoyer.disabled = false;
+        }
+    });
+}
+
+// --------------------------------------------------------------
+// 🔹 Bouton IMPRIMER
+// --------------------------------------------------------------
+const btnImprimer = document.getElementById('btn-imprimer');
+if (btnImprimer) {
+    btnImprimer.addEventListener('click', () => window.print());
+}
+
 });
 </script>
 
