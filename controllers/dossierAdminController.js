@@ -4,10 +4,17 @@ import supabase from "../config/db.js";
 // 🔹 Récupérer tous les dossiers admin
 export const getDossiersAdmin = async (req, res) => {
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('dossier_admin')
-            .select('*')
+            .select('*, motos(numero_chassis, marque, modele, numero_immatriculation)')
             .order('date_creation', { ascending: false });
+
+        // Si l'utilisateur est un directeur départemental, filtrer par statut
+        if (req.user.profil === 'directeur_dd') {
+            query = query.eq('statut', 'en_attente_validation_officielle');
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error("SUPABASE ERROR (getDossiersAdmin):", error);
@@ -18,6 +25,7 @@ export const getDossiersAdmin = async (req, res) => {
         }
 
         res.status(200).json(data);
+
     } catch (err) {
         console.error("SERVER ERROR (getDossiersAdmin):", err);
         res.status(500).json({
@@ -30,18 +38,16 @@ export const getDossiersAdmin = async (req, res) => {
 // 🔹 Récupérer un dossier admin par ID
 export const getDossierAdminById = async (req, res) => {
     try {
-        // La clé primaire dans Supabase semble être 'dossier_admin_id'
-        const { id } = req.params; 
+        const { id } = req.params;
 
         const { data, error } = await supabase
             .from('dossier_admin')
-            .select('*')
+            .select('*, motos(numero_chassis, marque, modele, numero_immatriculation)')
             .eq('dossier_admin_id', id)
             .single();
 
         if (error) {
-            // Gère à la fois l'erreur de recherche et le cas où l'enregistrement n'est pas trouvé
-            if (error.code === 'PGRST116') { // Code Supabase pour "Aucun enregistrement trouvé"
+            if (error.code === 'PGRST116') {
                 return res.status(404).json({ message: "Dossier admin non trouvé" });
             }
             console.error("SUPABASE ERROR (getDossierAdminById):", error);
@@ -61,29 +67,25 @@ export const getDossierAdminById = async (req, res) => {
     }
 };
 
-// 🔹 Ajouter un nouveau dossier admin (VERSION CORRIGÉE)
+// 🔹 Ajouter un nouveau dossier admin
 export const addDossierAdmin = async (req, res) => {
     try {
-        // 1. Récupération des données du frontend
-        const { reference_dossier, statut } = req.body;
-        
-        if (!reference_dossier || !statut) {
-            return res.status(400).json({ message: "Référence du dossier ou statut manquant." });
+        const { reference_dossier, statut = 'en_attente_validation_officielle' } = req.body;
+
+        if (!reference_dossier) {
+            return res.status(400).json({ message: "Référence du dossier manquante." });
         }
 
-        // 2. Récupération des infos de l'utilisateur connecté
-        // ✅ On utilise 'profil' au lieu de 'role'
         if (!req.user || !req.user.id || !req.user.profil) {
-            console.error("DEBUG ERROR: req.user manquant ou profil absent.");
             return res.status(401).json({ 
-                message: "Non autorisé: L'utilisateur n'a pas pu être identifié. Assurez-vous d'avoir fourni un token valide."
+                message: "Non autorisé: L'utilisateur n'a pas pu être identifié."
             });
         }
 
         const acteur_id = req.user.id;
-        const acteur_type = req.user.profil; // <-- profil à la place de role
+        const acteur_type = req.user.profil;
 
-        // 3. Recherche du dossier principal pour obtenir les IDs manquants
+        // Récupérer les infos de la moto pour ce dossier
         const { data: dossierPrincipal, error: dossierError } = await supabase
             .from('dossier')
             .select('moto_id, immatriculation_prov')
@@ -92,7 +94,7 @@ export const addDossierAdmin = async (req, res) => {
 
         if (dossierError || !dossierPrincipal) {
             if (dossierError && dossierError.code === 'PGRST116') {
-                return res.status(404).json({ message: "Le dossier principal avec cette référence n'existe pas." });
+                return res.status(404).json({ message: "Le dossier principal n'existe pas." });
             }
             console.error("SUPABASE ERROR (findDossier):", dossierError);
             return res.status(500).json({ message: "Erreur lors de la recherche du dossier principal." });
@@ -100,7 +102,7 @@ export const addDossierAdmin = async (req, res) => {
 
         const { moto_id, immatriculation_prov } = dossierPrincipal;
 
-        // 4. Insertion des données complètes dans la table dossier_admin
+        // Ajouter dans dossier_admin
         const { data, error: insertError } = await supabase
             .from('dossier_admin')
             .insert([
@@ -117,18 +119,11 @@ export const addDossierAdmin = async (req, res) => {
         if (insertError) {
             console.error("SUPABASE ERROR (addDossierAdmin - Insert):", insertError);
             if (insertError.code === '23505') {
-                return res.status(409).json({
-                    message: "Un certificat provisoire existe déjà pour cette moto.",
-                    error: insertError.message
-                });
+                return res.status(409).json({ message: "Certificat provisoire déjà existant." });
             }
-            return res.status(500).json({
-                message: "Erreur lors de l'ajout du dossier admin",
-                error: insertError.message
-            });
+            return res.status(500).json({ message: "Erreur lors de l'ajout du dossier admin", error: insertError.message });
         }
 
-        // 5. Retour de la donnée créée
         res.status(201).json(data[0]);
 
     } catch (err) {
@@ -140,20 +135,17 @@ export const addDossierAdmin = async (req, res) => {
     }
 };
 
-
 // 🔹 Mettre à jour un dossier admin (Par ID)
 export const updateDossierAdmin = async (req, res) => {
     try {
         const { id } = req.params;
-        // On récupère uniquement les champs pertinents pour une mise à jour
         const { immatriculation_prov, immatriculation_def, statut } = req.body; 
 
-        // Création d'un objet de mise à jour propre
         const updateObject = {};
         if (immatriculation_prov !== undefined) updateObject.immatriculation_prov = immatriculation_prov;
         if (immatriculation_def !== undefined) updateObject.immatriculation_def = immatriculation_def;
         if (statut !== undefined) updateObject.statut = statut;
-        
+
         if (Object.keys(updateObject).length === 0) {
             return res.status(400).json({ message: "Aucun champ valide fourni pour la mise à jour." });
         }
@@ -166,10 +158,7 @@ export const updateDossierAdmin = async (req, res) => {
 
         if (error) {
             console.error("SUPABASE ERROR (updateDossierAdmin):", error);
-            return res.status(500).json({
-                message: "Erreur lors de la mise à jour du dossier admin",
-                error: error.message
-            });
+            return res.status(500).json({ message: "Erreur lors de la mise à jour du dossier admin", error: error.message });
         }
 
         if (!data || data.length === 0) {
@@ -179,10 +168,7 @@ export const updateDossierAdmin = async (req, res) => {
         res.status(200).json(data[0]);
     } catch (err) {
         console.error("SERVER ERROR (updateDossierAdmin):", err);
-        res.status(500).json({
-            message: "Erreur serveur lors de la mise à jour du dossier admin",
-            error: err.message
-        });
+        res.status(500).json({ message: "Erreur serveur lors de la mise à jour du dossier admin", error: err.message });
     }
 };
 
@@ -195,17 +181,13 @@ export const deleteDossierAdmin = async (req, res) => {
             .from('dossier_admin')
             .delete()
             .eq('dossier_admin_id', id)
-            .select(); // Sélectionner pour vérifier l'existence avant suppression
+            .select();
 
         if (error) {
             console.error("SUPABASE ERROR (deleteDossierAdmin):", error);
-            return res.status(500).json({
-                message: "Erreur lors de la suppression du dossier admin",
-                error: error.message
-            });
+            return res.status(500).json({ message: "Erreur lors de la suppression du dossier admin", error: error.message });
         }
-        
-        // Si data est vide, cela signifie que l'élément n'existait pas
+
         if (!data || data.length === 0) {
             return res.status(404).json({ message: "Dossier admin non trouvé" });
         }
@@ -213,9 +195,6 @@ export const deleteDossierAdmin = async (req, res) => {
         res.status(200).json({ message: "Dossier admin supprimé avec succès", deleted_item: data[0] });
     } catch (err) {
         console.error("SERVER ERROR (deleteDossierAdmin):", err);
-        res.status(500).json({
-            message: "Erreur serveur lors de la suppression du dossier admin",
-            error: err.message
-        });
+        res.status(500).json({ message: "Erreur serveur lors de la suppression du dossier admin", error: err.message });
     }
 };

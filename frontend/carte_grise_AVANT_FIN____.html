@@ -483,18 +483,32 @@ function isTokenValid(token) {
     }
 }
 
-// --------------------------------------------------------------
-// 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin
+/// --------------------------------------------------------------
+// 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin avec immatriculation
 // --------------------------------------------------------------
 const btnEnvoyer = document.getElementById('btn-envoyer');
+
 if (btnEnvoyer) {
     btnEnvoyer.addEventListener('click', async () => {
         const token = localStorage.getItem('token');
         const ref = new URLSearchParams(window.location.search).get('ref');
 
-        if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
-        if (!isTokenValid(token)) return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
+        // Récupération du numéro de carte grise affiché
+        const numeroImmatriculationEl = document.getElementById('serie_immatriculation'); // <- ID correct
+        const immatriculationProv = numeroImmatriculationEl?.textContent?.trim();
 
+        // Vérifications
+        if (!ref || !token) {
+            return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
+        }
+        if (!immatriculationProv || immatriculationProv === "SERIE D'IMMATRICULATION PROVISOIRE") {
+            return alert("⚠️ Numéro de carte grise introuvable.");
+        }
+        if (!isTokenValid(token)) {
+            return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
+        }
+
+        // Désactiver le bouton pendant l'envoi
         btnEnvoyer.disabled = true;
         btnEnvoyer.textContent = 'Enregistrement en cours...';
 
@@ -505,7 +519,11 @@ if (btnEnvoyer) {
                     'Content-Type': 'application/json', 
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ reference_dossier: ref, statut: 'envoyé' })
+                body: JSON.stringify({ 
+                    reference_dossier: ref, 
+                    statut: 'envoyé',
+                    immatriculation_prov: immatriculationProv
+                })
             });
 
             if (!res.ok) {
