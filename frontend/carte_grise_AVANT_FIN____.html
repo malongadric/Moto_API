@@ -483,28 +483,27 @@ function isTokenValid(token) {
     }
 }
 
-/// --------------------------------------------------------------
+// --------------------------------------------------------------
 // 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin avec immatriculation
 // --------------------------------------------------------------
 const btnEnvoyer = document.getElementById('btn-envoyer');
 
 if (btnEnvoyer) {
     btnEnvoyer.addEventListener('click', async () => {
+        // 🔹 Récupération du token et référence
         const token = localStorage.getItem('token');
         const ref = new URLSearchParams(window.location.search).get('ref');
-
-        // 🔹 Récupération du numéro de carte grise affiché
         const numeroImmatriculationEl = document.getElementById('serie_immatriculation');
         const immatriculationProv = numeroImmatriculationEl?.textContent?.trim();
 
-        // 🔹 Vérifications de base
+        // 🔹 Vérifications
         if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
         if (!immatriculationProv || immatriculationProv === "SERIE D'IMMATRICULATION PROVISOIRE") {
             return alert("⚠️ Numéro de carte grise introuvable.");
         }
         if (!isTokenValid(token)) return alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
 
-        // 🔹 Désactivation du bouton pendant l'envoi
+        // 🔹 Désactivation du bouton
         btnEnvoyer.disabled = true;
         btnEnvoyer.textContent = 'Enregistrement en cours...';
 
@@ -528,11 +527,11 @@ if (btnEnvoyer) {
                 throw new Error(`Erreur API: Statut ${res.status} - ${resData.message || 'Pas de détail'}`);
             }
 
-            // 🔹 Succès avec message dynamique
-            const message = resData.statut === 'envoyé'
+            // 🔹 Message dynamique selon l'état
+            const message = resData?.statut === 'envoyé'
                 ? '✅ Certificat enregistré et envoyé pour validation.'
                 : '✅ Certificat mis à jour avec succès.';
-            
+
             alert(message);
             btnEnvoyer.textContent = '✅ ENREGISTRÉ';
 
@@ -544,6 +543,7 @@ if (btnEnvoyer) {
         }
     });
 }
+
 
 
 // --------------------------------------------------------------
