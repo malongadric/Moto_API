@@ -67,89 +67,105 @@ export const getDossierAdminById = async (req, res) => {
     }
 };
 
-// controllers/dossierAdminController.js
 
-// 🔹 Ajouter un nouveau dossier admin (CORRIGÉ FINAL)
+
+// 🔹 Ajouter ou mettre à jour un dossier admin (UPSERT)
 export const addDossierAdmin = async (req, res) => {
-    try {
-        // 🛑 Changement 1 : Récupération des données du corps de la requête
-        const { 
-            reference_dossier, // <-- Récupérée ici
-            statut = 'en_attente_validation_officielle',
-            immatriculation_prov 
-        } = req.body;
+  try {
+    const { 
+      reference_dossier, 
+      statut = 'en_attente_validation_officielle',
+      immatriculation_prov 
+    } = req.body;
 
-        if (!reference_dossier) {
-            return res.status(400).json({ message: "Référence du dossier manquante." });
-        }
-        
-        if (!immatriculation_prov) {
-            return res.status(400).json({ message: "Le numéro d'immatriculation provisoire (CG) est manquant." });
-        }
-
-        if (!req.user || !req.user.id || !req.user.profil) {
-            return res.status(401).json({ 
-                message: "Non autorisé: L'utilisateur n'a pas pu être identifié."
-            });
-        }
-
-        const acteur_id = req.user.id;
-        const acteur_type = req.user.profil;
-
-        // Récupération du moto_id
-        const { data: dossierPrincipal, error: dossierError } = await supabase
-            .from('dossier')
-            .select('moto_id') 
-            .eq('reference_dossier', reference_dossier)
-            .single();
-
-        if (dossierError || !dossierPrincipal) {
-            if (dossierError && dossierError.code === 'PGRST116') {
-                return res.status(404).json({ message: "Le dossier principal n'existe pas." });
-            }
-            console.error("SUPABASE ERROR (findDossier):", dossierError);
-            return res.status(500).json({ message: "Erreur serveur lors de la recherche du dossier principal." });
-        }
-
-        const { moto_id } = dossierPrincipal; 
-
-        // 🔹 Ajouter dans dossier_admin
-        const { data, error: insertError } = await supabase
-            .from('dossier_admin')
-            .insert([
-                {
-                    // 🔑 Ajout de la référence du dossier dans l'insertion
-                    reference_dossier, 
-                    moto_id,
-                    acteur_id,
-                    acteur_type,
-                    immatriculation_prov, 
-                    statut
-                }
-            ])
-            .select();
-        // ... (le reste du bloc insertError est conservé)
-
-        if (insertError) {
-            console.error("SUPABASE ERROR (addDossierAdmin - Insert):", insertError);
-            if (insertError.code === '23505') {
-                // 💡 Si cette erreur persiste, vous devez implémenter un UPSET (Upsert/Update on Conflict)
-                return res.status(409).json({ message: "Certificat provisoire déjà existant." });
-            }
-            // 💡 Si l'erreur 500 est toujours là, vérifier les FK (moto_id, acteur_id)
-            return res.status(500).json({ message: "Erreur lors de l'ajout du dossier admin", error: insertError.message });
-        }
-
-        res.status(201).json(data[0]);
-
-    } catch (err) {
-        console.error("SERVER ERROR (addDossierAdmin):", err);
-        res.status(500).json({
-            message: "Erreur serveur lors de l'ajout du dossier admin",
-            error: err.message
-        });
+    if (!reference_dossier || !immatriculation_prov) {
+      return res.status(400).json({ message: "Référence ou immatriculation provisoire manquante." });
     }
+
+    if (!req.user || !req.user.id || !req.user.profil) {
+      return res.status(401).json({ message: "Non autorisé: l'utilisateur n'a pas pu être identifié." });
+    }
+
+    const acteur_id = req.user.id;
+    const acteur_type = req.user.profil;
+
+    // 🔹 Étape 1 : Récupération du moto_id depuis le dossier principal
+    const { data: dossierPrincipal, error: dossierError } = await supabase
+      .from('dossier')
+      .select('moto_id') 
+      .eq('reference_dossier', reference_dossier)
+      .single();
+
+    if (dossierError || !dossierPrincipal) {
+      if (dossierError && dossierError.code === 'PGRST116') {
+        return res.status(404).json({ message: "Le dossier principal n'existe pas." });
+      }
+      console.error("SUPABASE ERROR (findDossier):", dossierError);
+      return res.status(500).json({ message: "Erreur serveur lors de la recherche du dossier principal." });
+    }
+
+    const { moto_id } = dossierPrincipal; 
+
+    // 🔹 Étape 2 : Vérification FK moto
+    const { data: motoData, error: motoError } = await supabase
+      .from('motos')
+      .select('id')
+      .eq('id', moto_id)
+      .single();
+
+    if (motoError || !motoData) {
+      console.error("SUPABASE ERROR (checkMotoId):", motoError);
+      return res.status(404).json({ message: `Erreur FK : Moto ID ${moto_id} introuvable.` });
+    }
+
+    // 🔹 Étape 3 : Vérification FK acteur
+    const { data: userData, error: userError } = await supabase
+      .from('utilisateurs')
+      .select('id')
+      .eq('id', acteur_id)
+      .single();
+
+    if (userError || !userData) {
+      console.error("SUPABASE ERROR (checkActeurId):", userError);
+      return res.status(401).json({ message: `Erreur FK : Acteur ID ${acteur_id} introuvable ou invalide.` });
+    }
+
+    // 🔹 Étape 4 : UPSERT (Insertion ou mise à jour)
+    const { data, error: upsertError } = await supabase
+      .from('dossier_admin')
+      .upsert(
+        {
+          reference_dossier, 
+          moto_id,
+          acteur_id,
+          acteur_type,
+          immatriculation_prov, 
+          statut
+        },
+        { onConflict: 'reference_dossier' } // clé unique pour éviter la violation de contrainte
+      )
+      .select();
+
+    if (upsertError) {
+      console.error("SUPABASE ERROR (addDossierAdmin - Upsert):", upsertError);
+      return res.status(500).json({ 
+        message: "Erreur lors de l'ajout/mise à jour du dossier admin", 
+        error: upsertError.message 
+      });
+    }
+
+    res.status(201).json(data[0]);
+
+  } catch (err) {
+    console.error("SERVER ERROR (addDossierAdmin):", err);
+    res.status(500).json({
+      message: "Erreur serveur inattendue lors de l'ajout du dossier admin",
+      error: err.message
+    });
+  }
 };
+
+
 // 🔹 Mettre à jour un dossier admin (Par ID)
 export const updateDossierAdmin = async (req, res) => {
     try {
