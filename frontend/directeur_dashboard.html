@@ -35,14 +35,11 @@
         }
         .sidebar-nav a svg { margin-right:15px; width:20px; height:20px; flex-shrink:0; }
         .sidebar-nav a:hover { background-color: rgba(255,255,255,0.05); }
-        
-        /* Style du lien actif (laissez-le même si non utilisé, au cas où vous changeriez d'avis) */
         .sidebar-nav a.active { 
             background-color: rgba(0,0,0,0.2); 
             border-left:4px solid var(--accent-color); 
             font-weight:bold; 
         }
-        
         .sidebar-footer { margin-top:auto; padding:20px; text-align:center; border-top:1px solid rgba(255,255,255,0.1); }
         .sidebar-footer #user-name { font-weight:bold; display:block; }
         .sidebar-footer #user-department { font-size:0.9em; opacity:0.8; display:block; }
@@ -76,6 +73,34 @@
         .data-table th, .data-table td { padding:15px; text-align:left; border-bottom:1px solid var(--border-color); white-space:nowrap; }
         .data-table th { background-color:var(--background-color); font-weight:600; cursor:pointer; }
         
+        /* 🎯 NOUVEAU CSS POUR LES STATISTIQUES */
+        .stat-card {
+            background-color: var(--white-color);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-left: 5px solid var(--secondary-color);
+        }
+        .stat-card:nth-child(2) {
+            border-left: 5px solid var(--accent-color); /* Couleur pour l'attente */
+        }
+        .stat-card:nth-child(3) {
+            border-left: 5px solid var(--primary-color); /* Couleur pour le validé */
+        }
+        .stat-label {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: #777;
+            font-weight: 600;
+        }
+        .stat-value {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
         /* Media Queries */
         @media (max-width:1024px) { 
             :root { --sidebar-width:220px; } 
@@ -100,7 +125,10 @@
     <div class="sidebar-header"><h1>Validation DD</h1></div>
     <nav class="sidebar-nav">
         <ul>
-            <li><a href="#" id="nav-list" class="nav-link active">Gestion des Dossiers</a></li>
+            <li><a href="#" id="nav-list" class="nav-link active" data-section="list-section">Gestion des Dossiers</a></li>
+            
+            <li><a href="#" id="nav-stats" class="nav-link" data-section="stats-section">Statistiques Départementales</a></li>
+            
             <li><a href="#" id="nav-logout" class="nav-link">Déconnexion</a></li>
         </ul>
     </nav>
@@ -132,6 +160,27 @@
             <div id="dossier-list"></div>
         </section>
 
+        <section id="stats-section" class="content-section">
+            <h3 class="form-section-title">Synthèse des Enregistrements dans votre Département</h3>
+            <div class="form-grid">
+                
+                <div class="stat-card">
+                    <p class="stat-label">Total Dossiers Enregistrés</p>
+                    <p class="stat-value" id="total-motos">...</p>
+                </div>
+
+                <div class="stat-card">
+                    <p class="stat-label">En Attente de Validation DD</p>
+                    <p class="stat-value" id="motos-attente">...</p>
+                </div>
+                
+                <div class="stat-card">
+                    <p class="stat-label">Certificats Officiels (Validés)</p>
+                    <p class="stat-value" id="motos-validees">...</p>
+                </div>
+                
+            </div>
+        </section>
         </main>
 </div>
 
@@ -148,7 +197,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusFilter = document.getElementById('status-filter'); 
     const dossierListContainer = document.getElementById('dossier-list');
     
+    // 🎯 Adresses API
     const API_BASE_URL = 'https://moto-api-cika.onrender.com/api/dossier_admin';
+    const STATS_API_URL = 'https://moto-api-cika.onrender.com/api/statistiques'; // 💡 NOUVELLE URL POUR LES STATS
     
     const storedUser = JSON.parse(localStorage.getItem('user'));
     
@@ -175,45 +226,114 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTraceability();
 
     // ----------------------------------------------------------------------
-    // 🔹 NAVIGATION
+    // 🔹 GESTION DES SECTIONS (Navigation)
     // ----------------------------------------------------------------------
-    menuToggle.addEventListener('click', ()=> sidebar.classList.toggle('open'));
-    
-    document.getElementById('nav-logout').addEventListener('click', (e) => {
+    function showSection(sectionId) {
+        contentSections.forEach(section => {
+            section.classList.remove('active');
+        });
+        document.getElementById(sectionId).classList.add('active');
+        
+        // Mettre à jour le titre de la page
+        const navLink = document.querySelector(`[data-section="${sectionId}"]`);
+        if (navLink) {
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            navLink.classList.add('active');
+            pageTitle.textContent = navLink.textContent;
+        }
+
+        // Si on est sur la section stats, charger les données
+        if (sectionId === 'stats-section') {
+            loadStats();
+        } else {
+            // Sinon, recharger la liste si on retourne à la gestion des dossiers
+            loadDossiersAdmin(searchInput.value);
+        }
+    }
+
+    document.getElementById('nav-list').addEventListener('click', (e) => {
         e.preventDefault();
-        localStorage.clear();
-        window.location.href = 'login.html';
+        showSection('list-section');
+    });
+
+    document.getElementById('nav-stats').addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection('stats-section');
     });
 
     // ----------------------------------------------------------------------
-    // 🔹 TRAITER UN DOSSIER (VALIDATION / REJET)
+    // 🔹 CHARGEMENT DES STATISTIQUES
     // ----------------------------------------------------------------------
-    async function traiterDossier(dossierId, nouveauStatut, numeroImmatriculation = null) {
-        let bodyContent = { statut: nouveauStatut };
+    async function loadStats() {
+        // Affichage de l'état de chargement
+        document.getElementById('total-motos').textContent = '...';
+        document.getElementById('motos-attente').textContent = '...';
+        document.getElementById('motos-validees').textContent = '...';
 
-        // 🔹 Rejet avec raison obligatoire
+        try {
+            // 💡 URL CORRIGÉE : Utilisation de l'endpoint dédié aux statistiques
+            const url = STATS_API_URL; 
+            
+            const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+            
+            if (!response.ok) {
+                 const errorDetails = await response.json().catch(() => ({}));
+                 // Afficher le message d'erreur du backend (si disponible) ou le statut
+                 throw new Error(errorDetails.message || `Échec de la récupération des statistiques. Statut: ${response.status}`);
+            }
+
+            const stats = await response.json(); 
+            
+            // Mise à jour des cartes (doit correspondre aux clés retournées par le contrôleur)
+            document.getElementById('total-motos').textContent = stats.total_enregistrements || 0;
+            document.getElementById('motos-attente').textContent = stats.en_attente_validation_officielle || 0;
+            document.getElementById('motos-validees').textContent = stats.validé || 0;
+
+        } catch (err) {
+            console.error("Erreur de chargement des statistiques:", err);
+            document.getElementById('total-motos').textContent = 'Erreur';
+            document.getElementById('motos-attente').textContent = 'Erreur';
+            document.getElementById('motos-validees').textContent = 'Erreur';
+        }
+    }
+    
+    // ----------------------------------------------------------------------
+    // 🔹 TRAITER UN DOSSIER (VALIDATION OFFICIELLE / REJET)
+    // ----------------------------------------------------------------------
+    async function traiterDossier(dossierId, nouveauStatut, referenceDossier = null, motoId = null) {
+        let bodyContent = { statut: nouveauStatut };
+        let endpoint = `${API_BASE_URL}/${dossierId}`; // Endpoint par défaut pour PUT (rejet/màj)
+        let method = 'PUT';
+
+        // 🛑 1. CAS CRITIQUE : VALIDATION OFFICIELLE
+        if (nouveauStatut === 'validé') {
+            if (!referenceDossier || !motoId) {
+                 alert("Erreur: Les informations de référence du dossier et de la moto sont manquantes pour la validation officielle.");
+                 return;
+            }
+            
+            method = 'POST';
+            // 🎯 Utilisation de l'endpoint pour générer l'immatriculation définitive.
+            endpoint = 'https://moto-api-cika.onrender.com/api/dossier_admin/valider_officiel'; 
+            bodyContent = { 
+                reference_dossier: referenceDossier, 
+                moto_id: motoId 
+            };
+        }
+
+        // 2. CAS DE REJET
         if (nouveauStatut === 'rejeté') {
             const raison = prompt("Veuillez indiquer la raison du REJET :");
-            if (!raison || !raison.trim()) {
-                alert("Raison du rejet obligatoire.");
+            if (raison === null || raison.trim() === "") {
+                alert("Raison du rejet obligatoire. Annulation de l'action.");
                 return;
             }
             bodyContent.raison_rejet = raison;
         }
 
-        // 🔹 Validation avec numéro provisoire de l'admin
-        if (nouveauStatut === 'validé') {
-            if (!numeroImmatriculation) {
-                alert("⚠️ Numéro d'immatriculation manquant.");
-                return;
-            }
-            bodyContent.numero_immatriculation = numeroImmatriculation;
-            bodyContent.valide = true;
-        }
-
         try {
-            const res = await fetch(`${API_BASE_URL}/${dossierId}`, {
-                method: 'PUT',
+            const res = await fetch(endpoint, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -221,21 +341,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(bodyContent)
             });
 
-            const resData = await res.json();
-
-            if (!res.ok) throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
-
-            alert(`✅ Dossier ${resData.reference_dossier || dossierId} a été ${nouveauStatut} avec succès.`);
-
-            if (nouveauStatut === 'validé') {
-                window.location.href = `carte_grise_PROVISOIRE_FINI1.html?ref=${encodeURIComponent(resData.reference_dossier || dossierId)}`;
-                return;
+            const resData = await res.json().catch(() => ({}));
+            
+            if (!res.ok) {
+                console.error(`Erreur: Statut ${res.status}`, resData);
+                throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
             }
 
-            loadDossiersAdmin(searchInput.value);
+            alert(`✅ Dossier ${referenceDossier || dossierId} a été ${nouveauStatut} avec succès.`);
+            
+            // 🚀 Redirection vers la Carte Grise OFFICIELLE
+            if (nouveauStatut === 'validé') {
+                // Assurez-vous d'avoir une page 'carte_grise_OFFICIELLE.html' pour ce certificat
+                window.location.href = `carte_grise_OFFICIELLE.html?ref=${referenceDossier}`;
+                return; 
+            }
+
+            loadDossiersAdmin(searchInput.value); 
 
         } catch (error) {
-            console.error("❌ Échec de la mise à jour :", error);
+            console.error(`❌ Échec de la mise à jour :`, error);
             alert(`Échec de la mise à jour : ${error.message}`);
         }
     }
@@ -246,9 +371,11 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadDossiersAdmin(query = '') {
         dossierListContainer.innerHTML = "<p>Chargement des dossiers...</p>";
         const currentStatus = statusFilter.value;
+        // Met à jour le titre basé sur le filtre sélectionné
         pageTitle.textContent = statusFilter.options[statusFilter.selectedIndex].text;
 
         try {
+            // L'API utilise le token pour filtrer par département
             let url = `${API_BASE_URL}?statut=${encodeURIComponent(currentStatus)}`;
             if (query) url += `&search=${encodeURIComponent(query)}`;
 
@@ -277,15 +404,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 html+=`<tr>
                     <td>${dossier.reference_dossier}</td>
-                    <td>${dossier.immatriculation_prov}</td>
+                    <td>${dossier.immatriculation_prov || 'N/A'}</td>
                     <td>${moto.marque || 'N/A'} ${moto.modele || ''} (${moto.numero_chassis || 'N/A'})</td>
                     <td>${dossier.acteur_type || 'N/A'}</td>
                     <td>${dateSaisie}</td>
                     <td>`;
 
                 if (currentStatus === 'en_attente_validation_officielle') {
-                    html += `<button class="btn btn-primary btn-valider" data-id="${dossier.id}">Valider</button>
-                             <button class="btn btn-danger btn-rejeter" data-id="${dossier.id}">Rejeter</button>`;
+                    // 🎯 Ajout des data-attributs pour la validation officielle
+                    html += `<button class="btn btn-primary btn-valider" 
+                                data-id="${dossier.id}" 
+                                data-ref="${dossier.reference_dossier}"
+                                data-moto-id="${moto.id}"
+                                >Valider</button>
+                              <button class="btn btn-danger btn-rejeter" data-id="${dossier.id}">Rejeter</button>`;
                 } else {
                     html += `<span style="font-weight:bold;">${dossier.statut.toUpperCase()}</span>`; 
                     if (dossier.raison_rejet) html += ` <small>(Raison: ${dossier.raison_rejet})</small>`;
@@ -302,33 +434,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('.btn-valider').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const id = btn.dataset.id;
-                        if (!confirm(`Voulez-vous VALIDER le dossier ${id} ?`)) return;
+                        const ref = btn.dataset.ref;
+                        const motoId = btn.dataset.motoId;
+                        
+                        if (!confirm(`Voulez-vous VALIDER officiellement le dossier ${ref} ?`)) return;
 
-                        try {
-                            // Récupère le numéro provisoire
-                            const dossierRes = await fetch(`${API_BASE_URL}/${id}`, {
-                                headers: { "Authorization": `Bearer ${token}` }
-                            });
-                            if (!dossierRes.ok) throw new Error("Impossible de récupérer le dossier.");
-
-                            const dossierData = await dossierRes.json();
-                            if (!dossierData.immatriculation_provisoire) {
-                                alert("⚠️ Aucune immatriculation provisoire attribuée par l'admin.");
-                                return;
-                            }
-
-                            await traiterDossier(id, 'validé', dossierData.immatriculation_provisoire);
-
-                        } catch (err) {
-                            console.error("Erreur lors de la validation :", err);
-                            alert("Erreur lors de la validation du dossier.");
-                        }
+                        // Appel de la fonction de traitement avec les données complètes
+                        await traiterDossier(id, 'validé', ref, motoId);
                     });
                 });
 
                 document.querySelectorAll('.btn-rejeter').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const id = btn.dataset.id;
+                        // Le rejet utilise l'ID du dossier et le statut 'rejeté'
                         traiterDossier(id, 'rejeté');
                     });
                 });
@@ -345,11 +464,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // ----------------------------------------------------------------------
     searchInput.addEventListener('input', () => loadDossiersAdmin(searchInput.value));
     statusFilter.addEventListener('change', () => loadDossiersAdmin(searchInput.value)); 
-    loadDossiersAdmin(); 
+    
+    // Charge la section par défaut au démarrage
+    showSection('list-section'); 
 
 });
 </script>
-
 
 </body>
 </html>
