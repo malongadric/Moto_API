@@ -68,13 +68,25 @@ export const getDossierAdminById = async (req, res) => {
 };
 
 // 🔹 Ajouter un nouveau dossier admin
+// 🔹 Ajouter un nouveau dossier admin (CORRIGÉ)
 export const addDossierAdmin = async (req, res) => {
     try {
-        const { reference_dossier, statut = 'en_attente_validation_officielle' } = req.body;
+        // 🛑 Changement 1 : Récupérer 'immatriculation_prov' du corps de la requête (frontend)
+        const { 
+            reference_dossier, 
+            statut = 'en_attente_validation_officielle',
+            immatriculation_prov 
+        } = req.body;
 
         if (!reference_dossier) {
             return res.status(400).json({ message: "Référence du dossier manquante." });
         }
+        
+        // 🛑 Ajout : S'assurer que le numéro d'immatriculation provisoire est présent
+        if (!immatriculation_prov) {
+             return res.status(400).json({ message: "Le numéro d'immatriculation provisoire (CG) est manquant." });
+        }
+
 
         if (!req.user || !req.user.id || !req.user.profil) {
             return res.status(401).json({ 
@@ -85,24 +97,28 @@ export const addDossierAdmin = async (req, res) => {
         const acteur_id = req.user.id;
         const acteur_type = req.user.profil;
 
-        // Récupérer les infos de la moto pour ce dossier
+        // 🛑 Changement 2 : L'objectif principal est de récupérer le 'moto_id'
+        // Nous retirons la recherche de 'immatriculation_prov' car elle est dans le body
+        // et cela simplifie la requête.
         const { data: dossierPrincipal, error: dossierError } = await supabase
             .from('dossier')
-            .select('moto_id, immatriculation_prov')
+            .select('moto_id') // <-- Ne demande que le moto_id
             .eq('reference_dossier', reference_dossier)
             .single();
 
         if (dossierError || !dossierPrincipal) {
+            // 🛑 Changement 3 : Meilleure gestion des erreurs si le dossier n'est pas trouvé
             if (dossierError && dossierError.code === 'PGRST116') {
                 return res.status(404).json({ message: "Le dossier principal n'existe pas." });
             }
             console.error("SUPABASE ERROR (findDossier):", dossierError);
-            return res.status(500).json({ message: "Erreur lors de la recherche du dossier principal." });
+            // 🛑 Maintenant l'erreur 500 ne se produit que pour des erreurs serveur réelles
+            return res.status(500).json({ message: "Erreur serveur lors de la recherche du dossier principal." });
         }
 
-        const { moto_id, immatriculation_prov } = dossierPrincipal;
+        const { moto_id } = dossierPrincipal; // <-- Récupération du moto_id
 
-        // Ajouter dans dossier_admin
+        // 🔹 Ajouter dans dossier_admin
         const { data, error: insertError } = await supabase
             .from('dossier_admin')
             .insert([
@@ -110,11 +126,13 @@ export const addDossierAdmin = async (req, res) => {
                     moto_id,
                     acteur_id,
                     acteur_type,
-                    immatriculation_prov,
+                    // 🛑 Changement 4 : Utiliser la valeur du frontend (la plus à jour)
+                    immatriculation_prov, 
                     statut
                 }
             ])
             .select();
+        // ... (le reste du bloc insertError est conservé)
 
         if (insertError) {
             console.error("SUPABASE ERROR (addDossierAdmin - Insert):", insertError);
@@ -134,7 +152,6 @@ export const addDossierAdmin = async (req, res) => {
         });
     }
 };
-
 // 🔹 Mettre à jour un dossier admin (Par ID)
 export const updateDossierAdmin = async (req, res) => {
     try {
