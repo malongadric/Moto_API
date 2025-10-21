@@ -14,8 +14,10 @@ export const getDossiersAdmin = async (req, res) => {
 
         const { statut, search } = req.query;
 
-        console.log("REQ USER:", req.user);
-        console.log("Query params statut/search:", statut, search);
+        console.log("=== GET DOSSIERS ADMIN ===");
+        console.log("Profil utilisateur :", req.user.profil);
+        console.log("Departement utilisateur :", req.user.departement_id);
+        console.log("Paramètres query statut/search :", statut, search);
 
         // 🎯 Filtrage par profil
         if (req.user.profil === 'directeur_departemental') {
@@ -30,11 +32,13 @@ export const getDossiersAdmin = async (req, res) => {
             // 🔹 Filtrer par statut seulement si fourni
             if (statut) {
                 query = query.eq('statut', statut.toLowerCase().trim());
+                console.log(`Filtrage DD par statut : ${statut.toLowerCase().trim()}`);
             }
-
         } else if (req.user.profil === 'admin') {
-            // 🔹 Admin peut filtrer par statut si fourni
-            if (statut) query = query.eq('statut', statut.toLowerCase().trim());
+            if (statut) {
+                query = query.eq('statut', statut.toLowerCase().trim());
+                console.log(`Filtrage Admin par statut : ${statut.toLowerCase().trim()}`);
+            }
         }
 
         // 🔹 Filtre de recherche (reference_dossier ou numero_chassis)
@@ -42,6 +46,7 @@ export const getDossiersAdmin = async (req, res) => {
             query = query.or(
                 `reference_dossier.ilike.%${search}%,motos.numero_chassis.ilike.%${search}%`
             );
+            console.log(`Filtre recherche : ${search}`);
         }
 
         // 🔹 Exécuter la requête
@@ -52,7 +57,9 @@ export const getDossiersAdmin = async (req, res) => {
             return res.status(500).json({ message: "Erreur récupération dossiers admin", error: error.message });
         }
 
-        console.log("Dossiers récupérés:", data.length, data.map(d => d.reference_dossier));
+        console.log("Nombre de dossiers récupérés :", data.length);
+        console.log("Departements des dossiers récupérés :", data.map(d => d.departement_id));
+        console.log("Statuts des dossiers récupérés :", data.map(d => d.statut));
 
         // 🔹 Retourner tableau vide si rien trouvé
         if (!data || data.length === 0) {
@@ -66,6 +73,7 @@ export const getDossiersAdmin = async (req, res) => {
         res.status(500).json({ message: "Erreur serveur récupération dossiers admin", error: err.message });
     }
 };
+
 
 
 // 🔹 Récupérer un dossier admin par ID
