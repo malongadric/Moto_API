@@ -411,18 +411,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         const proprietaire = await resProp.json();
         if (!proprietaire) throw new Error("Propriétaire introuvable");
 
-        // 🔹 4️⃣ Génération automatique de l'immatriculation (URL corrigée au singulier)
-        const resImmat = await fetch(
-            `https://moto-api-cika.onrender.com/api/immatriculation/attribuer/${moto.id}`,
-            { 
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json' 
-                }
-            }
-        );
-        const immat = await resImmat.json();
+        // 🔹 4️⃣ Génération automatique de l'immatriculation
+console.log("🚀 ID moto détecté :", moto.id);
+
+const resImmat = await fetch(
+  `https://moto-api-cika.onrender.com/api/immatriculations/attribuer/${moto.id}`,
+  { 
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json' 
+    }
+  }
+);
+
+// ✅ Vérifie d’abord si la réponse est OK avant de parser le JSON
+if (!resImmat.ok) {
+  const text = await resImmat.text();
+  console.error("❌ Erreur API Immatriculation :", resImmat.status, text);
+  throw new Error(`Erreur API ${resImmat.status}: ${text}`);
+}
+
+const immat = await resImmat.json();
+console.log("✅ Numéro attribué :", immat.numeroImmatriculation);
 
         // 🔹 5️⃣ Injection des données dans le design
         document.getElementById('nom').textContent = proprietaire.nom || 'N/A';

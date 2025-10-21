@@ -21,7 +21,7 @@ export const attribuerNumero = async (req, res) => {
         // 1️⃣ CORRECTION: Récupère l'ID du dossier lié à la moto
         // On suppose que la table 'dossiers' contient la clé étrangère 'moto_id'
         const { data: dossierData, error: dossierError } = await supabase
-            .from('dossiers') 
+            .from('dossier') 
             .select('id') // On sélectionne uniquement l'ID du dossier
             .eq('moto_id', motoId) 
             .single();
