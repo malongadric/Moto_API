@@ -298,72 +298,78 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ----------------------------------------------------------------------
-    // 🔹 TRAITER UN DOSSIER (VALIDATION OFFICIELLE / REJET)
-    // ----------------------------------------------------------------------
-    async function traiterDossier(dossierId, nouveauStatut, referenceDossier = null, motoId = null) {
-        let bodyContent = { statut: nouveauStatut };
-        let endpoint = `${API_BASE_URL}/${dossierId}`; // Endpoint par défaut pour PUT (rejet/màj)
-        let method = 'PUT';
-
-        // 🛑 1. CAS CRITIQUE : VALIDATION OFFICIELLE
-        if (nouveauStatut === 'validé') {
-            if (!referenceDossier || !motoId) {
-                 alert("Erreur: Les informations de référence du dossier et de la moto sont manquantes pour la validation officielle.");
-                 return;
-            }
-            
-            method = 'POST';
-            // 🎯 Utilisation de l'endpoint pour générer l'immatriculation définitive.
-            endpoint = 'https://moto-api-cika.onrender.com/api/dossier_admin/valider_officiel'; 
-            bodyContent = { 
-                reference_dossier: referenceDossier, 
-                moto_id: motoId 
-            };
-        }
-
-        // 2. CAS DE REJET
-        if (nouveauStatut === 'rejeté') {
-            const raison = prompt("Veuillez indiquer la raison du REJET :");
-            if (raison === null || raison.trim() === "") {
-                alert("Raison du rejet obligatoire. Annulation de l'action.");
-                return;
-            }
-            bodyContent.raison_rejet = raison;
-        }
-
-        try {
-            const res = await fetch(endpoint, {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(bodyContent)
-            });
-
-            const resData = await res.json().catch(() => ({}));
-            
-            if (!res.ok) {
-                console.error(`Erreur: Statut ${res.status}`, resData);
-                throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
-            }
-
-            alert(`✅ Dossier ${referenceDossier || dossierId} a été ${nouveauStatut} avec succès.`);
-            
-            // 🚀 Redirection vers la Carte Grise OFFICIELLE
-            if (nouveauStatut === 'validé') {
-                // Assurez-vous d'avoir une page 'carte_grise_OFFICIELLE.html' pour ce certificat
-                window.location.href = `carte_grise_OFFICIELLE.html?ref=${referenceDossier}`;
-                return; 
-            }
-
-            loadDossiersAdmin(searchInput.value); 
-
-        } catch (error) {
-            console.error(`❌ Échec de la mise à jour :`, error);
-            alert(`Échec de la mise à jour : ${error.message}`);
-        }
+// 🔹 TRAITER UN DOSSIER (VALIDATION OFFICIELLE / REJET)
+// ----------------------------------------------------------------------
+async function traiterDossier(dossierId, nouveauStatut, referenceDossier = null, motoId = null) {
+    if (!dossierId) {
+        alert("Erreur: ID du dossier manquant.");
+        return;
     }
+
+    let bodyContent = { statut: nouveauStatut };
+    let endpoint = `${API_BASE_URL}/${dossierId}`; // Endpoint par défaut pour PUT (rejet/màj)
+    let method = 'PUT';
+
+    // 🛑 1. CAS CRITIQUE : VALIDATION OFFICIELLE
+    if (nouveauStatut === 'validé') {
+        if (!motoId || !referenceDossier) {
+            alert("Erreur: Les informations du dossier et de la moto sont manquantes pour la validation officielle.");
+            return;
+        }
+
+        method = 'POST';
+        endpoint = 'https://moto-api-cika.onrender.com/api/dossier_admin/valider_officiel'; 
+
+        bodyContent = { 
+            id: dossierId,           // 🔹 ID obligatoire pour le backend
+            reference_dossier: referenceDossier,
+            moto_id: motoId
+        };
+    }
+
+    // 2. CAS DE REJET
+    if (nouveauStatut === 'rejeté') {
+        const raison = prompt("Veuillez indiquer la raison du REJET :");
+        if (!raison || raison.trim() === "") {
+            alert("Raison du rejet obligatoire. Annulation de l'action.");
+            return;
+        }
+        bodyContent.raison_rejet = raison;
+    }
+
+    try {
+        const res = await fetch(endpoint, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyContent)
+        });
+
+        const resData = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            console.error(`Erreur: Statut ${res.status}`, resData);
+            throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
+        }
+
+        alert(`✅ Dossier ${referenceDossier || dossierId} a été ${nouveauStatut} avec succès.`);
+
+        // 🚀 Redirection vers la Carte Grise OFFICIELLE
+        if (nouveauStatut === 'validé') {
+            window.location.href = `carte_grise_PROVISOIRE_FINI1.html?ref=${referenceDossier}`;
+            return; 
+        }
+
+        // 🔹 Recharger la liste des dossiers
+        loadDossiersAdmin(searchInput.value); 
+
+    } catch (error) {
+        console.error(`❌ Échec de la mise à jour :`, error);
+        alert(`Échec de la mise à jour : ${error.message}`);
+    }
+}
 
     // ----------------------------------------------------------------------
     // 🔹 CHARGEMENT DE LA LISTE DES DOSSIERS
