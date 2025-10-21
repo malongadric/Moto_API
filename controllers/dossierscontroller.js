@@ -301,23 +301,30 @@ export const updateDossier = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = { ...req.body };
-    const { profil, departement_id } = req.user || {};
+    const { profil, departement_id, id: userId } = req.user || {};
 
+    // 🔒 Restriction pour les agents
     if (profil === "agent" || profil === "agent_saisie") {
       return res.status(403).json({ message: "Accès refusé : vous ne pouvez pas modifier ce dossier" });
     }
 
-    // 🔹 Gestion automatique des statuts
-    if (profil === "admin" && updateData.numero_immatriculation) {
-      updateData.statut = "en_attente_officialisation";
+    // 🔹 Gestion automatique des statuts pour attribution d'immatriculation
+    if ((profil === "admin" || profil === "directeur_departemental") && updateData.numero_immatriculation) {
+      updateData.statut = "en_attente_officialisation"; // ou "validé" selon workflow
+      updateData.date_attribution = new Date();
+      updateData.attribue_par = userId;
     }
+
+    // 🔹 Gestion validation DD
     if (profil === "directeur_departemental" && updateData.valide === true) {
       updateData.statut = "validé";
       updateData.date_validation_dd = new Date();
     }
 
+    // 🔹 Construction de la requête
     let query = supabase.from("dossier").update(updateData).eq("dossier_id", id);
 
+    // Filtrage par département pour DD
     if (profil === "directeur_departemental") {
       query = query.eq("departement_id", departement_id);
     }
@@ -326,6 +333,7 @@ export const updateDossier = async (req, res) => {
     if (error) return res.status(400).json({ message: error.message });
 
     res.json({ message: "Dossier mis à jour avec succès", dossier: data });
+    
   } catch (err) {
     console.error("❌ Erreur serveur updateDossier:", err);
     res.status(500).json({ message: "Erreur serveur", erreur: err.message });

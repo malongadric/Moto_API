@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Directeur Départemental - Validation</title>
     <style>
-        /* --- Styles CSS : Conserver tous les styles existants --- */
+        /* --- Styles CSS : Variables et Mise en page de base --- */
         :root {
             --primary-color: #0d47a1;
             --secondary-color: #00796b;
@@ -23,11 +23,26 @@
         .sidebar-header { padding:20px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.1); }
         .sidebar-header h1 { margin:0; font-size:1.5rem; letter-spacing:1px; }
         .sidebar-nav ul { list-style:none; padding:20px 0; margin:0; }
-        .sidebar-nav a { display:flex; align-items:center; padding:15px 25px; color:var(--white-color); text-decoration:none; font-weight:500; transition: background-color 0.3s, padding-left 0.3s; border-left:4px solid transparent; }
+        .sidebar-nav a { 
+            display:flex; 
+            align-items:center; 
+            padding:15px 25px; 
+            color:var(--white-color); 
+            text-decoration:none; 
+            font-weight:500; 
+            transition: background-color 0.3s, padding-left 0.3s; 
+            border-left:4px solid transparent; 
+        }
         .sidebar-nav a svg { margin-right:15px; width:20px; height:20px; flex-shrink:0; }
         .sidebar-nav a:hover { background-color: rgba(255,255,255,0.05); }
-        /* La navigation n'a plus besoin d'être active par défaut, nous utilisons le sélecteur de statut */
-        /* .sidebar-nav a.active { background-color: rgba(0,0,0,0.2); border-left:4px solid var(--accent-color); font-weight:bold; } */
+        
+        /* Style du lien actif (laissez-le même si non utilisé, au cas où vous changeriez d'avis) */
+        .sidebar-nav a.active { 
+            background-color: rgba(0,0,0,0.2); 
+            border-left:4px solid var(--accent-color); 
+            font-weight:bold; 
+        }
+        
         .sidebar-footer { margin-top:auto; padding:20px; text-align:center; border-top:1px solid rgba(255,255,255,0.1); }
         .sidebar-footer #user-name { font-weight:bold; display:block; }
         .sidebar-footer #user-department { font-size:0.9em; opacity:0.8; display:block; }
@@ -52,7 +67,7 @@
         .btn-primary:hover { background-color:#004d40; transform:translateY(-1px); box-shadow:0 4px 8px rgba(0,121,107,0.4); }
         .btn-danger { background-color:#d32f2f; color:var(--white-color); }
         .btn-danger:hover { background-color:#b71c1c; transform:translateY(-1px); }
-        /* 🎯 NOUVEAU STYLE POUR LA BARRE DE FILTRAGE */
+        /* Style pour la barre de filtrage */
         .search-bar { display:flex; gap:15px; margin-bottom:25px; align-items:center; }
         .search-bar input { flex-grow:1; padding:12px; font-size:1rem; border:1px solid var(--border-color); border-radius:var(--border-radius); }
         .search-bar select { padding:12px; border:1px solid var(--border-color); border-radius:var(--border-radius); min-width: 200px; }
@@ -60,8 +75,13 @@
         .data-table { width:100%; border-collapse:collapse; margin-top:20px; }
         .data-table th, .data-table td { padding:15px; text-align:left; border-bottom:1px solid var(--border-color); white-space:nowrap; }
         .data-table th { background-color:var(--background-color); font-weight:600; cursor:pointer; }
-        /* Styles pour l'historique non pertinent ici, la section historique est retirée au profit du filtre de statut */
-        @media (max-width:1024px) { :root { --sidebar-width:220px; } .content-area { padding:20px; } .main-header h2 { font-size:1.5rem; } }
+        
+        /* Media Queries */
+        @media (max-width:1024px) { 
+            :root { --sidebar-width:220px; } 
+            .content-area { padding:20px; } 
+            .main-header h2 { font-size:1.5rem; } 
+        }
         @media (max-width:768px) { 
             .sidebar { position:absolute; transform:translateX(-100%); } 
             .sidebar.open { transform:translateX(0); } 
@@ -120,32 +140,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // ----------------------------------------------------------------------
     // 🔹 VARIABLES GLOBALES
     // ----------------------------------------------------------------------
-    const navLinks = document.querySelectorAll('.nav-link');
     const contentSections = document.querySelectorAll('.content-section');
     const pageTitle = document.getElementById('page-title');
     const menuToggle = document.getElementById('menu-toggle');
     const sidebar = document.getElementById('sidebar');
     const searchInput = document.getElementById('search-dossier');
-    const statusFilter = document.getElementById('status-filter'); // 🎯 NOUVEAU
+    const statusFilter = document.getElementById('status-filter'); 
     const dossierListContainer = document.getElementById('dossier-list');
     
     const API_BASE_URL = 'https://moto-api-cika.onrender.com/api/dossier_admin';
     
     const storedUser = JSON.parse(localStorage.getItem('user'));
     
-    // ----------------------------------------------------------------------
-    // 🔹 SÉCURITÉ & VÉRIFICATION DE RÔLE (INITIALISATION)
-    // ----------------------------------------------------------------------
-    if (!localStorage.getItem('token') || !storedUser || storedUser.profil !== 'directeur_dd') {
-        alert("Accès non autorisé. Veuillez vous connecter comme Directeur Départemental.");
-        window.location.href = 'login.html'; // Redirection vers la page de connexion
-        return; 
-    }
-    
+   // ----------------------------------------------------------------------
+// 🔹 SÉCURITÉ & VÉRIFICATION DE RÔLE (INITIALISATION)
+// ----------------------------------------------------------------------
+const token = localStorage.getItem('token');
+const profil = (localStorage.getItem('utilisateur_profil') || '').toLowerCase().replace(/\s+/g, '_');
+
+if (!token || profil !== 'directeur_departemental') {
+    alert("Accès non autorisé. Veuillez vous connecter comme Directeur Départemental.");
+    window.location.href = 'login.html';
+    return;
+}
+
     // Mise à jour de la section footer avec les infos utilisateur
     function updateTraceability() {
         const userName = storedUser.nom || 'Directeur';
-        const departementNom = storedUser.departement_nom || 'N/A';
+        // Utilisé departement_id comme fallback si departement_nom n'est pas disponible.
+        const departementNom = storedUser.departement_nom || storedUser.departement_id || 'N/A'; 
         document.getElementById('user-name').textContent = userName;
         document.getElementById('user-department').textContent = `Directeur - Département du ${departementNom}`;
         document.title = `DD - ${departementNom} - Validation`;
@@ -153,18 +176,13 @@ document.addEventListener('DOMContentLoaded', function() {
     updateTraceability();
 
     // ----------------------------------------------------------------------
-    // 🔹 NAVIGATION (Simplifiée)
+    // 🔹 NAVIGATION
     // ----------------------------------------------------------------------
-    function switchView(targetId) {
-        contentSections.forEach(section => section.classList.remove('active'));
-        document.getElementById(targetId).classList.add('active');
-        // Le titre est mis à jour par loadDossiersAdmin()
-        if(window.innerWidth<=768) sidebar.classList.remove('open');
-    }
-
-    // Gestion du menu (reste simple)
+    
+    // Gestion du menu mobile
     menuToggle.addEventListener('click', ()=> sidebar.classList.toggle('open'));
     
+    // Déconnexion
     document.getElementById('nav-logout').addEventListener('click', (e) => {
         e.preventDefault();
         localStorage.clear();
@@ -172,76 +190,90 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 
-    // ----------------------------------------------------------------------
-    // 🔹 FONCTIONS DE TRAITEMENT (Valider/Rejeter)
-    // ----------------------------------------------------------------------
+    // ... (code précédent)
 
-    async function traiterDossier(dossierId, nouveauStatut) {
-        const token = localStorage.getItem('token');
-        // La raison n'est envoyée que si c'est un rejet
-        let bodyContent = { statut: nouveauStatut };
-        
-        // Simuler l'ajout de la raison pour le rejet
-        if (nouveauStatut === 'rejeté') {
-            const raison = prompt("Veuillez indiquer la raison du REJET :");
-            if (raison === null || raison.trim() === "") {
-                alert("Raison du rejet obligatoire.");
-                return;
-            }
-            bodyContent.raison_rejet = raison; // Assurez-vous que votre API backend supporte ce champ
+async function traiterDossier(dossierId, nouveauStatut) {
+    const token = localStorage.getItem('token');
+    let bodyContent = { statut: nouveauStatut };
+
+    // 🔹 Gérer la raison pour le rejet
+    if (nouveauStatut === 'rejeté') {
+        const raison = prompt("Veuillez indiquer la raison du REJET :");
+        if (raison === null || raison.trim() === "") {
+            alert("Raison du rejet obligatoire.");
+            return;
         }
-
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/${dossierId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(bodyContent)
-            });
-
-            const resData = await res.json();
-            
-            if (!res.ok) {
-                console.error(`Erreur: Statut ${res.status}`, resData);
-                throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
-            }
-
-            alert(`✅ Dossier ${resData.reference_dossier || dossierId} a été ${nouveauStatut} avec succès.`);
-            
-            // Recharger la liste
-            loadDossiersAdmin(searchInput.value); 
-
-        } catch (error) {
-            console.error(`❌ Échec de la mise à jour :`, error);
-            alert(`Échec de la mise à jour : ${error.message}`);
-        }
+        bodyContent.raison_rejet = raison;
     }
 
+    // 🔹 Gérer l'attribution d'immatriculation pour Directeur Départemental ou Admin
+    if (nouveauStatut === 'validé') {
+        const numeroImmat = prompt("Veuillez saisir le numéro d'immatriculation attribué :");
+        if (numeroImmat === null || numeroImmat.trim() === "") {
+            alert("Numéro d'immatriculation obligatoire.");
+            return;
+        }
+        bodyContent.numero_immatriculation = numeroImmat.trim();
+        bodyContent.valide = true; // pour que le backend traite comme validation DD
+    }
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/${dossierId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(bodyContent)
+        });
+
+        const resData = await res.json();
+
+        if (!res.ok) {
+            console.error(`Erreur: Statut ${res.status}`, resData);
+            throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
+        }
+
+        const referenceDossier = resData.reference_dossier || dossierId;
+        alert(`✅ Dossier ${referenceDossier} a été ${nouveauStatut} avec succès.`);
+
+        // 🎯 Redirection vers la page de carte grise si validé
+        if (nouveauStatut === 'validé') {
+            window.location.href = `carte_grise_PROVISOIRE_FINI1.html?ref=${encodeURIComponent(referenceDossier)}`;
+            return;
+        }
+
+        // 🔄 Recharger la liste pour les autres statuts
+        loadDossiersAdmin(searchInput.value);
+
+    } catch (error) {
+        console.error(`❌ Échec de la mise à jour :`, error);
+        alert(`Échec de la mise à jour : ${error.message}`);
+    }
+}
+
+
     // ----------------------------------------------------------------------
-    // 🔹 CHARGEMENT DE LA LISTE DES DOSSIERS (Filtrage par statut et recherche)
+    // 🔹 CHARGEMENT DE LA LISTE DES DOSSIERS
     // ----------------------------------------------------------------------
 
     async function loadDossiersAdmin(query = '') {
         const token = localStorage.getItem('token');
         dossierListContainer.innerHTML = "<p>Chargement des dossiers...</p>";
         
-        // 🎯 Lire le statut actuel sélectionné
         const currentStatus = statusFilter.value;
         
-        // Mettre à jour le titre de la page pour refléter le filtre
+        // Mettre à jour le titre de la page
         pageTitle.textContent = statusFilter.options[statusFilter.selectedIndex].text;
 
         try {
-            // Construction de l'URL avec les deux paramètres (search et statut)
+            // Construction de l'URL avec les paramètres search et statut
             let url = `${API_BASE_URL}?statut=${encodeURIComponent(currentStatus)}`;
             if (query) {
                 url += `&search=${encodeURIComponent(query)}`;
             }
             
-            // NOTE IMPORTANTE : Le filtre par DEPARTEMENT est géré CÔTÉ SERVEUR (dans req.user)
+            // Le filtre par DEPARTEMENT est supposé être géré CÔTÉ SERVEUR via le token
             
             const response = await fetch(url, {
                 headers: { "Authorization": `Bearer ${token}` }
@@ -294,25 +326,24 @@ document.addEventListener('DOMContentLoaded', function() {
             html+=`</tbody></table></div>`;
             dossierListContainer.innerHTML = html;
 
-            // 🔹 Attacher les Event Listeners aux nouveaux boutons
-            if (currentStatus === 'en_attente_validation_officielle') {
-                document.querySelectorAll('.btn-valider').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        if(confirm(`Voulez-vous VALIDER le dossier ${id} ? Cette action est irréversible.`)) {
-                            traiterDossier(id, 'validé');
-                        }
-                    });
-                });
-
-                document.querySelectorAll('.btn-rejeter').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        // Appeler la fonction traiterDossier qui gère le prompt de la raison
-                        traiterDossier(id, 'rejeté');
-                    });
-                });
+           // 🔹 Attacher les Event Listeners aux nouveaux boutons
+if (['en_attente_validation_officielle'].includes(currentStatus)) {
+    document.querySelectorAll('.btn-valider').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            if (confirm(`Voulez-vous VALIDER le dossier ${id} ? Cette action est irréversible.`)) {
+                traiterDossier(id, 'validé');
             }
+        });
+    });
+
+    document.querySelectorAll('.btn-rejeter').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.dataset.id;
+            traiterDossier(id, 'rejeté'); // gère le prompt de raison
+        });
+    });
+}
 
         }catch(err){ 
             console.error("Erreur de chargement des dossiers admin:", err);
@@ -321,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ----------------------------------------------------------------------
-    // 🔹 INITIALISATION ET ÉCOUTEURS
+    // 🔹 INITIALISATION ET ÉCOUTEURS DES FILTRES
     // ----------------------------------------------------------------------
     
     // Écouteur pour la recherche

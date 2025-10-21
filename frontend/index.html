@@ -674,7 +674,7 @@
                             <option value="" disabled="" selected="" hidden="" id="is79t">Sélectionnez un profil</option>
                             <option value="agent" id="ipyv6">Agent</option>
                             <option value="admin" id="iupdy">Admin</option>
-                            <option value="directeur departemental" id="ibbhj">Directeur Départemental</option>
+                            <option value="directeur_departemental" id="ibbhj">Directeur Départemental</option>
                             <option value="SD" id="i6dpx">Super Directeur</option>
                         </select>
                     </div>
@@ -810,27 +810,47 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage(`Bienvenue ${userName} dans l’univers de la FNI ! On vous souhaite un excellent travail`);
 
             // === Stockage des infos utilisateur dans localStorage ===
-            if (result && result.user) {
-                localStorage.setItem('user_id', result.user.id || '');
-                localStorage.setItem('utilisateur_nom', result.user.nom || data.nom || '');
-                localStorage.setItem('utilisateur_departement_id', result.user.departement_id || data.departement_id || '');
-                localStorage.setItem('utilisateur_departement_nom', departements[result.user.departement_id] || 'N/A');
-                localStorage.setItem('utilisateur_profil', result.user.profil || data.profil || '');
-                localStorage.setItem('token', result.token || '');
-                if (result.moto_id) localStorage.setItem('moto_id', result.moto_id);
-            }
+if (result && result.user) {
+    localStorage.setItem('user_id', result.user.id || '');
+    localStorage.setItem('utilisateur_nom', result.user.nom || data.nom || '');
+    localStorage.setItem('utilisateur_departement_id', result.user.departement_id || data.departement_id || '');
+    localStorage.setItem('utilisateur_departement_nom', departements[result.user.departement_id] || 'N/A');
+
+    // Normalisation du profil : tout en minuscules, espaces remplacés par '_'
+    const profilNormalise = (result.user.profil || data.profil || '').toLowerCase().replace(/\s+/g, '_');
+    localStorage.setItem('utilisateur_profil', profilNormalise);
+
+    localStorage.setItem('token', result.token || '');
+    if (result.moto_id) localStorage.setItem('moto_id', result.moto_id);
+}
+
 
             // === Redirection après 3 secondes pour laisser le temps de lire le message ===
-            setTimeout(() => {
-                switch (result.user.profil) {
-                    case 'admin': window.location.href = 'admin_dashboard.html'; break;
-                    case 'agent': window.location.href = 'agent_dashboard.html'; break;
-                    case 'directeur_departemental': window.location.href = 'directeur_dashboard.html'; break;
-                    case 'SD': window.location.href = 'sd_dashboard.html'; break;
-                    case 'super_directeur': window.location.href = 'super_directeur_dashboard.html'; break;
-                    default: window.location.href = 'index.html';
-                }
-            }, 5000);
+setTimeout(() => {
+    // Normalisation : minuscules et underscore
+    const profilNormalise = (result.user.profil || '').toLowerCase().replace(/\s+/g, '_');
+
+    switch (profilNormalise) {
+        case 'admin':
+            window.location.href = 'admin_dashboard.html';
+            break;
+        case 'agent':
+            window.location.href = 'agent_dashboard.html';
+            break;
+        case 'directeur_departemental':
+            window.location.href = 'directeur_dashboard.html';
+            break;
+        case 'sd':
+            window.location.href = 'sd_dashboard.html';
+            break;
+        case 'super_directeur':
+            window.location.href = 'super_directeur_dashboard.html';
+            break;
+        default:
+            window.location.href = 'index.html';
+    }
+}, 5000);
+
 
         } catch (error) {
             console.error('Erreur lors de la requête de connexion:', error);

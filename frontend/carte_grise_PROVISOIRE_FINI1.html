@@ -371,12 +371,12 @@
         <div class="bloc-droite">
             <p>RÉPUBLIQUE DU CONGO</p>
             <p class="devise">Unité - Travail - Progrès</p>
-            <img src="armoiries_congo.png" alt="Armoiries de la République du Congo" class="armoiries">
+            <img src="OIP-removebg-preview.png" alt="Armoiries de la République du Congo" class="armoiries">
         </div>
     </div>
 
     <header>
-        <h1>CERTIFICAT PROVISOIRE DE MISE EN <br> CIRCULATION D'UNE MOTO TAXI</h1>
+        <h1>CERTIFICAT OFFICIELLE DE MISE EN <br> CIRCULATION D'UNE MOTO TAXI</h1>
     </header>
 
     <div class="info-row">
@@ -466,172 +466,229 @@
 </div>
 
 <script>
-    // =========================================================
-    // PARAMÈTRES DE CONNEXION SUPABASE
-    // =========================================================
-    // 🛑 REMPLACEZ CES VALEURS PAR LES VÔTRES ! 🛑
-    const SUPABASE_URL = 'VOTRE_URL_SUPABASE_ICI'; 
-    const SUPABASE_ANON_KEY = 'VOTRE_CLE_ANON_ICI'; 
-    
-    // ID du dossier unique à charger. Modifiez ceci pour tester différents enregistrements.
-    const ID_DOSSIER_A_CHARGER = 1; 
+document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    const moto_id = localStorage.getItem('moto_id');
 
-    // =========================================================
-    // FONCTION POUR METTRE À JOUR LE CONTENU HTML
-    // =========================================================
-    /**
-     * Met à jour le contenu textuel d'un élément HTML par son ID.
-     * @param {string} id - L'ID de l'élément HTML.
-     * @param {string} value - La valeur à insérer.
-     */
-    function updateField(id, value) {
-        const element = document.getElementById(id);
-        
-        if (element && value !== undefined && value !== null) {
-            let textValue = String(value);
-
-            // Applique les majuscules aux champs d'identification clés
-            if (['nom', 'numero_chassis', 'serie_immatriculation'].includes(id)) {
-                textValue = textValue.toUpperCase();
-            }
-
-            // Gère le formatage des valeurs numériques pour les unités
-            if (id === 'puissance_admin' && !textValue.includes('CV')) {
-                 textValue = `${textValue} CV`;
-            } else if (id === 'cylindree' && !textValue.includes('cm3')) {
-                 textValue = `${textValue} cm3`;
-            } else if (['poids_charge_autorisee', 'poids_vide', 'charge_utile'].includes(id) && !textValue.includes('kg')) {
-                 textValue = `${textValue} kg`;
-            } else if (id === 'premiere_mise_circulation') {
-                // Extrait seulement l'année (4 chiffres) si la valeur est une date complète
-                textValue = textValue.substring(0, 4);
-            }
-
-            // Remplissage
-            element.textContent = textValue;
-            
-            // 🛑 GESTION DE LA COULEUR 🛑
-            if (id === 'numero_chassis') {
-                element.style.color = 'red';
-            } else if (id !== 'serie_immatriculation') { // N'écrase pas le vert de l'immatriculation
-                element.style.color = '#000';
-            }
-        }
+    if (!ref || !token) {
+        alert("⚠️ Référence ou token manquant. Connectez-vous.");
+        return;
     }
 
-    // =========================================================
-    // FONCTION DE CHARGEMENT DE DONNÉES (Table unique 'dossier')
-    // =========================================================
-    async function fetchDossier(id) {
-        // La route cible la table 'dossier' par son ID
-        const url = `${SUPABASE_URL}/rest/v1/dossier?id=eq.${id}&select=*`;
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-            }
-        });
+    try {
+        // 🔹 1️⃣ Récupération du dossier
+        const resDossier = await fetch(
+            `https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (!resDossier.ok) throw new Error(`Dossier introuvable (status: ${resDossier.status})`);
+        const { dossier } = await resDossier.json();
+        if (!dossier) throw new Error("Dossier introuvable");
 
-        if (!response.ok) {
-            console.error(`Erreur Supabase lors du fetch du dossier (Statut: ${response.status})`);
-            return null;
+        // 🔹 2️⃣ Récupération de la moto
+        const idMoto = moto_id || dossier.moto_id;
+        if (!idMoto) throw new Error("ID de la moto manquant");
+
+        const resMoto = await fetch(
+            `https://moto-api-cika.onrender.com/api/motos/${idMoto}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const motoData = await resMoto.json();
+        const moto = motoData.data || motoData.moto;
+        if (!moto) throw new Error("Moto introuvable");
+
+        // 🔹 3️⃣ Récupération du propriétaire
+        if (!dossier.proprietaire_id) throw new Error("ID du propriétaire manquant");
+        const resProp = await fetch(
+            `https://moto-api-cika.onrender.com/api/proprietaires/${dossier.proprietaire_id}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const proprietaire = await resProp.json();
+        if (!proprietaire) throw new Error("Propriétaire introuvable");
+
+        // 🔹 4️⃣ Attribution du numéro d'immatriculation
+        console.log("🚀 ID moto détecté :", moto.id);
+
+        const resImmat = await fetch(
+            `https://moto-api-cika.onrender.com/api/immatriculations/attribuer/${moto.id}`,
+            { 
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' 
+                }
+            }
+        );
+
+        if (!resImmat.ok) {
+            const text = await resImmat.text();
+            console.error("❌ Erreur API Immatriculation :", resImmat.status, text);
+            throw new Error(`Erreur API ${resImmat.status}: ${text}`);
         }
 
-        const data = await response.json();
-        // Retourne le premier enregistrement trouvé (le dossier unique)
-        return data.length > 0 ? data[0] : null;
+        const immatData = await resImmat.json();
+        const numeroImmat = immatData.numeroImmatriculation || immatData?.immatriculation?.numero_immatriculation;
+        console.log("✅ Numéro attribué :", numeroImmat);
+
+        // 🔹 5️⃣ Injection des données dans le DOM
+        document.getElementById('nom').textContent = proprietaire.nom || 'N/A';
+        document.getElementById('prenom').textContent = proprietaire.prenom || 'N/A';
+        document.getElementById('telephone').textContent = proprietaire.telephone || 'N/A';
+        document.getElementById('profession').textContent = proprietaire.profession || 'N/A';
+        document.getElementById('adresse').textContent = proprietaire.adresse || 'N/A';
+        document.getElementById('serie_immatriculation').textContent = numeroImmat || 'N/A';
+        document.getElementById('modele').textContent = moto.modele || '—';
+        document.getElementById('carrosserie').textContent = moto.carrosserie || '—';
+        document.getElementById('marque').textContent = moto.marque || '—';
+        document.getElementById('type').textContent = moto.type || '—';
+        document.getElementById('premiere_mise_circulation').textContent = moto.annee || '—';
+        document.getElementById('numero_chassis').textContent = moto.numero_chassis || '—';
+        document.getElementById('couleur').textContent = moto.couleur || '—';
+        document.getElementById('energie').textContent = moto.energie || '—';
+        document.getElementById('puissance_admin').textContent = `${moto.puissance_moteur || 0} CV`;
+        document.getElementById('cylindree').textContent = `${moto.cylindree || 0} cm³`;
+        document.getElementById('nombre_places').textContent = moto.places || '—';
+        document.getElementById('poids_charge_autorisee').textContent = `${moto.poids_charge || 0} kg`;
+        document.getElementById('poids_vide').textContent = `${moto.poids_vide || 0} kg`;
+        document.getElementById('charge_utile').textContent = `${moto.charge_utile || 0} kg`;
+        document.getElementById('reference_moteur').textContent = moto.reference_moteur || '—';
+        document.getElementById('immat_provisoire_info').textContent = numeroImmat;
+
+    } catch (err) {
+        alert("❌ Erreur lors de la récupération des données : " + err.message);
+        console.error(err);
     }
 
-
-    // =========================================================
-    // LOGIQUE PRINCIPALE D'AFFICHAGE
-    // =========================================================
-    async function loadDocumentData() {
-        if (SUPABASE_URL.includes('VOTRE_URL_SUPABASE_ICI')) {
-            console.error("ERREUR DE CONFIGURATION: Veuillez configurer SUPABASE_URL et SUPABASE_ANON_KEY dans le script.");
-            displayTestData();
-            return; 
+    // --------------------------------------------------------------
+// 🔹 Fonction utilitaire pour vérifier le token
+// --------------------------------------------------------------
+function isTokenValid(token) {
+    if (!token) return false;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) {
+            console.warn("Token expiré :", payload.exp);
+            return false;
         }
+        console.log("Payload JWT :", payload);
+        return true;
+    } catch (err) {
+        console.error("Erreur lors de la lecture du token :", err);
+        return false;
+    }
+}
 
-        const dossier = await fetchDossier(ID_DOSSIER_A_CHARGER);
+// --------------------------------------------------------------
+// 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin avec immatriculation
+// --------------------------------------------------------------
+const btnEnvoyer = document.getElementById('btn-envoyer');
 
-        if (!dossier) {
-            console.error("Dossier incomplet ou non trouvé pour l'ID:", ID_DOSSIER_A_CHARGER);
+if (btnEnvoyer) {
+    btnEnvoyer.addEventListener('click', async () => {
+        const token = localStorage.getItem('token');
+        const ref = new URLSearchParams(window.location.search).get('ref');
+        const numeroImmatriculationEl = document.getElementById('serie_immatriculation');
+        const immatriculationProv = numeroImmatriculationEl?.textContent?.trim();
+
+        // 🔹 Vérifications de base
+        if (!ref || !token) {
+            alert("⚠️ Référence ou token manquant pour la sauvegarde.");
             return;
         }
 
-        // --- 1. CHAMPS PROPRIÉTAIRE ---
-        updateField('nom', dossier.nom);
-        updateField('prenom', dossier.prenom);
-        updateField('telephone', dossier.telephone);
-        updateField('profession', dossier.profession);
-        updateField('adresse', `${dossier.adresse || ''}, ${dossier.ville || ''}`);
-        
-        // --- 2. CHAMPS VÉHICULE ---
-        updateField('serie_immatriculation', dossier.serie_immatriculation); 
-        updateField('modele', dossier.modele);
-        updateField('carrosserie', dossier.carrosserie);
-        updateField('marque', dossier.marque);
-        updateField('type', dossier.type);
-        updateField('premiere_mise_circulation', dossier.premiere_mise_circulation);
-        updateField('numero_chassis', dossier.numero_chassis);
-        updateField('couleur', dossier.couleur);
-        updateField('energie', dossier.energie);
-        
-        // --- 3. CHAMPS TECHNIQUES ---
-        updateField('puissance_admin', dossier.puissance_admin);
-        updateField('cylindree', dossier.cylindree);
-        updateField('nombre_places', dossier.nombre_places); 
-        updateField('poids_charge_autorisee', dossier.poids_charge_autorisee);
-        updateField('poids_vide', dossier.poids_vide);
-        updateField('charge_utile', dossier.charge_utile);
-        updateField('reference_moteur', dossier.reference_moteur);
+        if (!immatriculationProv || immatriculationProv === "SERIE D'IMMATRICULATION PROVISOIRE") {
+            alert("⚠️ Numéro de carte grise introuvable.");
+            return;
+        }
 
-        // --- 4. PIED DE PAGE (Date et Lieu) ---
-        const dateDelivrance = new Date(); 
-        updateField('departement_id', dossier.departement_id || dossier.ville || 'Brazzaville'); 
-        updateField('date_jour', dateDelivrance.getDate().toString().padStart(2, '0'));
-        updateField('date_mois', (dateDelivrance.getMonth() + 1).toString().padStart(2, '0'));
-        updateField('date_annee', dateDelivrance.getFullYear().toString().substring(2, 4)); 
-    }
-    
-    // Fonction d'affichage de données de test (Fallback)
-    function displayTestData() {
-        console.warn("Utilisation des données de test. Le document n'est pas connecté à Supabase.");
-        updateField('nom', 'OKANDZA');
-        updateField('prenom', 'Caleme Remy');
-        updateField('telephone', '065550101');
-        updateField('profession', 'COMMERCANT');
-        updateField('adresse', 'Ignie, Brazzaville');
-        updateField('serie_immatriculation', 'TAXI 001 A 4');
-        updateField('modele', 'SANILI');
-        updateField('carrosserie', 'MOTOCYCLES');
-        updateField('marque', 'KTM');
-        updateField('type', 'MOTOCYCLES');
-        updateField('premiere_mise_circulation', '2025');
-        updateField('numero_chassis', 'LP5PCJLFOR0806439');
-        updateField('couleur', 'Noire');
-        updateField('energie', 'essence');
-        updateField('puissance_admin', '01');
-        updateField('cylindree', '125');
-        updateField('nombre_places', '1/2');
-        updateField('poids_charge_autorisee', '300');
-        updateField('poids_vide', '150');
-        updateField('charge_utile', '150');
-        updateField('reference_moteur', 'MOT2025SN');
-        
-        const today = new Date();
-        updateField('departement_id', 'BRAZZAVILLE');
-        updateField('date_jour', today.getDate().toString().padStart(2, '0'));
-        updateField('date_mois', (today.getMonth() + 1).toString().padStart(2, '0'));
-        updateField('date_annee', today.getFullYear().toString().substring(2, 4));
-    }
+        if (!isTokenValid(token)) {
+            alert("⚠️ Token invalide ou expiré. Merci de vous reconnecter.");
+            return;
+        }
 
-    // Démarrage du chargement des données au chargement de la page
-    window.onload = loadDocumentData;
+        // 🔹 Désactiver le bouton pendant l'envoi
+        btnEnvoyer.disabled = true;
+        btnEnvoyer.textContent = 'Enregistrement en cours...';
+
+        try {
+            // 🔹 Vérifier que la référence existe dans la table dossier
+            const resCheck = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(ref)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!resCheck.ok) throw new Error(`Dossier introuvable (status: ${resCheck.status})`);
+
+            const dossierData = await resCheck.json();
+            if (!dossierData?.dossier) throw new Error("Le dossier principal est introuvable");
+
+            // 🔹 Log pour debug
+            console.log("DEBUG: Dossier trouvé pour UPSERT", dossierData.dossier);
+
+            // 🔹 Appel API pour ajouter ou mettre à jour le dossier admin
+            const res = await fetch('https://moto-api-cika.onrender.com/api/dossier_admin', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    reference_dossier: ref,
+                    immatriculation_prov: immatriculationProv,
+                    statut: 'envoyé'
+                })
+            });
+
+            const resData = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                console.error("DEBUG: Erreur API dossier_admin", resData);
+                throw new Error(`Erreur API: Statut ${res.status} - ${resData.message || 'Pas de détail'}`);
+            }
+
+            // 🔹 Succès
+            const message = resData?.statut === 'envoyé'
+                ? '✅ Certificat enregistré et envoyé pour validation.'
+                : '✅ Certificat mis à jour avec succès.';
+
+            alert(message);
+            btnEnvoyer.textContent = '✅ ENREGISTRÉ';
+
+        } catch (err) {
+            // 🔹 Gestion d'erreur
+            console.error("❌ ERREUR ENVOYER DossierAdmin:", err);
+            alert('❌ Erreur lors de la sauvegarde : ' + err.message);
+            btnEnvoyer.textContent = '❌ Erreur! Réessayer';
+            btnEnvoyer.disabled = false;
+        }
+    });
+}
+
+// 🔹 Vérification du token
+function isTokenValid(token) {
+    if (!token) return false;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        if (payload.exp && payload.exp < now) return false;
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+
+
+// --------------------------------------------------------------
+// 🔹 Bouton IMPRIMER
+// --------------------------------------------------------------
+const btnImprimer = document.getElementById('btn-imprimer');
+if (btnImprimer) {
+    btnImprimer.addEventListener('click', () => window.print());
+}
+
+});
 </script>
 
 </body>
