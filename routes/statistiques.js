@@ -7,7 +7,7 @@ const router = express.Router()
 
 // Seuls admin, SD et directeurs peuvent voir les stats
 router.get(
-  '/stats',
+  '/statistiques',
   verifyToken,
   checkRole(['admin', 'SD', 'directeur departemental']),
   getStatistiques
