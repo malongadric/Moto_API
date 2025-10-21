@@ -152,22 +152,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const storedUser = JSON.parse(localStorage.getItem('user'));
     
-   // ----------------------------------------------------------------------
-// 🔹 SÉCURITÉ & VÉRIFICATION DE RÔLE (INITIALISATION)
-// ----------------------------------------------------------------------
-const token = localStorage.getItem('token');
-const profil = (localStorage.getItem('utilisateur_profil') || '').toLowerCase().replace(/\s+/g, '_');
+    // ----------------------------------------------------------------------
+    // 🔹 SÉCURITÉ & VÉRIFICATION DE RÔLE
+    // ----------------------------------------------------------------------
+    const token = localStorage.getItem('token');
+    const profil = (localStorage.getItem('utilisateur_profil') || '').toLowerCase().replace(/\s+/g, '_');
 
-if (!token || profil !== 'directeur_departemental') {
-    alert("Accès non autorisé. Veuillez vous connecter comme Directeur Départemental.");
-    window.location.href = 'login.html';
-    return;
-}
+    if (!token || profil !== 'directeur_departemental') {
+        alert("Accès non autorisé. Veuillez vous connecter comme Directeur Départemental.");
+        window.location.href = 'login.html';
+        return;
+    }
 
     // Mise à jour de la section footer avec les infos utilisateur
     function updateTraceability() {
         const userName = storedUser.nom || 'Directeur';
-        // Utilisé departement_id comme fallback si departement_nom n'est pas disponible.
         const departementNom = storedUser.departement_nom || storedUser.departement_id || 'N/A'; 
         document.getElementById('user-name').textContent = userName;
         document.getElementById('user-department').textContent = `Directeur - Département du ${departementNom}`;
@@ -178,112 +177,87 @@ if (!token || profil !== 'directeur_departemental') {
     // ----------------------------------------------------------------------
     // 🔹 NAVIGATION
     // ----------------------------------------------------------------------
-    
-    // Gestion du menu mobile
     menuToggle.addEventListener('click', ()=> sidebar.classList.toggle('open'));
     
-    // Déconnexion
     document.getElementById('nav-logout').addEventListener('click', (e) => {
         e.preventDefault();
         localStorage.clear();
         window.location.href = 'login.html';
     });
 
+    // ----------------------------------------------------------------------
+    // 🔹 TRAITER UN DOSSIER (VALIDATION / REJET)
+    // ----------------------------------------------------------------------
+    async function traiterDossier(dossierId, nouveauStatut, numeroImmatriculation = null) {
+        let bodyContent = { statut: nouveauStatut };
 
-    // ... (code précédent)
-
-async function traiterDossier(dossierId, nouveauStatut) {
-    const token = localStorage.getItem('token');
-    let bodyContent = { statut: nouveauStatut };
-
-    // 🔹 Gérer la raison pour le rejet
-    if (nouveauStatut === 'rejeté') {
-        const raison = prompt("Veuillez indiquer la raison du REJET :");
-        if (raison === null || raison.trim() === "") {
-            alert("Raison du rejet obligatoire.");
-            return;
-        }
-        bodyContent.raison_rejet = raison;
-    }
-
-    // 🔹 Gérer l'attribution d'immatriculation pour Directeur Départemental ou Admin
-    if (nouveauStatut === 'validé') {
-        const numeroImmat = prompt("Veuillez saisir le numéro d'immatriculation attribué :");
-        if (numeroImmat === null || numeroImmat.trim() === "") {
-            alert("Numéro d'immatriculation obligatoire.");
-            return;
-        }
-        bodyContent.numero_immatriculation = numeroImmat.trim();
-        bodyContent.valide = true; // pour que le backend traite comme validation DD
-    }
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/${dossierId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(bodyContent)
-        });
-
-        const resData = await res.json();
-
-        if (!res.ok) {
-            console.error(`Erreur: Statut ${res.status}`, resData);
-            throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
+        // 🔹 Rejet avec raison obligatoire
+        if (nouveauStatut === 'rejeté') {
+            const raison = prompt("Veuillez indiquer la raison du REJET :");
+            if (!raison || !raison.trim()) {
+                alert("Raison du rejet obligatoire.");
+                return;
+            }
+            bodyContent.raison_rejet = raison;
         }
 
-        const referenceDossier = resData.reference_dossier || dossierId;
-        alert(`✅ Dossier ${referenceDossier} a été ${nouveauStatut} avec succès.`);
-
-        // 🎯 Redirection vers la page de carte grise si validé
+        // 🔹 Validation avec numéro provisoire de l'admin
         if (nouveauStatut === 'validé') {
-            window.location.href = `carte_grise_PROVISOIRE_FINI1.html?ref=${encodeURIComponent(referenceDossier)}`;
-            return;
+            if (!numeroImmatriculation) {
+                alert("⚠️ Numéro d'immatriculation manquant.");
+                return;
+            }
+            bodyContent.numero_immatriculation = numeroImmatriculation;
+            bodyContent.valide = true;
         }
 
-        // 🔄 Recharger la liste pour les autres statuts
-        loadDossiersAdmin(searchInput.value);
+        try {
+            const res = await fetch(`${API_BASE_URL}/${dossierId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(bodyContent)
+            });
 
-    } catch (error) {
-        console.error(`❌ Échec de la mise à jour :`, error);
-        alert(`Échec de la mise à jour : ${error.message}`);
+            const resData = await res.json();
+
+            if (!res.ok) throw new Error(resData.message || `Erreur API: Statut ${res.status}`);
+
+            alert(`✅ Dossier ${resData.reference_dossier || dossierId} a été ${nouveauStatut} avec succès.`);
+
+            if (nouveauStatut === 'validé') {
+                window.location.href = `carte_grise_PROVISOIRE_FINI1.html?ref=${encodeURIComponent(resData.reference_dossier || dossierId)}`;
+                return;
+            }
+
+            loadDossiersAdmin(searchInput.value);
+
+        } catch (error) {
+            console.error("❌ Échec de la mise à jour :", error);
+            alert(`Échec de la mise à jour : ${error.message}`);
+        }
     }
-}
-
 
     // ----------------------------------------------------------------------
     // 🔹 CHARGEMENT DE LA LISTE DES DOSSIERS
     // ----------------------------------------------------------------------
-
     async function loadDossiersAdmin(query = '') {
-        const token = localStorage.getItem('token');
         dossierListContainer.innerHTML = "<p>Chargement des dossiers...</p>";
-        
         const currentStatus = statusFilter.value;
-        
-        // Mettre à jour le titre de la page
         pageTitle.textContent = statusFilter.options[statusFilter.selectedIndex].text;
 
         try {
-            // Construction de l'URL avec les paramètres search et statut
             let url = `${API_BASE_URL}?statut=${encodeURIComponent(currentStatus)}`;
-            if (query) {
-                url += `&search=${encodeURIComponent(query)}`;
-            }
-            
-            // Le filtre par DEPARTEMENT est supposé être géré CÔTÉ SERVEUR via le token
-            
-            const response = await fetch(url, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+            if (query) url += `&search=${encodeURIComponent(query)}`;
 
+            const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
             if (!response.ok) throw new Error("Échec de la récupération des dossiers.");
 
             const dossiers = await response.json();
-            
-            if (dossiers.length === 0) {
+
+            if (!dossiers.length) {
                 dossierListContainer.innerHTML = `<p>Aucun dossier trouvé pour ce statut dans votre département.</p>`;
                 return;
             }
@@ -296,11 +270,11 @@ async function traiterDossier(dossierId, nouveauStatut) {
                 <th>Date Saisie</th>
                 <th>Actions</th>
                 </tr></thead><tbody>`;
-            
+
             dossiers.forEach(dossier => {
                 const moto = dossier.motos || {};
                 const dateSaisie = new Date(dossier.date_creation).toLocaleDateString('fr-FR');
-                
+
                 html+=`<tr>
                     <td>${dossier.reference_dossier}</td>
                     <td>${dossier.immatriculation_prov}</td>
@@ -308,64 +282,74 @@ async function traiterDossier(dossierId, nouveauStatut) {
                     <td>${dossier.acteur_type || 'N/A'}</td>
                     <td>${dateSaisie}</td>
                     <td>`;
-                
-                // Afficher les boutons d'action SEULEMENT si le statut est "en attente"
+
                 if (currentStatus === 'en_attente_validation_officielle') {
                     html += `<button class="btn btn-primary btn-valider" data-id="${dossier.id}">Valider</button>
                              <button class="btn btn-danger btn-rejeter" data-id="${dossier.id}">Rejeter</button>`;
                 } else {
                     html += `<span style="font-weight:bold;">${dossier.statut.toUpperCase()}</span>`; 
-                    if (dossier.raison_rejet) {
-                        html += ` <small>(Raison: ${dossier.raison_rejet})</small>`;
-                    }
+                    if (dossier.raison_rejet) html += ` <small>(Raison: ${dossier.raison_rejet})</small>`;
                 }
-                
+
                 html += `</td></tr>`;
             });
-            
+
             html+=`</tbody></table></div>`;
             dossierListContainer.innerHTML = html;
 
-           // 🔹 Attacher les Event Listeners aux nouveaux boutons
-if (['en_attente_validation_officielle'].includes(currentStatus)) {
-    document.querySelectorAll('.btn-valider').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.id;
-            if (confirm(`Voulez-vous VALIDER le dossier ${id} ? Cette action est irréversible.`)) {
-                traiterDossier(id, 'validé');
+            // 🔹 Event Listeners pour Valider / Rejeter
+            if (currentStatus === 'en_attente_validation_officielle') {
+                document.querySelectorAll('.btn-valider').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const id = btn.dataset.id;
+                        if (!confirm(`Voulez-vous VALIDER le dossier ${id} ?`)) return;
+
+                        try {
+                            // Récupère le numéro provisoire
+                            const dossierRes = await fetch(`${API_BASE_URL}/${id}`, {
+                                headers: { "Authorization": `Bearer ${token}` }
+                            });
+                            if (!dossierRes.ok) throw new Error("Impossible de récupérer le dossier.");
+
+                            const dossierData = await dossierRes.json();
+                            if (!dossierData.immatriculation_provisoire) {
+                                alert("⚠️ Aucune immatriculation provisoire attribuée par l'admin.");
+                                return;
+                            }
+
+                            await traiterDossier(id, 'validé', dossierData.immatriculation_provisoire);
+
+                        } catch (err) {
+                            console.error("Erreur lors de la validation :", err);
+                            alert("Erreur lors de la validation du dossier.");
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.btn-rejeter').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.id;
+                        traiterDossier(id, 'rejeté');
+                    });
+                });
             }
-        });
-    });
 
-    document.querySelectorAll('.btn-rejeter').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const id = btn.dataset.id;
-            traiterDossier(id, 'rejeté'); // gère le prompt de raison
-        });
-    });
-}
-
-        }catch(err){ 
+        } catch (err) {
             console.error("Erreur de chargement des dossiers admin:", err);
-            dossierListContainer.innerHTML="<p style='color:red;'>Erreur de chargement des dossiers: " + err.message + "</p>"; 
+            dossierListContainer.innerHTML = `<p style='color:red;'>Erreur de chargement des dossiers: ${err.message}</p>`; 
         }
     }
-    
+
     // ----------------------------------------------------------------------
     // 🔹 INITIALISATION ET ÉCOUTEURS DES FILTRES
     // ----------------------------------------------------------------------
-    
-    // Écouteur pour la recherche
     searchInput.addEventListener('input', () => loadDossiersAdmin(searchInput.value));
-    
-    // Écouteur pour le changement de statut
     statusFilter.addEventListener('change', () => loadDossiersAdmin(searchInput.value)); 
-    
-    // Chargement initial au lancement de la page
     loadDossiersAdmin(); 
 
 });
 </script>
+
 
 </body>
 </html>
