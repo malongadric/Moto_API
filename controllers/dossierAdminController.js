@@ -239,3 +239,49 @@ export const deleteDossierAdmin = async (req, res) => {
         res.status(500).json({ message: "Erreur serveur suppression dossier admin", error: err.message });
     }
 };
+
+// 🔹 Valider officiellement un dossier (Directeur Départemental)
+export const validerOfficiel = async (req, res) => {
+    try {
+        const { id } = req.body; // ID du dossier à valider
+        if (!id) return res.status(400).json({ message: "ID du dossier manquant" });
+
+        // 🔹 Récupérer le dossier
+        const { data: dossier, error: getError } = await supabase
+            .from('dossier_admin')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (getError || !dossier) {
+            console.error("SUPABASE ERROR (validerOfficiel - get):", getError);
+            return res.status(404).json({ message: "Dossier admin non trouvé" });
+        }
+
+        // 🔹 Vérifier profil de l'utilisateur
+        if (req.user.profil !== 'directeur_departemental') {
+            return res.status(403).json({ message: "Accès refusé. Profil non autorisé." });
+        }
+
+        // 🔹 Mettre à jour le statut
+        const { data, error } = await supabase
+            .from('dossier_admin')
+            .update({ 
+                statut: 'en_attente_validation_officielle',
+                date_mise_a_jour: new Date()
+            })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error("SUPABASE ERROR (validerOfficiel - update):", error);
+            return res.status(500).json({ message: "Erreur mise à jour statut", error: error.message });
+        }
+
+        res.status(200).json({ message: "Dossier validé officiellement ✅", dossier: data[0] });
+
+    } catch (err) {
+        console.error("SERVER ERROR (validerOfficiel):", err);
+        res.status(500).json({ message: "Erreur serveur validation officielle", error: err.message });
+    }
+};
