@@ -14,7 +14,7 @@ router.post('/login', loginLimiter, login)
 router.get(
   '/users',
   verifyToken,
-  checkRole(['admin','directeur departemental','SD','super_directeur']),
+  checkRole(['admin','directeur_departemental','SD','super_directeur']),
   getUsers
 )
 
