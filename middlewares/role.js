@@ -8,7 +8,7 @@ export const ROLE_HIERARCHY = {
   super_directeur: 4,
   SD: 3,
   admin: 2,
-  directeur_departemental: 2,
+  'directeur departemental': 2,
   agent: 1,
   agent_saisie: 1
 };
@@ -25,7 +25,7 @@ const PERMISSIONS = {
   super_directeur: ['read_all_stats', 'manage_users', 'manage_departments'],
   SD: ['read_all_stats', 'manage_users'],
   admin: ['read_stats', 'manage_users', 'assign_immatriculation'],
-  directeur_departemental: ['read_stats_department', 'validate_carte_grise'],
+  'directeur departemental': ['read_stats_department', 'validate_carte_grise'],
   agent: ['create_dossier', 'view_own_dossiers'],
   agent_saisie: ['create_dossier']
 };

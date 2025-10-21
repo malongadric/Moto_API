@@ -1,7 +1,7 @@
 // controllers/dossierAdminController.js
 import supabase from "../config/db.js"; 
 
-// 🔹 Récupérer tous les dossiers admin
+// 🔹 Récupérer tous les dossiers admin (avec filtre départemental pour le DD)
 export const getDossiersAdmin = async (req, res) => {
     try {
         let query = supabase
@@ -12,10 +12,42 @@ export const getDossiersAdmin = async (req, res) => {
             `)
             .order('date_creation', { ascending: false });
 
-        // Si l'utilisateur est directeur départemental, filtrer par statut
+        // 🛑 NOUVEAU : Récupération des filtres du Query String (pour le statut et la recherche)
+        const { statut, search } = req.query;
+
+        // 🎯 LOGIQUE DE FILTRAGE PAR PROFIL 🎯
         if (req.user.profil === 'directeur_dd') {
-            query = query.eq('statut', 'en_attente_validation_officielle');
+            // 1. FILTRE OBLIGATOIRE : Par département de l'utilisateur
+            const userDepartementId = req.user.departement_id;
+            
+            if (!userDepartementId) {
+                 return res.status(403).json({ 
+                    message: "Accès refusé. L'identifiant de département est manquant dans le profil." 
+                 });
+            }
+            
+            // Appliquer le filtre de département
+            query = query.eq('departement_id', userDepartementId);
+            
+            // 2. FILTRE OPTIONNEL (par défaut 'en_attente_validation_officielle' si le DD ne spécifie rien)
+            const statutFilter = statut || 'en_attente_validation_officielle';
+            query = query.eq('statut', statutFilter);
+
+        } else if (req.user.profil === 'admin') {
+            // Si c'est un Super Admin, il peut utiliser le filtre 'statut' s'il le souhaite
+            if (statut) {
+                query = query.eq('statut', statut);
+            }
         }
+        
+        // 3. FILTRE DE RECHERCHE (optionnel pour tous les profils)
+        if (search) {
+             // Supabase a un filtre 'ilike' (case-insensitive search)
+             query = query.or(`reference_dossier.ilike.%${search}%,motos.numero_chassis.ilike.%${search}%`); 
+             // Note : Le filtre sur les relations (motos) pourrait nécessiter des politiques RLS spécifiques
+             // ou un contournement si le filtre direct ne fonctionne pas bien avec Supabase.
+        }
+
 
         const { data, error } = await query;
         if (error) {
