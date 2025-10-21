@@ -372,10 +372,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     const ref = new URLSearchParams(window.location.search).get('ref');
-    const moto_id = localStorage.getItem('moto_id'); // récupéré depuis la page précédente
+    const moto_id = localStorage.getItem('moto_id');
 
     if (!ref || !token) {
-        return alert("⚠️ Référence ou token manquant. Connectez-vous.");
+        alert("⚠️ Référence ou token manquant. Connectez-vous.");
+        return;
     }
 
     try {
@@ -385,12 +386,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             { headers: { 'Authorization': `Bearer ${token}` } }
         );
         if (!resDossier.ok) throw new Error(`Dossier introuvable (status: ${resDossier.status})`);
-        const dossierData = await resDossier.json();
-        const dossier = dossierData.dossier;
+        const { dossier } = await resDossier.json();
         if (!dossier) throw new Error("Dossier introuvable");
 
-        // 🔹 2️⃣ Récupération de la moto via localStorage ou dossier
-        let moto = null;
+        // 🔹 2️⃣ Récupération de la moto
         const idMoto = moto_id || dossier.moto_id;
         if (!idMoto) throw new Error("ID de la moto manquant");
 
@@ -399,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const motoData = await resMoto.json();
-        moto = motoData.data || motoData.moto;
+        const moto = motoData.data || motoData.moto;
         if (!moto) throw new Error("Moto introuvable");
 
         // 🔹 3️⃣ Récupération du propriétaire
@@ -411,37 +410,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         const proprietaire = await resProp.json();
         if (!proprietaire) throw new Error("Propriétaire introuvable");
 
-        // 🔹 4️⃣ Génération automatique de l'immatriculation
-console.log("🚀 ID moto détecté :", moto.id);
+        // 🔹 4️⃣ Attribution du numéro d'immatriculation
+        console.log("🚀 ID moto détecté :", moto.id);
 
-const resImmat = await fetch(
-  `https://moto-api-cika.onrender.com/api/immatriculations/attribuer/${moto.id}`,
-  { 
-    method: 'POST',
-    headers: { 
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json' 
-    }
-  }
-);
+        const resImmat = await fetch(
+            `https://moto-api-cika.onrender.com/api/immatriculations/attribuer/${moto.id}`,
+            { 
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json' 
+                }
+            }
+        );
 
-// ✅ Vérifie d’abord si la réponse est OK avant de parser le JSON
-if (!resImmat.ok) {
-  const text = await resImmat.text();
-  console.error("❌ Erreur API Immatriculation :", resImmat.status, text);
-  throw new Error(`Erreur API ${resImmat.status}: ${text}`);
-}
+        if (!resImmat.ok) {
+            const text = await resImmat.text();
+            console.error("❌ Erreur API Immatriculation :", resImmat.status, text);
+            throw new Error(`Erreur API ${resImmat.status}: ${text}`);
+        }
 
-const immat = await resImmat.json();
-console.log("✅ Numéro attribué :", immat.numeroImmatriculation);
+        const immatData = await resImmat.json();
+        const numeroImmat = immatData.numeroImmatriculation || immatData?.immatriculation?.numero_immatriculation;
+        console.log("✅ Numéro attribué :", numeroImmat);
 
-        // 🔹 5️⃣ Injection des données dans le design
+        // 🔹 5️⃣ Injection des données dans le DOM
         document.getElementById('nom').textContent = proprietaire.nom || 'N/A';
         document.getElementById('prenom').textContent = proprietaire.prenom || 'N/A';
         document.getElementById('telephone').textContent = proprietaire.telephone || 'N/A';
         document.getElementById('profession').textContent = proprietaire.profession || 'N/A';
         document.getElementById('adresse').textContent = proprietaire.adresse || 'N/A';
-        document.getElementById('serie_immatriculation').textContent = immat.numeroImmatriculation || 'N/A';
+        document.getElementById('serie_immatriculation').textContent = numeroImmat || 'N/A';
         document.getElementById('modele').textContent = moto.modele || '—';
         document.getElementById('carrosserie').textContent = moto.carrosserie || '—';
         document.getElementById('marque').textContent = moto.marque || '—';
@@ -457,68 +456,57 @@ console.log("✅ Numéro attribué :", immat.numeroImmatriculation);
         document.getElementById('poids_vide').textContent = `${moto.poids_vide || 0} kg`;
         document.getElementById('charge_utile').textContent = `${moto.charge_utile || 0} kg`;
         document.getElementById('reference_moteur').textContent = moto.reference_moteur || '—';
-        document.getElementById('immat_provisoire_info').textContent = dossier.immatriculation_prov || '—';
+        document.getElementById('immat_provisoire_info').textContent = numeroImmat;
 
     } catch (err) {
         alert("❌ Erreur lors de la récupération des données : " + err.message);
         console.error(err);
-        // Les champs restent sur leurs valeurs par défaut ou 'N/A'
     }
 
     // --------------------------------------------------------------
-    // 🔹 6️⃣ Bouton ENVOYER / Sauvegarde dans dossier_admin
+    // 🔹 Bouton ENVOYER / Sauvegarde dans dossier_admin
     // --------------------------------------------------------------
     const btnEnvoyer = document.getElementById('btn-envoyer');
     if (btnEnvoyer) {
         btnEnvoyer.addEventListener('click', async () => {
             const token = localStorage.getItem('token');
             const ref = new URLSearchParams(window.location.search).get('ref');
-            
-            // On vérifie que les données critiques sont là
+
             if (!ref || !token) return alert("⚠️ Référence ou token manquant pour la sauvegarde.");
 
-            // Optionnel : Désactiver le bouton pendant le traitement
             btnEnvoyer.disabled = true;
             btnEnvoyer.textContent = 'Enregistrement en cours...';
 
             try {
-                // Requête pour stocker le statut dans dossier_admin
                 const res = await fetch('https://moto-api-cika.onrender.com/api/dossier_admin', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json', 
                         'Authorization': `Bearer ${token}` 
                     },
-                    // On envoie la référence du dossier et le nouveau statut
                     body: JSON.stringify({ reference_dossier: ref, statut: 'envoyé' })
                 });
-                
+
                 if (!res.ok) throw new Error(`Erreur API: Statut ${res.status}`);
-                
-                // Si la sauvegarde réussit
+
                 alert('✅ Certificat enregistré avec succès et envoyé pour validation.');
                 btnEnvoyer.textContent = '✅ ENREGISTRÉ';
-                // Optionnel : Rediriger l'utilisateur
-                // window.location.href = '/dossiers.html'; 
 
             } catch (err) {
                 alert('❌ Erreur lors de la sauvegarde : ' + err.message);
                 console.error(err);
                 btnEnvoyer.textContent = '❌ Erreur! Réessayer';
-                btnEnvoyer.disabled = false; // Réactiver si échec
+                btnEnvoyer.disabled = false;
             }
         });
     }
 
     // --------------------------------------------------------------
-    // 🔹 7️⃣ Bouton IMPRIMER
+    // 🔹 Bouton IMPRIMER
     // --------------------------------------------------------------
     const btnImprimer = document.getElementById('btn-imprimer');
     if (btnImprimer) {
-        btnImprimer.addEventListener('click', () => {
-            // Déclenche l'impression/sauvegarde en PDF
-            window.print();
-        });
+        btnImprimer.addEventListener('click', () => window.print());
     }
 });
 </script>
