@@ -41,10 +41,14 @@ export const getDossierAdminById = async (req, res) => {
                 *, 
                 motos(numero_chassis, marque, modele, numero_immatriculation)
             `)
-            .eq('dossier_admin_id', id)
+            // CORRECTION : utilise 'id' comme nouvelle clé primaire
+            .eq('id', id) 
             .single();
 
         if (error) {
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({ message: "Dossier admin non trouvé." });
+            }
             console.error("SUPABASE ERROR (getDossierAdminById):", error);
             return res.status(500).json({ message: "Erreur récupération dossier admin", error: error.message });
         }
@@ -72,21 +76,26 @@ export const addDossierAdmin = async (req, res) => {
         const acteur_id = req.user.id;
         const acteur_type = req.user.profil;
 
-        // 🔹 Étape 1 : Récupérer le dossier principal
+        // 🔹 Étape 1 : Récupérer le dossier principal pour obtenir moto_id
         const { data: dossierPrincipal, error: dossierError } = await supabase
             .from('dossier')
-            .select('dossier_id, moto_id')
+            // Remarque : 'dossier_id' n'est probablement pas nécessaire ici, seul 'moto_id' l'est.
+            .select('moto_id') 
             .eq('reference_dossier', reference_dossier)
             .single();
 
         if (dossierError || !dossierPrincipal) {
             console.error("SUPABASE ERROR (findDossier):", dossierError);
-            return res.status(404).json({ message: "Dossier principal introuvable." });
+            if (dossierError && dossierError.code === 'PGRST116') {
+                 return res.status(404).json({ message: "Dossier principal introuvable (Référence inconnue)." });
+            }
+            return res.status(500).json({ message: "Erreur serveur lors de la recherche du dossier principal.", error: dossierError?.message });
         }
 
-        const { dossier_id, moto_id } = dossierPrincipal;
+        const { moto_id } = dossierPrincipal;
+        // Si vous avez besoin d'une autre colonne de la table 'dossier', utilisez : const { id: dossier_fk_id, moto_id } = dossierPrincipal; 
 
-        // 🔹 Étape 2 : Vérifier la moto
+        // 🔹 Étape 2 : Vérifier la moto (intégrité FK)
         const { data: motoData, error: motoError } = await supabase
             .from('motos')
             .select('id')
@@ -95,10 +104,10 @@ export const addDossierAdmin = async (req, res) => {
 
         if (motoError || !motoData) {
             console.error("SUPABASE ERROR (checkMotoId):", motoError);
-            return res.status(404).json({ message: `Moto ID ${moto_id} introuvable.` });
+            return res.status(404).json({ message: `Erreur FK : Moto ID ${moto_id} introuvable.` });
         }
 
-        // 🔹 Étape 3 : Vérifier l'acteur
+        // 🔹 Étape 3 : Vérifier l'acteur (intégrité FK)
         const { data: userData, error: userError } = await supabase
             .from('utilisateurs')
             .select('id')
@@ -107,7 +116,7 @@ export const addDossierAdmin = async (req, res) => {
 
         if (userError || !userData) {
             console.error("SUPABASE ERROR (checkActeurId):", userError);
-            return res.status(401).json({ message: `Acteur ID ${acteur_id} introuvable ou invalide.` });
+            return res.status(401).json({ message: `Erreur FK : Acteur ID ${acteur_id} introuvable ou invalide.` });
         }
 
         // 🔹 Étape 4 : UPSERT dans dossier_admin (clé unique reference_dossier)
@@ -116,14 +125,15 @@ export const addDossierAdmin = async (req, res) => {
             .upsert(
                 {
                     reference_dossier, // clé unique pour UPSERT
-                    dossier_id,
                     moto_id,
                     acteur_id,
                     acteur_type,
                     immatriculation_prov,
                     statut
+                    // Si votre nouvelle table a une FK vers la table 'dossier', incluez-la ici.
+                    // Par exemple : dossier_fk_id, 
                 },
-                { onConflict: 'reference_dossier' } // utiliser reference_dossier comme unique
+                { onConflict: 'reference_dossier' } // utiliser reference_dossier comme clé d'unicité
             )
             .select();
 
@@ -159,7 +169,8 @@ export const updateDossierAdmin = async (req, res) => {
         const { data, error } = await supabase
             .from('dossier_admin')
             .update(updateObject)
-            .eq('dossier_admin_id', id)
+            // CORRECTION : utilise 'id' comme nouvelle clé primaire
+            .eq('id', id)
             .select();
 
         if (error) {
@@ -186,7 +197,8 @@ export const deleteDossierAdmin = async (req, res) => {
         const { data, error } = await supabase
             .from('dossier_admin')
             .delete()
-            .eq('dossier_admin_id', id)
+            // CORRECTION : utilise 'id' comme nouvelle clé primaire
+            .eq('id', id)
             .select();
 
         if (error) {
