@@ -26,7 +26,7 @@ const getCode = (profil, departement_id) => {
   switch(profil){
     case 'agent': return `${departementPart}B`
     case 'admin': return `${departementPart}D`
-    case 'directeur departemental': return `${departementPart}DD`
+    case 'directeur_departemental': return `${departementPart}DD`
     case 'SD': return `${departementPart}S`
     case 'super_directeur': return `${departementPart}SD`
     default: return ''
@@ -80,7 +80,7 @@ export const login = async (req, res) => {
       switch(profil){
         case 'agent': return `${departementPart}B`;
         case 'admin': return `${departementPart}D`;
-        case 'directeur departemental': return `${departementPart}DD`;
+        case 'directeur_departemental': return `${departementPart}DD`;
         case 'SD': return `${departementPart}S`;
         case 'super_directeur': return `${departementPart}SD`;
         default: return '';
@@ -124,7 +124,7 @@ export const getUsers = async (req, res) => {
     const { filter } = req.query
 
     // Accès limité à admin / DD / SD / super_directeur
-    if (!['admin','directeur departemental','SD','super_directeur'].includes(profil)) {
+    if (!['admin','directeur_departemental','SD','super_directeur'].includes(profil)) {
       return res.status(403).json({ message: 'Accès refusé' })
     }
 
@@ -140,7 +140,7 @@ export const getUsers = async (req, res) => {
     if (filter) filteredData = filteredData.filter(u => u.profil === filter)
 
     // DD -> son département seulement
-    if (profil === 'directeur departemental') filteredData = filteredData.filter(u => u.departement_id === departement_id)
+    if (profil === 'directeur_departemental') filteredData = filteredData.filter(u => u.departement_id === departement_id)
 
     // Stats par profil
     const stats = filteredData.reduce((acc, u) => {
