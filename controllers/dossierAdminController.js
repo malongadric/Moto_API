@@ -1,41 +1,59 @@
 // controllers/dossierAdminController.js
 import supabase from "../config/db.js"; 
 
+
 // 🔹 Récupérer tous les dossiers admin (avec filtre départemental pour le DD)
 export const getDossiersAdmin = async (req, res) => {
     try {
         let query = supabase
             .from('dossier_admin')
             .select(`
-                *, 
-                motos(numero_chassis, marque, modele, numero_immatriculation)
+                *,
+                motos(id, numero_chassis, marque, modele, numero_immatriculation)
             `)
             .order('date_creation', { ascending: false });
 
         const { statut, search } = req.query;
 
+        console.log("REQ USER:", req.user);
+        console.log("Query params statut/search:", statut, search);
+
         // 🎯 Filtrage par profil
         if (req.user.profil === 'directeur_departemental') {
             const userDepartementId = req.user.departement_id;
             if (!userDepartementId) {
-                 return res.status(403).json({ message: "Accès refusé. Département manquant." });
+                return res.status(403).json({ message: "Accès refusé. Département manquant." });
             }
 
             query = query.eq('departement_id', userDepartementId);
-            query = query.eq('statut', statut || 'en_attente_validation_officielle');
 
+            // ⚠️ Normaliser le statut : utiliser la valeur fournie ou défaut
+            const statutFiltre = statut ? statut.toLowerCase().trim() : 'en_attente_validation_officielle';
+            query = query.eq('statut', statutFiltre);
+
+            console.log(`Filtrage DD : departement_id=${userDepartementId}, statut=${statutFiltre}`);
         } else if (req.user.profil === 'admin') {
-            if (statut) query = query.eq('statut', statut);
+            if (statut) query = query.eq('statut', statut.toLowerCase().trim());
         }
 
+        // 🔹 Filtre de recherche
         if (search) {
-             query = query.or(`reference_dossier.ilike.%${search}%,motos.numero_chassis.ilike.%${search}%`);
+            query = query.or(
+                `reference_dossier.ilike.%${search}%,motos.numero_chassis.ilike.%${search}%`
+            );
         }
 
         const { data, error } = await query;
+
         if (error) {
             console.error("SUPABASE ERROR (getDossiersAdmin):", error);
             return res.status(500).json({ message: "Erreur récupération dossiers admin", error: error.message });
+        }
+
+        console.log("Dossiers récupérés:", data.length, data.map(d => d.reference_dossier));
+
+        if (!data || data.length === 0) {
+            return res.status(200).json([]); // Retourner tableau vide pour le front
         }
 
         res.status(200).json(data);
