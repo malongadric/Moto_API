@@ -7,6 +7,7 @@ import express from 'express';
 import {
   getDossiersAdmin, 
   getDossierAdminById,
+  getDossierAdminByReference,
   addDossierAdmin,
   updateDossierAdmin,
   deleteDossierAdmin,
@@ -23,6 +24,8 @@ router.use(verifyToken);
 
 // 3. DÉFINITION DES ROUTES
 router.get('/', getDossiersAdmin); 
+// Obtenir un dossier_admin par référence (utilisé par le front)
+router.get('/by-reference', getDossierAdminByReference);
 router.get('/:id', getDossierAdminById);
 router.post('/', addDossierAdmin); 
 router.put('/:id', updateDossierAdmin);

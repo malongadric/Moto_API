@@ -102,6 +102,36 @@ export const getDossierAdminById = async (req, res) => {
 };
 
 
+/* ================================================================
+   🔹 RÉCUPÉRER UN DOSSIER_ADMIN PAR RÉFÉRENCE (AJOUT POUR LE FRONT)
+=================================================================== */
+export const getDossierAdminByReference = async (req, res) => {
+    try {
+        const { reference_dossier } = req.query;
+        if (!reference_dossier) return res.status(400).json({ message: "Référence dossier manquante" });
+
+        const { data, error } = await supabase
+            .from('dossier_admin')
+            .select(`*, motos(numero_chassis, numero_immatriculation, marque, modele)`)
+            .eq('reference_dossier', reference_dossier)
+            .maybeSingle();
+
+        if (error) {
+            console.error('SUPABASE ERROR (getDossierAdminByReference):', error);
+            return res.status(500).json({ message: 'Erreur récupération dossier_admin', error: error.message });
+        }
+
+        if (!data) return res.status(404).json({ message: 'Dossier admin introuvable' });
+
+        // Retourne une forme explicite pour le front
+        return res.status(200).json({ message: 'Dossier admin récupéré', dossier_admin: data });
+    } catch (err) {
+        console.error('SERVER ERROR (getDossierAdminByReference):', err);
+        res.status(500).json({ message: 'Erreur serveur', error: err.message });
+    }
+};
+
+
 
 export const addDossierAdmin = async (req, res) => {
     try {

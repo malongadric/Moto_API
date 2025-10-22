@@ -1,0 +1,23 @@
+# Fichier render.yaml pour déployer l'API sur Render.com
+# Remarque: ne commit pas de secrets dans ce fichier. Configure SUPABASE_URL et SUPABASE_KEY
+# via les Environment -> Secrets de Render après avoir connecté le dépôt.
+
+services:
+  - type: web
+    name: moto-api
+    env: docker
+    plan: free
+    dockerfilePath: Dockerfile
+    branch: main
+    region: oregon
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: FRONTEND_URL
+        value: "https://ton-frontend.example.com"
+    secretVars:
+      - key: SUPABASE_URL
+      - key: SUPABASE_KEY
