@@ -509,30 +509,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!resProp.ok) throw new Error(`Propriétaire introuvable (status: ${resProp.status})`);
         const proprietaire = await resProp.json();
         if (!proprietaire) throw new Error("Propriétaire introuvable");
+// 🔹 4️⃣ Récupération de l'immatriculation provisoire (sans recréer)
+let numeroImmat = '';
+try {
+    const resDossierAdmin = await fetch(
+        `https://moto-api-cika.onrender.com/api/dossier_admin/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+    );
 
-        // 🔹 4️⃣ Récupération de l'immatriculation provisoire
-        let numeroImmat = 'TAXI 001 A6'; // Valeur par défaut
-        try {
-            const resDossierAdmin = await fetch(
-                `https://moto-api-cika.onrender.com/api/dossier_admin/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            if (resDossierAdmin.ok) {
-                const dossierAdminJson = await resDossierAdmin.json();
-                const dossierAdmin = dossierAdminJson?.data || dossierAdminJson?.dossier_admin || {};
-                if (dossierAdmin.immatriculation_prov) {
-                    numeroImmat = dossierAdmin.immatriculation_prov;
-                } else {
-                    // Si aucun numéro provisoire existant, on peut créer un numéro aléatoire du type TAXI XXX XX
-                    const randomNum = String(Math.floor(Math.random() * 900) + 100); // 100 à 999
-                    const randomLettre = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
-                    const randomChiffre = String(Math.floor(Math.random() * 10)); // 0-9
-                    numeroImmat = `TAXI ${randomNum} ${randomLettre}${randomChiffre}`;
-                }
-            }
-        } catch (err) {
-            console.warn("⚠️ Dossier admin introuvable, on utilise une immatriculation provisoire par défaut", err);
-        }
+    if (resDossierAdmin.ok) {
+        const dossierAdminJson = await resDossierAdmin.json();
+        const dossierAdmin = dossierAdminJson?.data || dossierAdminJson?.dossier_admin || {};
+        numeroImmat = dossierAdmin.immatriculation_prov || '';
+    }
+
+    // Si pas trouvé, on laisse vide mais on NE génère PAS un aléatoire
+    if (!numeroImmat) {
+        alert("⚠️ Aucun numéro d'immatriculation trouvé pour ce dossier. Veuillez contacter l'administrateur.");
+        numeroImmat = "—";
+    }
+} catch (err) {
+    console.error("❌ Erreur récupération dossier admin :", err);
+    numeroImmat = "—";
+}
 
         console.log("✅ Numéro d'immatriculation affiché :", numeroImmat);
 

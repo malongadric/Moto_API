@@ -103,15 +103,12 @@ export const getDossierAdminById = async (req, res) => {
 
 
 
-/* ================================================================
-   🔹 AJOUTER OU METTRE À JOUR UN DOSSIER ADMIN (UPSERT)
-=================================================================== */
 export const addDossierAdmin = async (req, res) => {
     try {
         const { reference_dossier, immatriculation_prov, statut } = req.body;
 
-        if (!reference_dossier || !immatriculation_prov) {
-            return res.status(400).json({ message: "Référence ou immatriculation provisoire manquante." });
+        if (!reference_dossier) {
+            return res.status(400).json({ message: "Référence du dossier manquante." });
         }
 
         if (!req.user || !req.user.id || !req.user.profil) {
@@ -129,61 +126,98 @@ export const addDossierAdmin = async (req, res) => {
             .single();
 
         if (dossierError || !dossierPrincipal) {
-            console.error("SUPABASE ERROR (findDossier):", dossierError);
             return res.status(404).json({ message: "Dossier principal introuvable." });
         }
 
         const { moto_id, departement_id } = dossierPrincipal;
         const departement_id_final = departement_id || req.user.departement_id;
 
-        console.log("🟩 Création / Mise à jour dossier_admin");
-        console.log("📌 Référence :", reference_dossier);
-        console.log("📍 Département utilisé :", departement_id_final);
-        console.log("👤 Acteur :", acteur_type, "ID:", acteur_id);
+        // 🔹 Étape 2 : Vérifie si un dossier_admin existe déjà
+        const { data: existing, error: checkError } = await supabase
+            .from('dossier_admin')
+            .select('*')
+            .eq('reference_dossier', reference_dossier)
+            .maybeSingle();
 
-        // 🔹 Étape 2 : Vérifier la moto
-        const { data: motoData, error: motoError } = await supabase
-            .from('motos')
-            .select('id')
-            .eq('id', moto_id)
-            .single();
+        if (checkError) throw checkError;
 
-        if (motoError || !motoData) {
-            console.error("SUPABASE ERROR (checkMotoId):", motoError);
-            return res.status(404).json({ message: `Moto ID ${moto_id} introuvable.` });
+        // 🔹 3️⃣ Si un dossier existe déjà → mise à jour uniquement
+        if (existing) {
+            console.log("⚠️ Dossier déjà existant → mise à jour sans modifier l’immatriculation.");
+
+            // Empêcher le directeur de recréer le dossier
+            if (acteur_type === 'directeur_departemental') {
+                const { data, error: updateError } = await supabase
+                    .from('dossier_admin')
+                    .update({
+                        statut: statut || existing.statut,
+                        date_mise_a_jour: new Date()
+                    })
+                    .eq('reference_dossier', reference_dossier)
+                    .select();
+
+                if (updateError) throw updateError;
+
+                return res.status(200).json({
+                    message: "✅ Validation effectuée par le directeur — immatriculation conservée.",
+                    data: data[0]
+                });
+            }
+
+            // Si c’est l’admin, il peut aussi mettre à jour son dossier existant
+            const { data, error: updateError } = await supabase
+                .from('dossier_admin')
+                .update({
+                    statut: statut || existing.statut,
+                    date_mise_a_jour: new Date()
+                })
+                .eq('reference_dossier', reference_dossier)
+                .select();
+
+            if (updateError) throw updateError;
+
+            return res.status(200).json({
+                message: "✅ Dossier existant mis à jour (statut modifié uniquement).",
+                data: data[0]
+            });
         }
 
-        // 🔹 Étape 3 : UPSERT
-        const { data, error: upsertError } = await supabase
+        // 🔹 4️⃣ Création uniquement si inexistant (par l'admin communal)
+        if (acteur_type === 'directeur_departemental') {
+            return res.status(403).json({
+                message: "⛔ Le directeur départemental ne peut pas créer un nouveau dossier admin."
+            });
+        }
+
+        const { data, error: insertError } = await supabase
             .from('dossier_admin')
-            .upsert({
+            .insert([{
                 reference_dossier,
                 moto_id,
-                departement_id: departement_id_final, // ✅ Correction clé
+                departement_id: departement_id_final,
                 acteur_id,
                 acteur_type,
                 immatriculation_prov,
                 statut: statut || 'en_attente_validation_officielle',
                 date_creation: new Date(),
                 date_mise_a_jour: new Date()
-            }, { onConflict: 'reference_dossier' })
+            }])
             .select();
 
-        if (upsertError) {
-            console.error("SUPABASE ERROR (addDossierAdmin - Upsert):", upsertError);
-            return res.status(500).json({ message: "Erreur ajout/mise à jour dossier admin", error: upsertError.message });
-        }
+        if (insertError) throw insertError;
 
-        console.log("✅ Dossier admin enregistré :", data[0]?.reference_dossier);
-        console.log("📍 Département enregistré :", data[0]?.departement_id);
-
-        res.status(201).json(data[0]);
+        console.log("✅ Nouveau dossier_admin créé :", data[0].reference_dossier);
+        res.status(201).json({
+            message: "✅ Dossier admin créé avec succès.",
+            data: data[0]
+        });
 
     } catch (err) {
         console.error("SERVER ERROR (addDossierAdmin):", err);
         res.status(500).json({ message: "Erreur serveur inattendue", error: err.message });
     }
 };
+
 
 
 
