@@ -1,11 +1,6 @@
 // controllers/immatriculationController.js
 import supabase from '../config/db.js';
 
-
-
-// controllers/immatriculationController.js
-import supabase from '../config/db.js';
-
 export const attribuerNumero = async (req, res) => {
     try {
         const motoId = parseInt(req.params.motoId, 10);
