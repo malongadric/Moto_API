@@ -86,7 +86,9 @@ export const getDossiers = async (req, res) => {
     const from = (page - 1) * parseInt(limit);
     const to = from + parseInt(limit) - 1;
 
-    // 🔹 Requête avec jointures (inclut agent)
+    // 🔹 Requête initiale : on ne fait PAS la jointure PostgREST avec utilisateurs
+    // parce que la relation FK peut ne pas exister en production (PostgREST renvoie 400).
+    // On récupérera ensuite les utilisateurs en une seule requête "IN (...)".
     let query = supabase
       .from("dossier")
       .select(`
@@ -94,7 +96,7 @@ export const getDossiers = async (req, res) => {
         reference_dossier,
         date_soumission,
         statut,
-        agent:utilisateurs(id, nom, prenom),
+        agent_id,
         moto:motos(id, numero_chassis, numero_immatriculation, marque, modele),
         proprietaire:proprietaires(nom, prenom),
         mandataire:mandataires(nom, prenom),
@@ -116,8 +118,21 @@ if (req.query.reference_dossier) {
     const { data, error, count } = await query;
     if (error) return res.status(400).json({ message: error.message });
 
+    // 🔹 Récupérer en batch les utilisateurs référencés par agent_id
+    const agentIds = Array.from(new Set((data || []).map(d => d.agent_id).filter(Boolean)));
+    let usersById = {};
+    if (agentIds.length > 0) {
+      const { data: users, error: usersErr } = await supabase
+        .from('utilisateurs')
+        .select('id, nom, prenom')
+        .in('id', agentIds);
+      if (!usersErr && users) {
+        usersById = Object.fromEntries(users.map(u => [u.id, u]));
+      }
+    }
+
     // 🔹 Transformer les données pour le frontend
-    const dossiers = data.map(d => {
+    const dossiers = (data || []).map(d => {
       // Propriétaire
       const proprietaireNom = Array.isArray(d.proprietaire) && d.proprietaire.length
         ? d.proprietaire[0].nom
@@ -147,9 +162,8 @@ if (req.query.reference_dossier) {
       const marque = moto.marque || "";
       const modele = moto.modele || "";
 
-  // Agent
-  const agentObj = Array.isArray(d.agent) && d.agent.length ? d.agent[0] : d.agent || null;
-  // Fallback: if agent row missing, show 'ID <n>' when d.agent_id is present
+  // Agent: use usersById map (fetched separately) or fallback to ID
+  const agentObj = d.agent_id ? (usersById[d.agent_id] || null) : null;
   const agentDisplay = agentObj ? ((agentObj.prenom || '') + ' ' + (agentObj.nom || '')).trim() : (d.agent_id ? `ID ${d.agent_id}` : '—');
 
   return {
