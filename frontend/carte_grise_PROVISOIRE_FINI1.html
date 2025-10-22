@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        // 🔹 1️⃣ Récupération du dossier
+        // 🔹 1️⃣ Récupération du dossier principal
         const resDossier = await fetch(
             `https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
@@ -510,9 +510,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const proprietaire = await resProp.json();
         if (!proprietaire) throw new Error("Propriétaire introuvable");
 
-        // 🔹 4️⃣ Récupération du numéro d'immatriculation
-        const numeroImmat = moto.numero_immatriculation || 'N/A';
-        console.log("✅ Numéro d'immatriculation :", numeroImmat);
+        // 🔹 4️⃣ Récupération du dossier admin pour immatriculation provisoire
+        let numeroImmat = moto.numero_immatriculation || 'N/A';
+        try {
+            const resDossierAdmin = await fetch(
+                `https://moto-api-cika.onrender.com/api/dossier_admin/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (resDossierAdmin.ok) {
+                const dossierAdminJson = await resDossierAdmin.json();
+                const dossierAdmin = dossierAdminJson?.data || dossierAdminJson?.dossier_admin || {};
+                if (dossierAdmin.immatriculation_prov) {
+                    numeroImmat = dossierAdmin.immatriculation_prov;
+                }
+            }
+        } catch (err) {
+            console.warn("⚠️ Dossier admin introuvable, on utilise le numéro de la moto", err);
+        }
+        console.log("✅ Numéro d'immatriculation affiché :", numeroImmat);
 
         // 🔹 5️⃣ Injection des données dans le DOM
         document.getElementById('nom').textContent = proprietaire.nom || 'N/A';
@@ -521,6 +536,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('profession').textContent = proprietaire.profession || 'N/A';
         document.getElementById('adresse').textContent = proprietaire.adresse || 'N/A';
         document.getElementById('serie_immatriculation').textContent = numeroImmat;
+        document.getElementById('immat_provisoire_info').textContent = numeroImmat;
+
         document.getElementById('modele').textContent = moto.modele || '—';
         document.getElementById('carrosserie').textContent = moto.carrosserie || '—';
         document.getElementById('marque').textContent = moto.marque || '—';
@@ -536,37 +553,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('poids_vide').textContent = `${moto.poids_vide || 0} kg`;
         document.getElementById('charge_utile').textContent = `${moto.charge_utile || 0} kg`;
         document.getElementById('reference_moteur').textContent = moto.reference_moteur || '—';
-        document.getElementById('immat_provisoire_info').textContent = numeroImmat;
 
-       // ... (le code précédent reste inchangé) ...
+        // 🔹 6️⃣ Lieu de délivrance
+        let lieu = localStorage.getItem('utilisateur_departement_nom') || dossier.departement_nom || 'Pointe-Noire';
+        lieu = lieu.replace(/^(Commune de |Département de )/i, '').trim();
+        document.getElementById('departement_id').textContent = lieu;
 
-// 6️⃣ Définition du lieu de délivrance
-let lieu = 'Pointe-Noire'; 
-
-// On vérifie le département de l'utilisateur connecté ou du dossier pour la cohérence
-const departementStocke = localStorage.getItem('utilisateur_departement_nom');
-if (departementStocke) {
-    lieu = departementStocke;
-} else {
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        lieu = payload.departement_nom || payload.departement || dossier.departement_nom || 'Pointe-Noire';
-    } catch (err) {
-        lieu = dossier.departement_nom || 'Pointe-Noire';
-    }
-}
-
-// 🛑 MODIFICATION CLÉ ICI 🛑
-// Nettoyage de la chaîne pour retirer les préfixes "Commune de " ou "Département de "
-// La méthode replace remplace la première occurrence trouvée.
-lieu = lieu.replace(/^(Commune de |Département de )/i, '').trim(); 
-// Le 'i' rend la recherche insensible à la casse (majuscules/minuscules)
-
-// Mise à jour de l'élément HTML avec le nom simplifié
-document.getElementById('departement_id').textContent = lieu;
-
-// 7️⃣ Date automatique
-// ... (le code suivant reste inchangé) ...
         // 🔹 7️⃣ Date automatique
         const today = new Date();
         document.getElementById('date_jour').textContent = String(today.getDate()).padStart(2, '0');
@@ -608,7 +600,6 @@ document.getElementById('departement_id').textContent = lieu;
             btnEnvoyer.textContent = 'Enregistrement en cours...';
 
             try {
-                // Vérifier que la référence existe
                 const resCheck = await fetch(`https://moto-api-cika.onrender.com/api/dossiers/by-reference?reference_dossier=${encodeURIComponent(ref)}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

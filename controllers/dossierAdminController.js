@@ -86,13 +86,17 @@ export const getDossierAdminById = async (req, res) => {
             if (error.code === 'PGRST116') {
                 return res.status(404).json({ message: "Dossier admin non trouvé." });
             }
-            console.error("SUPABASE ERROR (getDossierAdminById):", error);
             return res.status(500).json({ message: "Erreur récupération dossier admin", error: error.message });
         }
 
-        res.status(200).json(data);
+        // 🔹 Prioriser immatriculation_prov
+        const numeroImmat = data.immatriculation_prov || data.motos?.numero_immatriculation || 'N/A';
+
+        res.status(200).json({
+            ...data,
+            numero_immatriculation: numeroImmat
+        });
     } catch (err) {
-        console.error("SERVER ERROR (getDossierAdminById):", err);
         res.status(500).json({ message: "Erreur serveur récupération dossier admin", error: err.message });
     }
 };
