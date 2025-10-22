@@ -1,0 +1,42 @@
+﻿[
+    {
+        "id":  2,
+        "reference_dossier":  "REF-1-2025-1",
+        "moto_id":  1,
+        "acteur_id":  1,
+        "acteur_type":  "admin",
+        "immatriculation_prov":  "TAXI 002 A1",
+        "immatriculation_def":  null,
+        "statut":  "en_attente_validation_officielle",
+        "date_creation":  "2025-10-22T14:22:43.412+00:00",
+        "date_mise_a_jour":  "2025-10-22T15:33:12.453304+00:00",
+        "departement_id":  1,
+        "motos":  {
+                      "id":  1,
+                      "marque":  null,
+                      "modele":  null,
+                      "numero_chassis":  "2357844G347BJKSUH",
+                      "numero_immatriculation":  "TAXI 002 A1"
+                  }
+    },
+    {
+        "id":  1,
+        "reference_dossier":  "REF-1-2025-2",
+        "moto_id":  2,
+        "acteur_id":  1,
+        "acteur_type":  "admin",
+        "immatriculation_prov":  "TAXI 001 A1",
+        "immatriculation_def":  null,
+        "statut":  "en_attente_validation_officielle",
+        "date_creation":  "2025-10-22T14:22:15.389+00:00",
+        "date_mise_a_jour":  "2025-10-22T15:33:11.646021+00:00",
+        "departement_id":  1,
+        "motos":  {
+                      "id":  2,
+                      "marque":  null,
+                      "modele":  null,
+                      "numero_chassis":  "238287382789729",
+                      "numero_immatriculation":  "TAXI 001 A1"
+                  }
+    }
+]

@@ -1,0 +1,9 @@
+﻿{
+    "message":  "Liste des dossiers récupérée avec succès",
+    "total":  0,
+    "page":  1,
+    "limit":  10,
+    "dossiers":  [
+
+                 ]
+}

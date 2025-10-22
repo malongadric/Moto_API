@@ -86,7 +86,7 @@ export const getDossiers = async (req, res) => {
     const from = (page - 1) * parseInt(limit);
     const to = from + parseInt(limit) - 1;
 
-    // 🔹 Requête avec jointures
+    // 🔹 Requête avec jointures (inclut agent)
     let query = supabase
       .from("dossier")
       .select(`
@@ -94,6 +94,7 @@ export const getDossiers = async (req, res) => {
         reference_dossier,
         date_soumission,
         statut,
+        agent:utilisateurs(id, nom, prenom),
         moto:motos(id, numero_chassis, numero_immatriculation, marque, modele),
         proprietaire:proprietaires(nom, prenom),
         mandataire:mandataires(nom, prenom),
@@ -146,7 +147,12 @@ if (req.query.reference_dossier) {
       const marque = moto.marque || "";
       const modele = moto.modele || "";
 
-      return {
+  // Agent
+  const agentObj = Array.isArray(d.agent) && d.agent.length ? d.agent[0] : d.agent || null;
+  // Fallback: if agent row missing, show 'ID <n>' when d.agent_id is present
+  const agentDisplay = agentObj ? ((agentObj.prenom || '') + ' ' + (agentObj.nom || '')).trim() : (d.agent_id ? `ID ${d.agent_id}` : '—');
+
+  return {
         dossier_id: d.dossier_id,
         reference_dossier: d.reference_dossier,
         date_soumission: d.date_soumission,
@@ -155,6 +161,8 @@ if (req.query.reference_dossier) {
         proprietaire_prenom: proprietairePrenom,
         mandataire_nom: mandataireNom,
         mandataire_prenom: mandatairePrenom,
+  agent_nom: agentDisplay,
+  agent_prenom: agentObj ? agentObj.prenom || '' : '',
         departement_nom: departementNom,
         moto_id,
         numero_chassis,
@@ -217,10 +225,25 @@ export const getDossierById = async (req, res) => {
     const { data, error } = await query.single();
     if (error || !data) return res.status(404).json({ message: "Dossier introuvable" });
 
+    // 🔹 Récupération des informations de l'agent si présentes
+    let agent = null;
+    if (data.agent_id) {
+      const { data: agentData, error: agentError } = await supabase
+        .from('utilisateurs')
+        .select('id, nom, prenom, email, profil')
+        .eq('id', data.agent_id)
+        .maybeSingle();
+      if (!agentError && agentData) agent = agentData;
+      else agent = { id: data.agent_id, nom: `ID ${data.agent_id}`, prenom: '' };
+    }
+
     // 🔹 Retour JSON complet
     res.json({
       message: "Dossier récupéré avec succès",
-      dossier: data
+      dossier: {
+        ...data,
+        agent
+      }
     });
   } catch (err) {
     console.error("❌ Erreur serveur getDossierById:", err);
@@ -283,8 +306,9 @@ export const getDossierByReference = async (req, res) => {
         .from('utilisateurs')
         .select('id, nom, prenom, email, profil')
         .eq('id', dossier.agent_id)
-        .single();
-      if (!agentError) agent = agentData;
+        .maybeSingle();
+      if (!agentError && agentData) agent = agentData;
+      else agent = { id: dossier.agent_id, nom: `ID ${dossier.agent_id}`, prenom: '' };
     }
 
     // 🔹 Retour JSON complet

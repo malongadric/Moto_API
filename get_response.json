@@ -1,0 +1,20 @@
+﻿{
+    "id":  1,
+    "reference_dossier":  "REF-1-2025-2",
+    "moto_id":  2,
+    "acteur_id":  1,
+    "acteur_type":  "admin",
+    "immatriculation_prov":  "TAXI 001 A1",
+    "immatriculation_def":  null,
+    "statut":  "en_attente_validation_officielle",
+    "date_creation":  "2025-10-22T14:22:15.389+00:00",
+    "date_mise_a_jour":  "2025-10-22T15:35:18.500677+00:00",
+    "departement_id":  1,
+    "motos":  {
+                  "marque":  null,
+                  "modele":  null,
+                  "numero_chassis":  "238287382789729",
+                  "numero_immatriculation":  "TAXI 001 A1"
+              },
+    "numero_immatriculation":  "TAXI 001 A1"
+}

@@ -257,12 +257,19 @@ export const addDossierAdmin = async (req, res) => {
 export const updateDossierAdmin = async (req, res) => {
     try {
         const { id } = req.params;
-        const { immatriculation_prov, immatriculation_def, statut } = req.body;
+        const { immatriculation_prov, immatriculation_def, statut, acteur_id } = req.body;
 
         const updateObject = {};
         if (immatriculation_prov !== undefined) updateObject.immatriculation_prov = immatriculation_prov;
         if (immatriculation_def !== undefined) updateObject.immatriculation_def = immatriculation_def;
         if (statut !== undefined) updateObject.statut = statut;
+        // Allow updating acteur_id only for admin users (controlled)
+        if (acteur_id !== undefined) {
+            if (!req.user || req.user.profil !== 'admin') {
+                return res.status(403).json({ message: 'Accès refusé: seul un admin peut réassigner le dossier.' });
+            }
+            updateObject.acteur_id = acteur_id;
+        }
         updateObject.date_mise_a_jour = new Date();
 
         if (Object.keys(updateObject).length === 0) {
