@@ -477,7 +477,7 @@ async function traiterDossier(dossierId, nouveauStatut, referenceDossier = null,
                 <td>${dossier.reference_dossier}</td>
                 <td>${dossier.immatriculation_prov || 'N/A'}</td>
                 <td>${moto.marque || 'N/A'} ${moto.modele || ''} (${moto.numero_chassis || 'N/A'})</td>
-                <td>${dossier.acteur_type || 'N/A'}</td>
+                <td>${dossier.agent ? (dossier.agent.prenom || '') + ' ' + (dossier.agent.nom || '') : (dossier.acteur_type || 'N/A')}</td>
                 <td>${dateSaisie}</td>
                 <td>`;
 
