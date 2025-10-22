@@ -1,7 +1,9 @@
 // controllers/dossierAdminController.js
 import supabase from "../config/db.js"; 
 
-// 🔹 Récupérer tous les dossiers admin (avec filtre départemental pour le DD)
+/* ================================================================
+   🔹 RÉCUPÉRER TOUS LES DOSSIERS ADMIN (avec filtre départemental)
+=================================================================== */
 export const getDossiersAdmin = async (req, res) => {
     try {
         let query = supabase
@@ -16,40 +18,35 @@ export const getDossiersAdmin = async (req, res) => {
 
         console.log("=== GET DOSSIERS ADMIN ===");
         console.log("Profil utilisateur :", req.user.profil);
-        console.log("Departement utilisateur :", req.user.departement_id);
+        console.log("Département utilisateur :", req.user.departement_id);
         console.log("Paramètres query statut/search :", statut, search);
 
-        // 🎯 Filtrage par profil
+        // 🎯 Filtrage selon le profil utilisateur
         if (req.user.profil === 'directeur_departemental') {
             const userDepartementId = req.user.departement_id;
             if (!userDepartementId) {
                 return res.status(403).json({ message: "Accès refusé. Département manquant." });
             }
 
-            // 🔹 Tous les dossiers du département
             query = query.eq('departement_id', userDepartementId);
 
-            // 🔹 Filtrer par statut seulement si fourni
             if (statut) {
                 query = query.eq('statut', statut.toLowerCase().trim());
-                console.log(`Filtrage DD par statut : ${statut.toLowerCase().trim()}`);
             }
-        } else if (req.user.profil === 'admin') {
+        } 
+        else if (req.user.profil === 'admin') {
             if (statut) {
                 query = query.eq('statut', statut.toLowerCase().trim());
-                console.log(`Filtrage Admin par statut : ${statut.toLowerCase().trim()}`);
             }
         }
 
-        // 🔹 Filtre de recherche (reference_dossier ou numero_chassis)
+        // 🔹 Filtre recherche
         if (search) {
             query = query.or(
                 `reference_dossier.ilike.%${search}%,motos.numero_chassis.ilike.%${search}%`
             );
-            console.log(`Filtre recherche : ${search}`);
         }
 
-        // 🔹 Exécuter la requête
         const { data, error } = await query;
 
         if (error) {
@@ -57,17 +54,10 @@ export const getDossiersAdmin = async (req, res) => {
             return res.status(500).json({ message: "Erreur récupération dossiers admin", error: error.message });
         }
 
-        console.log("Nombre de dossiers récupérés :", data.length);
-        console.log("Departements des dossiers récupérés :", data.map(d => d.departement_id));
-        console.log("Statuts des dossiers récupérés :", data.map(d => d.statut));
+        console.log("✅ Dossiers récupérés :", data.length);
+        console.log("📍 Départements trouvés :", data.map(d => d.departement_id));
 
-        // 🔹 Retourner tableau vide si rien trouvé
-        if (!data || data.length === 0) {
-            return res.status(200).json([]);
-        }
-
-        res.status(200).json(data);
-
+        return res.status(200).json(data || []);
     } catch (err) {
         console.error("SERVER ERROR (getDossiersAdmin):", err);
         res.status(500).json({ message: "Erreur serveur récupération dossiers admin", error: err.message });
@@ -76,7 +66,9 @@ export const getDossiersAdmin = async (req, res) => {
 
 
 
-// 🔹 Récupérer un dossier admin par ID
+/* ================================================================
+   🔹 RÉCUPÉRER UN DOSSIER ADMIN PAR ID
+=================================================================== */
 export const getDossierAdminById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -105,7 +97,11 @@ export const getDossierAdminById = async (req, res) => {
     }
 };
 
-// 🔹 Ajouter ou mettre à jour un dossier admin (UPSERT)
+
+
+/* ================================================================
+   🔹 AJOUTER OU METTRE À JOUR UN DOSSIER ADMIN (UPSERT)
+=================================================================== */
 export const addDossierAdmin = async (req, res) => {
     try {
         const { reference_dossier, immatriculation_prov, statut } = req.body;
@@ -121,7 +117,7 @@ export const addDossierAdmin = async (req, res) => {
         const acteur_id = req.user.id;
         const acteur_type = req.user.profil;
 
-        // 🔹 Étape 1 : Récupérer le dossier principal pour moto_id et département
+        // 🔹 Étape 1 : Récupérer le dossier principal
         const { data: dossierPrincipal, error: dossierError } = await supabase
             .from('dossier')
             .select('moto_id, departement_id')
@@ -134,8 +130,14 @@ export const addDossierAdmin = async (req, res) => {
         }
 
         const { moto_id, departement_id } = dossierPrincipal;
+        const departement_id_final = departement_id || req.user.departement_id;
 
-        // 🔹 Étape 2 : Vérifier que moto_id existe
+        console.log("🟩 Création / Mise à jour dossier_admin");
+        console.log("📌 Référence :", reference_dossier);
+        console.log("📍 Département utilisé :", departement_id_final);
+        console.log("👤 Acteur :", acteur_type, "ID:", acteur_id);
+
+        // 🔹 Étape 2 : Vérifier la moto
         const { data: motoData, error: motoError } = await supabase
             .from('motos')
             .select('id')
@@ -147,13 +149,13 @@ export const addDossierAdmin = async (req, res) => {
             return res.status(404).json({ message: `Moto ID ${moto_id} introuvable.` });
         }
 
-        // 🔹 Étape 3 : UPSERT dans dossier_admin
+        // 🔹 Étape 3 : UPSERT
         const { data, error: upsertError } = await supabase
             .from('dossier_admin')
             .upsert({
                 reference_dossier,
                 moto_id,
-                departement_id, // 🔹 Important : département bien renseigné
+                departement_id: departement_id_final, // ✅ Correction clé
                 acteur_id,
                 acteur_type,
                 immatriculation_prov,
@@ -168,6 +170,9 @@ export const addDossierAdmin = async (req, res) => {
             return res.status(500).json({ message: "Erreur ajout/mise à jour dossier admin", error: upsertError.message });
         }
 
+        console.log("✅ Dossier admin enregistré :", data[0]?.reference_dossier);
+        console.log("📍 Département enregistré :", data[0]?.departement_id);
+
         res.status(201).json(data[0]);
 
     } catch (err) {
@@ -176,7 +181,11 @@ export const addDossierAdmin = async (req, res) => {
     }
 };
 
-// 🔹 Mettre à jour un dossier admin (par ID)
+
+
+/* ================================================================
+   🔹 MISE À JOUR D’UN DOSSIER ADMIN
+=================================================================== */
 export const updateDossierAdmin = async (req, res) => {
     try {
         const { id } = req.params;
@@ -186,7 +195,7 @@ export const updateDossierAdmin = async (req, res) => {
         if (immatriculation_prov !== undefined) updateObject.immatriculation_prov = immatriculation_prov;
         if (immatriculation_def !== undefined) updateObject.immatriculation_def = immatriculation_def;
         if (statut !== undefined) updateObject.statut = statut;
-        updateObject.date_mise_a_jour = new Date(); // Mise à jour automatique de la date
+        updateObject.date_mise_a_jour = new Date();
 
         if (Object.keys(updateObject).length === 0) {
             return res.status(400).json({ message: "Aucun champ fourni pour la mise à jour." });
@@ -214,7 +223,11 @@ export const updateDossierAdmin = async (req, res) => {
     }
 };
 
-// 🔹 Supprimer un dossier admin (par ID)
+
+
+/* ================================================================
+   🔹 SUPPRIMER UN DOSSIER ADMIN
+=================================================================== */
 export const deleteDossierAdmin = async (req, res) => {
     try {
         const { id } = req.params;
@@ -241,13 +254,16 @@ export const deleteDossierAdmin = async (req, res) => {
     }
 };
 
-// 🔹 Valider officiellement un dossier (Directeur Départemental)
+
+
+/* ================================================================
+   🔹 VALIDATION OFFICIELLE (DIRECTEUR DÉPARTEMENTAL)
+=================================================================== */
 export const validerOfficiel = async (req, res) => {
     try {
-        const { id } = req.body; // ID du dossier à valider
+        const { id } = req.body;
         if (!id) return res.status(400).json({ message: "ID du dossier manquant" });
 
-        // 🔹 Récupérer le dossier
         const { data: dossier, error: getError } = await supabase
             .from('dossier_admin')
             .select('*')
@@ -259,12 +275,10 @@ export const validerOfficiel = async (req, res) => {
             return res.status(404).json({ message: "Dossier admin non trouvé" });
         }
 
-        // 🔹 Vérifier profil de l'utilisateur
         if (req.user.profil !== 'directeur_departemental') {
             return res.status(403).json({ message: "Accès refusé. Profil non autorisé." });
         }
 
-        // 🔹 Mettre à jour le statut
         const { data, error } = await supabase
             .from('dossier_admin')
             .update({ 
