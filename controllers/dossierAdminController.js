@@ -256,93 +256,47 @@ export const deleteDossierAdmin = async (req, res) => {
 
 
 
+/* ================================================================
+   🔹 VALIDATION OFFICIELLE (DIRECTEUR DÉPARTEMENTAL)
+=================================================================== */
 export const validerOfficiel = async (req, res) => {
-    try {
-        // Le frontend envoie l'ID, la référence et le moto_id (req.body = { id, reference_dossier, moto_id })
-        const { id, moto_id } = req.body; 
-        if (!id || !moto_id) {
-            return res.status(400).json({ message: "ID du dossier ou de la moto manquant" });
-        }
+    try {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ message: "ID du dossier manquant" });
 
-        // 0. Vérification des droits
-        if (req.user.profil !== 'directeur_departemental') {
-            return res.status(403).json({ message: "Accès refusé. Profil non autorisé." });
-        }
+        const { data: dossier, error: getError } = await supabase
+            .from('dossier_admin')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-        // 1. Récupérer le dossier pour le département (Sécurité)
-        const { data: dossier, error: getError } = await supabase
-            .from('dossier_admin')
-            .select('*')
-            .eq('id', id)
-            .eq('departement_id', req.user.departement_id) // Vérifions que le DD valide son propre département
-            .single();
-
-        if (getError || !dossier) {
-            console.error("SUPABASE ERROR (validerOfficiel - get):", getError);
-            return res.status(404).json({ message: "Dossier admin non trouvé ou non dans votre département" });
-        }
-
-        // =================================================================================================
-        // 2. ÉTAPE CLÉ : GÉNÉRATION DU NUMÉRO D'IMMATRICULATION DÉFINITIF
-        // =================================================================================================
-        
-        // REMPLACEZ CETTE LIGNE PAR VOTRE VRAIE LOGIQUE DE GÉNÉRATION D'IMMATRICULATION
-        // Cela devrait être fait dans une transaction pour plus de sécurité.
-        const nouvelleImmatriculation = `CG-${dossier.departement_id}-${Date.now().toString().slice(-4)}`;
-
-        // 3. Mise à jour de la MOTO (pour stocker l'immatriculation définitive)
-        const { error: motoUpdateError } = await supabase
-            .from('motos')
-            .update({ 
-                numero_immatriculation: nouvelleImmatriculation // ⚠️ Assurez-vous que le nom de colonne est correct
-            })
-            .eq('id', moto_id);
-
-        if (motoUpdateError) {
-            console.error("SUPABASE ERROR (validerOfficiel - moto update):", motoUpdateError);
-            return res.status(500).json({ message: "Erreur mise à jour de la moto", error: motoUpdateError.message });
-        }
-
-
-        // =================================================================================================
-        // 4. ÉTAPE CLÉ : MISE À JOUR DU STATUT À 'validé'
-        // =================================================================================================
-
-        const { data: updatedDossier, error: updateError } = await supabase
-            .from('dossier_admin')
-            .update({ 
-                // 🛑 CORRECTION ICI : Le statut DOIT être 'validé' pour apparaître dans l'historique
-                statut: 'validé', 
-                immatriculation_def: nouvelleImmatriculation, // Stockage de l'immat définitive
-                date_validation_officielle: new Date(), // Ajout d'une date de validation
-                date_mise_a_jour: new Date()
-            })
-            .eq('id', id)
-            .select();
-
-        if (updateError) {
-            console.error("SUPABASE ERROR (validerOfficiel - update):", updateError);
-            return res.status(500).json({ message: "Erreur mise à jour statut", error: updateError.message });
-        }
-        
-        // 5. Mettre à jour le statut du dossier principal (bonne pratique)
-        const { error: mainDossierError } = await supabase
-            .from('dossier')
-            .update({ statut: 'validé' })
-            .eq('moto_id', moto_id);
-            
-        if (mainDossierError) {
-            console.error("SUPABASE WARNING (validerOfficiel - main dossier update):", mainDossierError);
-            // On continue car le dossier admin a été mis à jour
+        if (getError || !dossier) {
+            console.error("SUPABASE ERROR (validerOfficiel - get):", getError);
+            return res.status(404).json({ message: "Dossier admin non trouvé" });
         }
 
-        res.status(200).json({ 
-            message: "Dossier validé officiellement et immatriculation enregistrée ✅", 
-            dossier: updatedDossier[0] 
-        });
+        if (req.user.profil !== 'directeur_departemental') {
+            return res.status(403).json({ message: "Accès refusé. Profil non autorisé." });
+        }
 
-    } catch (err) {
-        console.error("SERVER ERROR (validerOfficiel):", err);
-        res.status(500).json({ message: "Erreur serveur validation officielle", error: err.message });
-    }
+        const { data, error } = await supabase
+            .from('dossier_admin')
+            .update({ 
+                statut: 'en_attente_validation_officielle',
+                date_mise_a_jour: new Date()
+            })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            console.error("SUPABASE ERROR (validerOfficiel - update):", error);
+            return res.status(500).json({ message: "Erreur mise à jour statut", error: error.message });
+        }
+
+        res.status(200).json({ message: "Dossier validé officiellement ✅", dossier: data[0] });
+
+    } catch (err) {
+        console.error("SERVER ERROR (validerOfficiel):", err);
+        res.status(500).json({ message: "Erreur serveur validation officielle", error: err.message });
+    }
 };
