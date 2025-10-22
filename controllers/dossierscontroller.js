@@ -276,14 +276,26 @@ export const getDossierByReference = async (req, res) => {
       if (!error) moto = data;
     }
 
+    // 🔹 Récupération des informations de l'agent si présentes
+    let agent = null;
+    if (dossier.agent_id) {
+      const { data: agentData, error: agentError } = await supabase
+        .from('utilisateurs')
+        .select('id, nom, prenom, email, profil')
+        .eq('id', dossier.agent_id)
+        .single();
+      if (!agentError) agent = agentData;
+    }
+
     // 🔹 Retour JSON complet
     res.json({
       message: "Dossier récupéré avec succès",
       dossier: {
         ...dossier,
-        proprietaire,
-        mandataire,
-        moto
+                proprietaire,
+                mandataire,
+                moto,
+                agent,
       }
     });
 
