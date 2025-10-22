@@ -509,30 +509,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!resProp.ok) throw new Error(`Propriétaire introuvable (status: ${resProp.status})`);
         const proprietaire = await resProp.json();
         if (!proprietaire) throw new Error("Propriétaire introuvable");
-// 🔹 4️⃣ Récupération de l'immatriculation provisoire (sans recréer)
-let numeroImmat = '';
-try {
-    const resDossierAdmin = await fetch(
-        `https://moto-api-cika.onrender.com/api/dossier_admin/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
-        { headers: { 'Authorization': `Bearer ${token}` } }
-    );
 
-    if (resDossierAdmin.ok) {
-        const dossierAdminJson = await resDossierAdmin.json();
-        const dossierAdmin = dossierAdminJson?.data || dossierAdminJson?.dossier_admin || {};
-        numeroImmat = dossierAdmin.immatriculation_prov || '';
-    }
-
-    // Si pas trouvé, on laisse vide mais on NE génère PAS un aléatoire
-    if (!numeroImmat) {
-        alert("⚠️ Aucun numéro d'immatriculation trouvé pour ce dossier. Veuillez contacter l'administrateur.");
-        numeroImmat = "—";
-    }
-} catch (err) {
-    console.error("❌ Erreur récupération dossier admin :", err);
-    numeroImmat = "—";
-}
-
+        // 🔹 4️⃣ Récupération du dossier admin pour immatriculation provisoire
+        let numeroImmat = moto.numero_immatriculation || 'N/A';
+        try {
+            const resDossierAdmin = await fetch(
+                `https://moto-api-cika.onrender.com/api/dossier_admin/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+            if (resDossierAdmin.ok) {
+                const dossierAdminJson = await resDossierAdmin.json();
+                const dossierAdmin = dossierAdminJson?.data || dossierAdminJson?.dossier_admin || {};
+                if (dossierAdmin.immatriculation_prov) {
+                    numeroImmat = dossierAdmin.immatriculation_prov;
+                }
+            }
+        } catch (err) {
+            console.warn("⚠️ Dossier admin introuvable, on utilise le numéro de la moto", err);
+        }
         console.log("✅ Numéro d'immatriculation affiché :", numeroImmat);
 
         // 🔹 5️⃣ Injection des données dans le DOM
