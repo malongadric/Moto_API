@@ -393,7 +393,7 @@
     </div>
 
     <div class="info-row bordered-top-bottom">
-        <span class="label-inline">Genre :</span> <span id="genre_vehicule" class="data-field">léger</span>
+        <span class="label-inline">Genre :</span> <span id="genre_vehicule" class="data-field">Taxi Moto</span>
         <span class="label-inline center-aligned">Modèle :</span> <span id="modele" class="data-field">MODÈLE</span>
         <span class="label-inline right-aligned">Carrosserie :</span> <span id="carrosserie" class="data-field">CARROSSERIE</span>
     </div>
@@ -450,18 +450,18 @@
     </div>
     
     <div class="section-signature">
-        <div class="signature-bloc" style="text-align: left;">
-            Délivré à <span id="departement_id" class="data-field" style="flex-grow: 0; padding: 0;">LIEU DE DÉLIVRANCE</span>, le: 
-            <span class="signature-line" style="width: 20px; text-align: center;" id="date_jour">__</span> / 
-            <span class="signature-line" style="width: 20px; text-align: center;" id="date_mois">__</span> / 
-            <span class="signature-line" style="width: 20px; text-align: center;" id="date_annee">__</span>
-        </div>
-        
-        <div class="signature-bloc" style="text-align: right;">
-            <div class="signature-title">Le Directeur Départemental</div>
-            <div class="signature-line"></div>
-        </div>
+    <div class="signature-bloc" style="text-align: left;">
+        Délivré à <span id="departement_id" class="data-field" style="flex-grow: 0; padding: 0;">Pointe-Noire</span>, le: 
+        <span class="signature-line" style="width: 20px; text-align: center;" id="date_jour">__</span> / 
+        <span class="signature-line" style="width: 20px; text-align: center;" id="date_mois">__</span> / 
+        <span class="signature-line" style="width: 20px; text-align: center;" id="date_annee">__</span>
     </div>
+    
+    <div class="signature-bloc" style="text-align: right;">
+        <div class="signature-title">Le Directeur Départemental</div>
+        <div class="signature-line"></div>
+    </div>
+</div>
     
 </div>
 
@@ -538,10 +538,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('reference_moteur').textContent = moto.reference_moteur || '—';
         document.getElementById('immat_provisoire_info').textContent = numeroImmat;
 
-        // 🔹 Définition du lieu de délivrance et date automatique
-        const lieu = dossier.departement_nom || 'Brazzaville';
-        document.getElementById('departement_id').textContent = lieu;
+       // ... (le code précédent reste inchangé) ...
 
+// 6️⃣ Définition du lieu de délivrance
+let lieu = 'Pointe-Noire'; 
+
+// On vérifie le département de l'utilisateur connecté ou du dossier pour la cohérence
+const departementStocke = localStorage.getItem('utilisateur_departement_nom');
+if (departementStocke) {
+    lieu = departementStocke;
+} else {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        lieu = payload.departement_nom || payload.departement || dossier.departement_nom || 'Pointe-Noire';
+    } catch (err) {
+        lieu = dossier.departement_nom || 'Pointe-Noire';
+    }
+}
+
+// 🛑 MODIFICATION CLÉ ICI 🛑
+// Nettoyage de la chaîne pour retirer les préfixes "Commune de " ou "Département de "
+// La méthode replace remplace la première occurrence trouvée.
+lieu = lieu.replace(/^(Commune de |Département de )/i, '').trim(); 
+// Le 'i' rend la recherche insensible à la casse (majuscules/minuscules)
+
+// Mise à jour de l'élément HTML avec le nom simplifié
+document.getElementById('departement_id').textContent = lieu;
+
+// 7️⃣ Date automatique
+// ... (le code suivant reste inchangé) ...
+        // 🔹 7️⃣ Date automatique
         const today = new Date();
         document.getElementById('date_jour').textContent = String(today.getDate()).padStart(2, '0');
         document.getElementById('date_mois').textContent = String(today.getMonth() + 1).padStart(2, '0');
@@ -552,7 +578,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error(err);
     }
 
-    // 🔹 Fonction utilitaire pour vérifier le token
+    // 🔹 Vérification du token
     function isTokenValid(token) {
         if (!token) return false;
         try {
@@ -628,7 +654,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 </script>
-
 
 </body>
 </html>

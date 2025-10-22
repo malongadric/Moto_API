@@ -214,17 +214,75 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = 'login.html';
         return;
     }
+// ----------------------------------------------------------------------
+// 🔹 FONCTION UTILITAIRE : Décodage du JWT (Conservée)
+// ----------------------------------------------------------------------
+function decodeJwt(token) {
+    if (!token) return null;
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.error("Erreur de décodage du token JWT:", e);
+        return null;
+    }
+}
 
-    // Mise à jour de la section footer avec les infos utilisateur
-    function updateTraceability() {
-        const userName = storedUser.nom || 'Directeur';
-        const departementNom = storedUser.departement_nom || storedUser.departement_id || 'N/A'; 
-        document.getElementById('user-name').textContent = userName;
-        document.getElementById('user-department').textContent = `Directeur - Département du ${departementNom}`;
-        document.title = `DD - ${departementNom} - Validation`;
-    }
-    updateTraceability();
+// ----------------------------------------------------------------------
+// 🔹 GESTION DE LA TRAÇABILITÉ (FOOTER) - ADAPTÉ AU NOUVEAU STOCKAGE
+// ----------------------------------------------------------------------
+function updateTraceability() {
+    // 1. Récupération des données brutes
+    const token = localStorage.getItem('token');
+    
+    // === ADAPTATION ICI : Utilisation des clés individuelles ===
+    let userName = localStorage.getItem('utilisateur_nom') || 'Directeur';
+    let departementNom = localStorage.getItem('utilisateur_departement_nom') || 'Département Inconnu';
+    
+    // 💡 Fallback pour le département au cas où le nom n'est pas stocké
+    if (departementNom === 'N/A' || departementNom === 'Département Inconnu') {
+        const deptId = localStorage.getItem('utilisateur_departement_id');
+        if (deptId) {
+            departementNom = `ID ${deptId} (Nom en attente)`;
+        }
+    }
+    // ========================================================
 
+    // 2. Priorité B (Fallback / Correction) : Informations du Token JWT
+    // On utilise le token pour s'assurer que l'info n'est pas obsolète.
+    const payload = decodeJwt(token);
+    if (payload) {
+        // Si le nom dans le token est disponible et différent, on peut l'utiliser
+        // userName = payload.nom || userName; // Choix : garder le localStorage ou le token
+
+        // Tentative de récupération du département depuis le token
+        const tokenDept = payload.departement_nom || payload.departement;
+        if (tokenDept && tokenDept !== departementNom) {
+            departementNom = tokenDept;
+        }
+    }
+
+    // 3. Injection dans le footer
+    const userNameEl = document.getElementById('user-name');
+    const userDeptEl = document.getElementById('user-department');
+        
+    // Sécurité contre les valeurs null
+    const displayedName = userName || 'Directeur';
+    const displayedDept = departementNom || 'Département Inconnu';
+
+    if (userNameEl) userNameEl.textContent = displayedName;
+    if (userDeptEl) userDeptEl.textContent = `Directeur - ${displayedDept}`;
+
+    // 4. Mise à jour du titre de la page
+    document.title = `DD - ${displayedDept} - Validation`;
+}
+
+// Appel de la fonction mis à jour
+updateTraceability();
     // ----------------------------------------------------------------------
     // 🔹 GESTION DES SECTIONS (Navigation)
     // ----------------------------------------------------------------------
