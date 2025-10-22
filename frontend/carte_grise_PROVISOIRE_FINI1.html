@@ -510,8 +510,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const proprietaire = await resProp.json();
         if (!proprietaire) throw new Error("Propriétaire introuvable");
 
-        // 🔹 4️⃣ Récupération du dossier admin pour immatriculation provisoire
-        let numeroImmat = moto.numero_immatriculation || 'N/A';
+        // 🔹 4️⃣ Récupération de l'immatriculation provisoire
+        let numeroImmat = 'TAXI 001 A6'; // Valeur par défaut
         try {
             const resDossierAdmin = await fetch(
                 `https://moto-api-cika.onrender.com/api/dossier_admin/by-reference?reference_dossier=${encodeURIComponent(ref)}`,
@@ -522,11 +522,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const dossierAdmin = dossierAdminJson?.data || dossierAdminJson?.dossier_admin || {};
                 if (dossierAdmin.immatriculation_prov) {
                     numeroImmat = dossierAdmin.immatriculation_prov;
+                } else {
+                    // Si aucun numéro provisoire existant, on peut créer un numéro aléatoire du type TAXI XXX XX
+                    const randomNum = String(Math.floor(Math.random() * 900) + 100); // 100 à 999
+                    const randomLettre = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+                    const randomChiffre = String(Math.floor(Math.random() * 10)); // 0-9
+                    numeroImmat = `TAXI ${randomNum} ${randomLettre}${randomChiffre}`;
                 }
             }
         } catch (err) {
-            console.warn("⚠️ Dossier admin introuvable, on utilise le numéro de la moto", err);
+            console.warn("⚠️ Dossier admin introuvable, on utilise une immatriculation provisoire par défaut", err);
         }
+
         console.log("✅ Numéro d'immatriculation affiché :", numeroImmat);
 
         // 🔹 5️⃣ Injection des données dans le DOM

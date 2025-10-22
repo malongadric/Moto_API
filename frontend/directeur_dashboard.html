@@ -429,99 +429,103 @@ async function traiterDossier(dossierId, nouveauStatut, referenceDossier = null,
     }
 }
 
-    // ----------------------------------------------------------------------
-    // 🔹 CHARGEMENT DE LA LISTE DES DOSSIERS
-    // ----------------------------------------------------------------------
-    async function loadDossiersAdmin(query = '') {
-        dossierListContainer.innerHTML = "<p>Chargement des dossiers...</p>";
-        const currentStatus = statusFilter.value;
-        // Met à jour le titre basé sur le filtre sélectionné
-        pageTitle.textContent = statusFilter.options[statusFilter.selectedIndex].text;
+   async function loadDossiersAdmin(query = '') {
+    dossierListContainer.innerHTML = "<p>Chargement des dossiers...</p>";
+    const currentStatus = statusFilter.value;
+    pageTitle.textContent = statusFilter.options[statusFilter.selectedIndex].text;
 
-        try {
-            // L'API utilise le token pour filtrer par département
-            let url = `${API_BASE_URL}?statut=${encodeURIComponent(currentStatus)}`;
+    try {
+        let statutsAAfficher = [currentStatus];
+
+        // 🔹 Ajout du statut "envoyé" pour les directeurs départementaux
+        if (profil === 'directeur_departemental' && currentStatus === 'en_attente_validation_officielle') {
+            statutsAAfficher.push('envoyé');
+        }
+
+        let dossiers = [];
+        for (const statut of statutsAAfficher) {
+            let url = `${API_BASE_URL}?statut=${encodeURIComponent(statut)}`;
             if (query) url += `&search=${encodeURIComponent(query)}`;
+            
+            const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+            if (res.ok) {
+                const data = await res.json();
+                dossiers = dossiers.concat(data);
+            }
+        }
 
-            const response = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
-            if (!response.ok) throw new Error("Échec de la récupération des dossiers.");
+        if (!dossiers.length) {
+            dossierListContainer.innerHTML = `<p>Aucun dossier trouvé pour ce statut dans votre département.</p>`;
+            return;
+        }
 
-            const dossiers = await response.json();
+        // 🔹 Génération du tableau HTML
+        let html=`<div class="table-container"><table class="data-table"><thead><tr>
+            <th>Référence</th>
+            <th>Immat. Provisoire</th>
+            <th>Moto (Châssis)</th>
+            <th>Saisi par</th>
+            <th>Date Saisie</th>
+            <th>Actions</th>
+            </tr></thead><tbody>`;
 
-            if (!dossiers.length) {
-                dossierListContainer.innerHTML = `<p>Aucun dossier trouvé pour ce statut dans votre département.</p>`;
-                return;
+        dossiers.forEach(dossier => {
+            const moto = dossier.motos || {};
+            const dateSaisie = new Date(dossier.date_creation).toLocaleDateString('fr-FR');
+
+            html+=`<tr>
+                <td>${dossier.reference_dossier}</td>
+                <td>${dossier.immatriculation_prov || 'N/A'}</td>
+                <td>${moto.marque || 'N/A'} ${moto.modele || ''} (${moto.numero_chassis || 'N/A'})</td>
+                <td>${dossier.acteur_type || 'N/A'}</td>
+                <td>${dateSaisie}</td>
+                <td>`;
+
+            if (currentStatus === 'en_attente_validation_officielle') {
+                html += `<button class="btn btn-primary btn-valider" 
+                            data-id="${dossier.id}" 
+                            data-ref="${dossier.reference_dossier}"
+                            data-moto-id="${moto.id}"
+                            >Valider</button>
+                         <button class="btn btn-danger btn-rejeter" data-id="${dossier.id}">Rejeter</button>`;
+            } else {
+                html += `<span style="font-weight:bold;">${dossier.statut.toUpperCase()}</span>`; 
+                if (dossier.raison_rejet) html += ` <small>(Raison: ${dossier.raison_rejet})</small>`;
             }
 
-            let html=`<div class="table-container"><table class="data-table"><thead><tr>
-                <th>Référence</th>
-                <th>Immat. Provisoire</th>
-                <th>Moto (Châssis)</th>
-                <th>Saisi par</th>
-                <th>Date Saisie</th>
-                <th>Actions</th>
-                </tr></thead><tbody>`;
+            html += `</td></tr>`;
+        });
 
-            dossiers.forEach(dossier => {
-                const moto = dossier.motos || {};
-                const dateSaisie = new Date(dossier.date_creation).toLocaleDateString('fr-FR');
+        html+=`</tbody></table></div>`;
+        dossierListContainer.innerHTML = html;
 
-                html+=`<tr>
-                    <td>${dossier.reference_dossier}</td>
-                    <td>${dossier.immatriculation_prov || 'N/A'}</td>
-                    <td>${moto.marque || 'N/A'} ${moto.modele || ''} (${moto.numero_chassis || 'N/A'})</td>
-                    <td>${dossier.acteur_type || 'N/A'}</td>
-                    <td>${dateSaisie}</td>
-                    <td>`;
-
-                if (currentStatus === 'en_attente_validation_officielle') {
-                    // 🎯 Ajout des data-attributs pour la validation officielle
-                    html += `<button class="btn btn-primary btn-valider" 
-                                data-id="${dossier.id}" 
-                                data-ref="${dossier.reference_dossier}"
-                                data-moto-id="${moto.id}"
-                                >Valider</button>
-                              <button class="btn btn-danger btn-rejeter" data-id="${dossier.id}">Rejeter</button>`;
-                } else {
-                    html += `<span style="font-weight:bold;">${dossier.statut.toUpperCase()}</span>`; 
-                    if (dossier.raison_rejet) html += ` <small>(Raison: ${dossier.raison_rejet})</small>`;
-                }
-
-                html += `</td></tr>`;
+        // 🔹 Event Listeners pour Valider / Rejeter
+        if (currentStatus === 'en_attente_validation_officielle') {
+            document.querySelectorAll('.btn-valider').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const id = btn.dataset.id;
+                    const ref = btn.dataset.ref;
+                    const motoId = btn.dataset.motoId;
+                    if (!confirm(`Voulez-vous VALIDER officiellement le dossier ${ref} ?`)) return;
+                    await traiterDossier(id, 'validé', ref, motoId);
+                });
             });
 
-            html+=`</tbody></table></div>`;
-            dossierListContainer.innerHTML = html;
-
-            // 🔹 Event Listeners pour Valider / Rejeter
-            if (currentStatus === 'en_attente_validation_officielle') {
-                document.querySelectorAll('.btn-valider').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const id = btn.dataset.id;
-                        const ref = btn.dataset.ref;
-                        const motoId = btn.dataset.motoId;
-                        
-                        if (!confirm(`Voulez-vous VALIDER officiellement le dossier ${ref} ?`)) return;
-
-                        // Appel de la fonction de traitement avec les données complètes
-                        await traiterDossier(id, 'validé', ref, motoId);
-                    });
+            document.querySelectorAll('.btn-rejeter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.dataset.id;
+                    traiterDossier(id, 'rejeté');
                 });
-
-                document.querySelectorAll('.btn-rejeter').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.dataset.id;
-                        // Le rejet utilise l'ID du dossier et le statut 'rejeté'
-                        traiterDossier(id, 'rejeté');
-                    });
-                });
-            }
-
-        } catch (err) {
-            console.error("Erreur de chargement des dossiers admin:", err);
-            dossierListContainer.innerHTML = `<p style='color:red;'>Erreur de chargement des dossiers: ${err.message}</p>`; 
+            });
         }
+
+    } catch (err) {
+        console.error("Erreur de chargement des dossiers admin:", err);
+        dossierListContainer.innerHTML = `<p style='color:red;'>Erreur de chargement des dossiers: ${err.message}</p>`; 
     }
+}
+
+
 
     // ----------------------------------------------------------------------
     // 🔹 INITIALISATION ET ÉCOUTEURS DES FILTRES

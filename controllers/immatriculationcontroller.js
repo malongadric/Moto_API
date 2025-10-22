@@ -3,6 +3,9 @@ import supabase from '../config/db.js';
 
 
 
+// controllers/immatriculationController.js
+import supabase from '../config/db.js';
+
 export const attribuerNumero = async (req, res) => {
     try {
         const motoId = parseInt(req.params.motoId, 10);
@@ -51,25 +54,29 @@ export const attribuerNumero = async (req, res) => {
         if (userRole === 'directeur_departemental' && dossierData.departement_id !== departementId)
             return res.status(403).json({ message: "Vous ne pouvez attribuer un numéro que pour votre département." });
 
+        // =======================================================
         // 🔹 ADMIN : génération et attribution atomique du numéro
+        // =======================================================
         if (userRole === 'admin') {
+            // Vérifie si cette moto a déjà un numéro
             const { data: existing } = await supabase
                 .from('immatriculations')
                 .select('*')
                 .eq('moto_id', motoId)
                 .maybeSingle();
 
-            if (existing) return res.status(400).json({ message: 'Cette moto a déjà un numéro d’immatriculation.' });
+            if (existing)
+                return res.status(400).json({ message: 'Cette moto a déjà un numéro d’immatriculation.' });
 
             const typeVehicule = 'TAXI';
 
-            const { data: sequenceData } = await supabase
+            // 🔹 Récupération de la séquence du département
+            let { data: sequenceData } = await supabase
                 .from('sequences_immatriculations')
                 .select('*')
                 .eq('departement_id', departementId)
                 .eq('type_vehicule', typeVehicule)
-                .limit(1)
-                .single();
+                .maybeSingle();
 
             let nextSequence = 1;
             let nextSerie = 'A';
@@ -77,19 +84,58 @@ export const attribuerNumero = async (req, res) => {
             if (sequenceData) {
                 nextSequence = sequenceData.last_sequence + 1;
                 nextSerie = sequenceData.last_serie;
+
+                // Passage à la série suivante après 999
                 if (nextSequence > 999) {
                     nextSequence = 1;
                     nextSerie = String.fromCharCode(nextSerie.charCodeAt(0) + 1);
                     if (nextSerie > 'Z') nextSerie = 'A';
                 }
             } else {
-                await supabase
+                // Crée une séquence si inexistante
+                const { data: newSeq } = await supabase
                     .from('sequences_immatriculations')
-                    .insert([{ departement_id: departementId, type_vehicule: typeVehicule, last_sequence: 0, last_serie: 'A' }]);
+                    .insert([{
+                        departement_id: departementId,
+                        type_vehicule: typeVehicule,
+                        last_sequence: 0,
+                        last_serie: 'A'
+                    }])
+                    .select()
+                    .maybeSingle();
+                sequenceData = newSeq;
             }
 
+            // ✅ Génération du numéro : TAXI 001 A1
             const numeroImmatriculation = `${typeVehicule} ${String(nextSequence).padStart(3, '0')} ${nextSerie}${departementId}`;
 
+            // 🔹 Vérifie si ce numéro existe déjà (sécurité)
+            const { data: exist } = await supabase
+                .from('immatriculations')
+                .select('id')
+                .eq('numero_immatriculation', numeroImmatriculation)
+                .maybeSingle();
+
+            if (exist) {
+                return res.status(409).json({
+                    message: `Le numéro ${numeroImmatriculation} existe déjà. Réessayez.`
+                });
+            }
+
+            // ✅ Mise à jour de la séquence
+            const { error: seqUpdateError } = await supabase
+                .from('sequences_immatriculations')
+                .update({
+                    last_sequence: nextSequence,
+                    last_serie: nextSerie
+                })
+                .eq('departement_id', departementId)
+                .eq('type_vehicule', typeVehicule);
+
+            if (seqUpdateError)
+                return res.status(500).json({ message: 'Erreur mise à jour séquence', error: seqUpdateError.message });
+
+            // ✅ Attribution atomique via RPC
             const { error: txError } = await supabase.rpc('attribuer_numero_transaction', {
                 moto_id_input: motoId,
                 numero_input: numeroImmatriculation,
@@ -97,7 +143,8 @@ export const attribuerNumero = async (req, res) => {
                 reference_dossier_input: dossierData.reference_dossier
             });
 
-            if (txError) return res.status(500).json({ message: 'Erreur lors de l’attribution du numéro (transaction)', error: txError.message });
+            if (txError)
+                return res.status(500).json({ message: 'Erreur lors de l’attribution du numéro (transaction)', error: txError.message });
 
             return res.status(201).json({
                 message: 'Numéro attribué avec succès (transaction sécurisée)',
@@ -105,32 +152,36 @@ export const attribuerNumero = async (req, res) => {
             });
         }
 
-        // 🔹 DIRECTEUR DEPARTEMENTAL : validation
+        // =======================================================
+        // 🔹 DIRECTEUR DEPARTEMENTAL : validation finale
+        // =======================================================
         if (userRole === 'directeur_departemental') {
-            if (!dossierData.immatriculation_prov) 
+            if (!dossierData.immatriculation_prov)
                 return res.status(400).json({ message: "Aucune immatriculation provisoire trouvée." });
 
             const { error: updateError } = await supabase
                 .from('dossier')
-                .update({ 
-                    statut: 'validé', 
-                    immatriculation_def: dossierData.immatriculation_prov, 
-                    date_mise_a_jour: new Date() 
+                .update({
+                    statut: 'validé',
+                    immatriculation_def: dossierData.immatriculation_prov,
+                    date_mise_a_jour: new Date()
                 })
                 .eq('dossier_id', dossierData.dossier_id);
 
-            if (updateError) return res.status(500).json({ message: "Erreur validation dossier", error: updateError.message });
+            if (updateError)
+                return res.status(500).json({ message: "Erreur validation dossier", error: updateError.message });
 
             const { error: adminUpdateError } = await supabase
                 .from('dossier_admin')
-                .update({ 
-                    statut: 'validé', 
-                    immatriculation_def: dossierData.immatriculation_prov, 
-                    date_mise_a_jour: new Date() 
+                .update({
+                    statut: 'validé',
+                    immatriculation_def: dossierData.immatriculation_prov,
+                    date_mise_a_jour: new Date()
                 })
                 .eq('reference_dossier', dossierData.reference_dossier);
 
-            if (adminUpdateError) console.error('Erreur mise à jour dossier_admin:', adminUpdateError);
+            if (adminUpdateError)
+                console.error('Erreur mise à jour dossier_admin:', adminUpdateError);
 
             return res.status(200).json({
                 message: 'Dossier validé avec succès',
