@@ -1,6 +1,6 @@
 // routes/authRoutes.js
 import express from 'express'
-import { login, getUsers, loginLimiter } from '../controllers/authController.js'
+import { login, getUsers, getUserById, loginLimiter } from '../controllers/authController.js'
 import { verifyToken } from '../middlewares/auth.js'
 import { checkRole } from '../middlewares/role.js'
 
@@ -17,5 +17,8 @@ router.get(
   checkRole(['admin','directeur_departemental','SD','super_directeur']),
   getUsers
 )
+
+//  Obtenir un utilisateur par ID (accessible à tout utilisateur authentifié)
+router.get('/users/:id', verifyToken, getUserById)
 
 export default router

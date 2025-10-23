@@ -294,8 +294,8 @@ if (proprietaireForm) {
             alert("✅ Propriétaire enregistré et lié à la moto avec succès !");
             proprietaireForm.reset();
 
-            // ❌ Ne pas supprimer moto_id ici, validation en a besoin
-            window.location.href = "validation_from.html";
+            // Redirection vers la page de paiement au lieu de validation directe
+            window.location.href = "payment_agent_check.html";
 
         } catch (err) {
             console.error(err);

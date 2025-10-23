@@ -15,6 +15,7 @@ import departements from './routes/departement.js';
 import dossiers from './routes/dossiers.js';
 import paiement from './routes/paiement.js';
 import dossierAdminRoutes from './routes/dossierAdminRoutes.js';
+import proxyPaiement from './routes/proxyPaiement.js';
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -50,7 +51,8 @@ app.use(cors({
     callback(new Error('Not allowed by CORS: ' + origin));
   },
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  // allow API-TOKEN header used by external payment API and lowercase variant
+  allowedHeaders: ['Content-Type','Authorization','API-TOKEN','api-token','X-Requested-With'],
   credentials: true
 }));
 // --- Preflight OPTIONS pour toutes les routes ---
@@ -58,6 +60,11 @@ app.options('*', cors());
 
 // Middleware JSON
 app.use(express.json());
+
+// Servir les fichiers statiques du frontend (pour tests locaux)
+import path from 'path';
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 // --- Routes ---
 app.use('/api/auth', auth);
@@ -74,6 +81,7 @@ app.use('/api/departements', departements);
 app.use('/api/dossiers', dossiers);
 app.use('/api/v1', paiement);
 app.use('/api/dossier_admin', dossierAdminRoutes);
+app.use('/api/proxy', proxyPaiement);
 
 // --- Test connexion Supabase ---
 app.get('/api/test', async (req, res) => {

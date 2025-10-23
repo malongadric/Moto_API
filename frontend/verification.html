@@ -179,19 +179,43 @@ document.addEventListener('DOMContentLoaded', async function() {
         const proprietaire = dossier.proprietaire?.[0] || dossier.proprietaire; 
         const mandataire = dossier.mandataire?.[0] || dossier.mandataire;
         moto = dossier.moto?.[0] || dossier.moto; // moto est la variable globale
-        const agentData = dossier.agent?.[0] || dossier.agent; // Agent data
+        // L’API locale renvoie l’objet agent (non tableau). On gère les 2 cas.
+        const agentData = Array.isArray(dossier.agent) ? (dossier.agent[0] || null) : dossier.agent; 
 
-        // Calcul du nom de l'agent pour l'affichage (répond à votre demande)
-        const agentNom = agentData ? 
-            `${agentData.prenom || ''} ${agentData.nom || ''}`.trim() : 
-            `ID: ${dossier.agent_id || '—'}`;
-        
-        // 🔹 Stocker moto_id et dossier_id pour usage futur
-        if (moto && moto.id) {
-            localStorage.setItem('moto_id', moto.id);
-            localStorage.setItem('dossier_id', dossier.dossier_id);
-        }
-    
+        // ✅ Récupération fiable du nom complet de l'agent
+let agentNom = '—';
+
+async function fetchUserById(id) {
+    try {
+        if (!id || !token) return null;
+        const res = await fetch(`https://moto-api-cika.onrender.com/api/auth/users/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return null;
+        const user = await res.json();
+        return `${user.prenom || ''} ${user.nom || ''}`.trim() || null;
+    } catch (error) {
+        console.warn("Erreur récupération agent:", error);
+        return null;
+    }
+}
+
+// 🧩 Cas 1 : le backend renvoie déjà les infos de l'agent
+if (dossier.agent && (dossier.agent.nom || dossier.agent.prenom)) {
+    agentNom = `${dossier.agent.prenom || ''} ${dossier.agent.nom || ''}`.trim();
+} 
+// 🧩 Cas 2 : sinon on va chercher le nom via l'ID
+else if (dossier.agent_id) {
+    const fetchedNom = await fetchUserById(dossier.agent_id);
+    agentNom = fetchedNom || `ID ${dossier.agent_id}`;
+}
+
+// 🔹 Stocker moto_id et dossier_id pour usage futur
+if (moto && moto.id) {
+    localStorage.setItem('moto_id', moto.id);
+    localStorage.setItem('dossier_id', dossier.dossier_id);
+}
+
         // 🔹 3️⃣ Affichage des informations
         detailRefTitle.textContent = dossier.reference_dossier;
         pageTitle.textContent = `Validation du Dossier: ${dossier.reference_dossier}`;

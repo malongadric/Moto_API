@@ -16,6 +16,7 @@ export const verifyToken = (req, res, next) => {
     req.user = {
       id: decoded.id,
       nom: decoded.nom,
+      prenom: decoded.prenom,
       email: decoded.email,
       profil: decoded.profil,           // <-- important : doit correspondre au champ "profil" dans la DB/token
       departement_id: decoded.departement_id

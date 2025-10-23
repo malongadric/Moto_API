@@ -321,8 +321,20 @@ export const getDossierByReference = async (req, res) => {
         .select('id, nom, prenom, email, profil')
         .eq('id', dossier.agent_id)
         .maybeSingle();
-      if (!agentError && agentData) agent = agentData;
-      else agent = { id: dossier.agent_id, nom: `ID ${dossier.agent_id}`, prenom: '' };
+      if (!agentError && agentData) {
+        agent = agentData;
+      } else {
+        // Fallback : si l'utilisateur connecté correspond à l'agent du dossier
+        if (req.user && req.user.id === dossier.agent_id) {
+          agent = {
+            id: dossier.agent_id,
+            nom: req.user.nom || `ID ${dossier.agent_id}`,
+            prenom: req.user.prenom || ''
+          };
+        } else {
+          agent = { id: dossier.agent_id, nom: `ID ${dossier.agent_id}`, prenom: '' };
+        }
+      }
     }
 
     // 🔹 Retour JSON complet

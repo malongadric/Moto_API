@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent - Vérification paiement</title>
+<style>
+:root {
+  --primary-color: #0d47a1;
+  --secondary-color: #00796b;
+  --accent-color: #ff5722;
+  --background-color: #f5f7fa;
+  --text-color: #333;
+  --border-color: #e0e0e0;
+  --white-color: #fff;
+  --shadow: 0 4px 12px rgba(0,0,0,0.08);
+  --border-radius: 8px;
+  --sidebar-width: 260px;
+}
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  background: var(--background-color);
+  color: var(--text-color);
+  display: flex;
+  height: 100vh;
+}
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--primary-color);
+  color: var(--white-color);
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-header {
+  padding: 20px;
+  text-align: center;
+}
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.main-header {
+  display: flex;
+  align-items: center;
+  background: var(--white-color);
+  padding: 15px 30px;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+}
+.content-area {
+  flex: 1;
+  padding: 30px;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.card {
+  background: var(--white-color);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+}
+.form-group {
+  margin-bottom: 20px;
+}
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+input[type=text] {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+input[type=text]:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+.button-group {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 25px;
+}
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s;
+}
+.btn-primary {
+  background: var(--secondary-color);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #005a4f;
+  transform: translateY(-2px);
+}
+.btn-secondary {
+  background: var(--accent-color);
+  color: #fff;
+}
+.btn-secondary:hover {
+  background: #e64a19;
+  transform: translateY(-2px);
+}
+.btn-skip {
+  background: #757575;
+  color: #fff;
+}
+.btn-skip:hover {
+  background: #616161;
+  transform: translateY(-2px);
+}
+.status {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+.ok, .success {
+  background: #e6ffed;
+  color: #0b6b2d;
+  border-left: 4px solid #0b6b2d;
+}
+.err, .error {
+  background: #fff0f0;
+  color: #9b1c1c;
+  border-left: 4px solid #9b1c1c;
+}
+</style>
+</head>
+<body>
+<aside class="sidebar"><div class="sidebar-header"><h1>Immatriculation</h1></div></aside>
+<div class="main-content">
+  <header class="main-header"><h2>Vérifier paiement - Agent</h2></header>
+  <main class="content-area">
+    <div class="card">
+      <h3>Vérification du paiement</h3>
+      <p>Entrez le numéro de la facture ou utilisez le bouton "Passer" si votre département n'utilise pas ce système.</p>
+
+      <div class="form-group">
+        <label for="paymentId">Numéro de facture</label>
+        <input id="paymentId" type="text" placeholder="ex: 6423ee4e" />
+      </div>
+
+      <div class="button-group">
+        <button id="btnCheck" class="btn btn-secondary">Vérifier</button>
+        <button id="btnSkip" class="btn btn-skip">Passer</button>
+      </div>
+
+      <div id="status" class="status" style="display:none"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const g = id => document.getElementById(id);
+
+  function redirectToValidation(paymentId, delay = 0) {
+    const redirectUrl = '/frontend/validation_from.html?payment_id=' + encodeURIComponent(paymentId);
+    if (delay > 0) {
+      return setTimeout(() => { window.location.href = redirectUrl; }, delay);
+    } else {
+      window.location.href = redirectUrl;
+    }
+  }
+
+  async function postTo(path, paymentId){
+    // Configuration API via proxy backend local
+    const API_CONFIG = {
+      PROXY_URL: 'http://localhost:5000/api/proxy/',
+      REQUEST_TIMEOUT: 15000,
+      API_TOKEN: '90f5912e-a9a5-45cb-adb5-7d887f237c69'
+    };
+
+    // URL finale côté backend (évite CORS et garde le token côté serveur si configuré)
+    const apiUrl = `${API_CONFIG.PROXY_URL}${path.replace('{id}', paymentId)}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.REQUEST_TIMEOUT);
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'API-TOKEN': API_CONFIG.API_TOKEN
+        },
+        body: '{}',
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      const text = await res.text();
+      let body;
+      try { body = JSON.parse(text); } catch(e) { body = text; }
+      return { status: res.status, ok: res.ok, body };
+    } catch(err) {
+      if (err.name === 'AbortError') {
+        return { error: 'La requête a expiré.', timeout: true };
+      }
+      return { error: String(err) };
+    }
+  }
+
+  g('btnSkip').addEventListener('click', function() {
+    g('status').className = 'status success';
+    g('status').textContent = 'Redirection vers la page de validation...';
+    g('status').style.display = 'block';
+    redirectToValidation('skip', 1000);
+  });
+
+  g('btnCheck').addEventListener('click', async () => {
+    const pid = g('paymentId').value.trim();
+    if(!pid) return alert('Renseignez le numéro de facture');
+
+    g('status').className = 'status';
+    g('status').textContent = 'Vérification en cours...';
+    g('status').style.display = 'block';
+
+    // Vérification réelle via API (pas de simulation)
+    const res = await postTo('info-caisse/{id}', pid);
+
+    if (res.status === 401 || (res.body && res.body.error && res.body.error.includes("vous n etes pas autorise"))) {
+      g('status').className = 'status err';
+      g('status').innerHTML = `<strong>Erreur d'autorisation (401)</strong>: Vous n'êtes pas autorisé à accéder à cette information.<br>
+        <ul style="margin-top:8px;text-align:left;">
+          <li>Vérifiez que vous êtes connecté avec un compte ayant les droits suffisants</li>
+          <li>Assurez-vous que votre session n'a pas expiré (déconnexion/reconnexion)</li>
+          <li>Contactez l'administrateur si le problème persiste</li>
+        </ul>`;
+    }
+    else if (res.ok && res.body) {
+      const b = res.body;
+      const statusStr = typeof b.status !== 'undefined' ? String(b.status) : undefined;
+
+      if (statusStr === '1') {
+        g('status').className = 'status success';
+        g('status').innerHTML = '<strong>Paiement vérifié avec succès!</strong><br>Redirection vers la page de validation dans <span id="countdown">3</span> secondes...';
+        g('status').style.display = 'block';
+
+        let count = 3;
+        const countdownInterval = setInterval(() => {
+          count--;
+          g('countdown').textContent = count;
+          if (count <= 0) {
+            clearInterval(countdownInterval);
+            redirectToValidation(pid);
+          }
+        }, 1000);
+      } else if (statusStr === '0') {
+        g('status').className = 'status err';
+        const details = [
+          b.payment_id ? `<li><strong>Reçu:</strong> ${b.payment_id}</li>` : '',
+          b.prestation ? `<li><strong>Prestation:</strong> ${b.prestation}</li>` : '',
+          b.usager ? `<li><strong>Usager:</strong> ${b.usager}</li>` : '',
+          b.cout ? `<li><strong>Coût:</strong> ${b.cout}</li>` : ''
+        ].filter(Boolean).join('');
+        g('status').innerHTML = `<strong>Facture trouvée mais non payée.</strong>${details ? '<br><ul style="margin-top:8px;text-align:left;">' + details + '</ul>' : ''}`;
+        g('status').style.display = 'block';
+      } else {
+        g('status').className = 'status error';
+        let msg = 'Réponse inattendue du serveur.';
+        if (b && b.response) msg = b.response;
+        else if (b && b.error) msg = b.error;
+        g('status').textContent = msg;
+        g('status').style.display = 'block';
+      }
+    } else {
+      g('status').className = 'status error';
+      let msg = 'Paiement non trouvé ou non payé.';
+      if (res.status === 404) msg = 'Facture introuvable.';
+      if (res.body && res.body.response) msg = res.body.response;
+      else if (res.body && res.body.error) msg = res.body.error;
+      g('status').textContent = msg;
+      g('status').style.display = 'block';
+    }
+  });
+</script>
+</body>
+</html>

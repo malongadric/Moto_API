@@ -79,6 +79,7 @@ body {
     <div class="reference-info">
         Référence du Dossier : <span class="reference-number" id="ref-number">REF-XXXX</span><br>
         Département : <span class="departement-number" id="dep-number">--</span>
+        <div style="margin-top:8px;font-size:0.95rem;color:#333">Payment ID (si fourni) : <strong id="payment-id">-</strong></div>
     </div>
     
     <a href="agent_dashboard.html" class="btn" id="btn-dashboard">Retourner au Tableau de Bord</a>
@@ -127,6 +128,11 @@ body {
         if (result.dossier) {
             document.getElementById('ref-number').textContent = result.dossier.reference_dossier || "N/A";
             document.getElementById('dep-number').textContent = result.dossier.departement_id || "N/A";
+
+            // show payment id from query if present
+            const qs = new URLSearchParams(location.search);
+            const pid = qs.get('payment_id');
+            if (pid) document.getElementById('payment-id').textContent = pid;
 
             // Nettoyage
             ['proprietaire_id', 'mandataire_id', 'moto_id'].forEach(k => localStorage.removeItem(k));

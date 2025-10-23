@@ -1,0 +1,13 @@
+﻿{
+    "content":  "{\"response\":\"vous n avez pas le droit d acce\\u0301der a cette facture\"}",
+    "status":  403,
+    "headers":  {
+                    "X-Robots-Tag":  "noindex",
+                    "Date":  "Wed, 22 Oct 2025 16:30:38 GMT",
+                    "X-Powered-By":  "PHP/8.2.28",
+                    "Content-Type":  "application/json",
+                    "Host":  "89.117.59.239:30082",
+                    "Connection":  "close",
+                    "Cache-Control":  "no-cache, private"
+                }
+}

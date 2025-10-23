@@ -15,6 +15,7 @@ export const loginLimiter = rateLimit({
 const formatUser = (user) => ({
   id: user.id,
   nom: user.nom,
+  prenom: user.prenom,
   profil: user.profil,
   departement_id: user.departement_id,
   permissions: getPermissions(user.profil)
@@ -154,3 +155,24 @@ export const getUsers = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur', erreur: err.message })
   }
 }
+
+// ----------------- GET USER BY ID (public to authenticated users) -----------------
+export const getUserById = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) return res.status(400).json({ message: 'ID invalide' });
+
+    const { data, error } = await supabase
+      .from('utilisateurs')
+      .select('id, nom, prenom, profil, departement_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) return res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
+    if (!data) return res.status(404).json({ message: 'Utilisateur introuvable' });
+
+    return res.json(data);
+  } catch (err) {
+    return res.status(500).json({ message: 'Erreur serveur', erreur: err.message });
+  }
+};
