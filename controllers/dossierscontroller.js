@@ -28,7 +28,25 @@ export const addDossier = async (req, res) => {
 
     // 🔹 Génération de la référence unique pour le dossier
     const currentYear = new Date().getFullYear();
-    const reference = `REF-${userDepartementId}-${currentYear}-${moto_id}`;
+    // Calcule la prochaine séquence par département et année (REF-{dept}-{year}-{seq})
+    const startOfYear = new Date(Date.UTC(currentYear, 0, 1, 0, 0, 0)).toISOString();
+    const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59)).toISOString();
+    const { data: existingRefs } = await supabase
+      .from('dossier')
+      .select('reference_dossier')
+      .eq('departement_id', userDepartementId)
+      .gte('date_soumission', startOfYear)
+      .lte('date_soumission', endOfYear);
+    let lastSeq = 0;
+    (existingRefs || []).forEach(d => {
+      const m = d.reference_dossier && String(d.reference_dossier).match(new RegExp(`^REF-${userDepartementId}-${currentYear}-(\\d+)$`));
+      if (m) {
+        const num = parseInt(m[1], 10);
+        if (!isNaN(num)) lastSeq = Math.max(lastSeq, num);
+      }
+    });
+    const nextSeq = lastSeq + 1;
+    const reference = `REF-${userDepartementId}-${currentYear}-${nextSeq}`;
 
     // 🔹 Préparation des données
     const dossierPayload = {

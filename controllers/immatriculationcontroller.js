@@ -25,13 +25,32 @@ export const attribuerNumero = async (req, res) => {
             return res.status(500).json({ message: 'Erreur récupération dossier', error: dossierError.message });
 
         if (!dossierData) {
-            const reference = `REF-${departementId}-${new Date().getFullYear()}-${motoId}`;
+            // Génère une référence par séquence annuelle et département (REF-{dept}-{year}-{seq})
+            const currentYear = new Date().getFullYear();
+            const startOfYear = new Date(Date.UTC(currentYear, 0, 1, 0, 0, 0)).toISOString();
+            const endOfYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59)).toISOString();
+            const { data: existingRefs } = await supabase
+                .from('dossier')
+                .select('reference_dossier')
+                .eq('departement_id', departementId)
+                .gte('date_soumission', startOfYear)
+                .lte('date_soumission', endOfYear);
+            let lastSeq = 0;
+            (existingRefs || []).forEach(d => {
+                const m = d.reference_dossier && String(d.reference_dossier).match(new RegExp(`^REF-${departementId}-${currentYear}-(\\d+)$`));
+                if (m) {
+                    const num = parseInt(m[1], 10);
+                    if (!isNaN(num)) lastSeq = Math.max(lastSeq, num);
+                }
+            });
+            const nextSeq = lastSeq + 1;
+            const reference = `REF-${departementId}-${currentYear}-${nextSeq}`;
             const { data: newDossier, error: createError } = await supabase
                 .from('dossier')
                 .insert([{
                     moto_id: motoId,
                     statut: 'en_attente',
-                    date_creation: new Date(),
+                    date_soumission: new Date(),
                     reference_dossier: reference,
                     departement_id: departementId,
                     agent_id: userId
